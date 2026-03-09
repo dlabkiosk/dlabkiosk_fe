@@ -1,2 +1,14 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('kiosk', {
+  onCardScanned: (callback: (value: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, value: string) => {
+      callback(value);
+    };
+    ipcRenderer.on('card:scanned', handler);
+
+    return () => {
+      ipcRenderer.removeListener('card:scanned', handler);
+    };
+  },
+});
