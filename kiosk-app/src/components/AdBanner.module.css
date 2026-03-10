@@ -1,0 +1,11 @@
+.container {
+  margin: 0 24px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}

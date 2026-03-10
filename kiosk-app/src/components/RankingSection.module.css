@@ -1,0 +1,93 @@
+.container {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #eee;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.moreButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 18px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.tabRow {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #999;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+}
+
+.tabActive {
+  color: #1a1a2e;
+  border-bottom-color: #1a1a2e;
+}
+
+.columns {
+  display: flex;
+  gap: 16px;
+}
+
+.rankList {
+  list-style: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rankItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.rankBadge {
+  width: 24px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.rankName {
+  font-size: 13px;
+  color: #333;
+}

@@ -15,6 +15,6 @@ body {
   color: #1a1a2e;
   background-color: #f0f4f8;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  overflow-x: hidden;
   user-select: none;
 }

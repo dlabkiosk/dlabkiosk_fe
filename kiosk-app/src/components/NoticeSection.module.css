@@ -1,0 +1,58 @@
+.container {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #eee;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.moreButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 18px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.5;
+  padding-left: 12px;
+  position: relative;
+}
+
+.item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #999;
+}
