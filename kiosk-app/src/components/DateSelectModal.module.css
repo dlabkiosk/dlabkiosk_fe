@@ -1,0 +1,194 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.modal {
+  position: relative;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8) var(--space-6) var(--space-7);
+  width: 360px;
+  max-width: 90vw;
+}
+
+.backButton {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-lg);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-base);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: var(--font-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--font-base);
+  color: var(--color-text-hint);
+  text-align: center;
+  margin-bottom: var(--space-5);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.navButton {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  border: none;
+  background: transparent;
+  font-size: var(--font-lg);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monthLabel {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: var(--space-5);
+}
+
+.dayLabel {
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-2) 0;
+}
+
+.emptyCell {
+  padding: var(--space-2) 0;
+}
+
+.dayCell {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-sm);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.dayCell:active:not(:disabled) {
+  background: var(--color-bg-light);
+}
+
+.dayCellActive {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  font-weight: var(--weight-bold);
+}
+
+.dayCellActive:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.dayCellToday {
+  background: var(--color-bg-light);
+  font-weight: var(--weight-bold);
+}
+
+.dayCellPast {
+  color: var(--color-text-placeholder);
+  cursor: default;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.cancelButton {
+  flex: 1;
+  padding: var(--space-3h) 0;
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.cancelButton:active {
+  background: var(--color-bg-light);
+}
+
+.submitButton {
+  flex: 1;
+  padding: var(--space-3h) 0;
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-bg-white);
+  background: var(--color-text);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.submitButton:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+.submitButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

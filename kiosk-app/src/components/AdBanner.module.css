@@ -1,6 +1,6 @@
 .container {
-  margin: 0 24px;
-  border-radius: 20px;
+  margin: 0 var(--space-6);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 

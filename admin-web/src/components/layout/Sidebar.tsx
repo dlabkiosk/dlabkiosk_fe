@@ -13,7 +13,6 @@ import {
   LuWallet,
   LuMegaphone,
   LuSettings,
-  LuChevronDown,
 } from 'react-icons/lu';
 import type { MenuItem } from '../../types/menu';
 import logoImg from '../../assets/logo.png';
@@ -32,14 +31,14 @@ const MENU_ITEMS: MenuItem[] = [
   { label: '식사관리', path: '/meals', icon: LuUtensils, children: [] },
   { label: '비대면 신청', path: '/remote', icon: LuMonitor },
   { label: '좌석관리', path: '/seats', icon: LuArmchair, children: [] },
-  { label: '휴대폰관리', path: '/phones', icon: LuSmartphone, children: [] },
-  {
-    label: '상·벌점관리',
-    path: '/points',
-    icon: LuStar,
-    children: [],
-  },
-  { label: '수납관리', path: '/billing', icon: LuWallet, children: [] },
+  // { label: '휴대폰관리', path: '/phones', icon: LuSmartphone, children: [] },
+  // {
+  //   label: '상·벌점관리',
+  //   path: '/points',
+  //   icon: LuStar,
+  //   children: [],
+  // },
+  // { label: '수납관리', path: '/billing', icon: LuWallet, children: [] },
   { label: '공지관리', path: '/notices', icon: LuMegaphone, children: [] },
   { label: '설정', path: '/settings', icon: LuSettings, children: [] },
 ];
@@ -60,7 +59,8 @@ export default function Sidebar() {
     });
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
     <aside className={styles.sidebar}>
@@ -84,9 +84,6 @@ export default function Sidebar() {
                 >
                   <Icon className={styles.menuIcon} />
                   <span className={styles.menuLabel}>{item.label}</span>
-                  <LuChevronDown
-                    className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
-                  />
                 </button>
                 {isOpen && (
                   <div className={styles.subMenu}>
@@ -115,9 +112,7 @@ export default function Sidebar() {
             >
               <Icon className={styles.menuIcon} />
               <span className={styles.menuLabel}>{item.label}</span>
-              {item.children !== undefined && (
-                <LuChevronDown className={styles.chevron} />
-              )}
+              {item.children !== undefined }
             </NavLink>
           );
         })}

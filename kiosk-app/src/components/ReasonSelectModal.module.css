@@ -17,6 +17,23 @@
   max-width: 90vw;
 }
 
+.backButton {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-lg);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .closeButton {
   position: absolute;
   top: var(--space-4);
@@ -55,7 +72,7 @@
   gap: var(--space-3);
 }
 
-.actionButton {
+.reasonButton {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,16 +86,16 @@
   transition: background-color 0.15s;
 }
 
-.actionButton:active {
+.reasonButton:active {
   background-color: #e8e8e8;
 }
 
-.actionIcon {
+.reasonIcon {
   font-size: var(--icon-md);
   line-height: 1;
 }
 
-.actionLabel {
+.reasonLabel {
   font-size: var(--font-base);
   font-weight: var(--weight-semibold);
   color: var(--color-text);

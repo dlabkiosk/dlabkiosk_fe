@@ -4,54 +4,14 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-bottom: 24px;
-  background-color: #f0f4f8;
+  gap: var(--space-4);
+  padding-bottom: var(--space-6);
+  background-color: var(--color-bg);
   overflow-y: auto;
-}
-
-.connectArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 0 24px;
-}
-
-.connectButton {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  background-color: #4a90d9;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.connectButton:active {
-  background-color: #3a7bc8;
-}
-
-.errorText {
-  font-size: 13px;
-  color: #dc3545;
-}
-
-.connectedBadge {
-  margin: 0 24px;
-  padding: 8px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #28a745;
-  background: #d4edda;
-  border-radius: 10px;
 }
 
 .infoSection {
   display: flex;
-  gap: 12px;
-  padding: 0 24px;
+  gap: var(--space-3);
+  padding: 0 var(--space-6);
 }

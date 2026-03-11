@@ -1,13 +1,13 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 24px;
+  gap: var(--space-3);
+  padding: 0 var(--space-6);
 }
 
 .largeRow {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .largeButton {
@@ -16,33 +16,33 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 28px 16px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 16px;
+  gap: var(--space-2h);
+  padding: var(--space-7) var(--space-4);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .largeButton:active {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-gray);
 }
 
 .largeIcon {
-  font-size: 32px;
+  font-size: var(--icon-lg);
   line-height: 1;
 }
 
 .largeLabel {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
 
 .smallRow {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .smallButton {
@@ -51,26 +51,26 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 20px 12px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 16px;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-3);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .smallButton:active {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-gray);
 }
 
 .smallIcon {
-  font-size: 24px;
+  font-size: var(--icon-sm);
   line-height: 1;
 }
 
 .smallLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
