@@ -1,0 +1,177 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-top);
+}
+
+.modal {
+  position: relative;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-2xl);
+  width: 400px;
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backButton {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-lg);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerTitle {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* 학생 정보 카드 */
+.studentCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  margin: var(--space-4) var(--space-5) 0;
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarIcon {
+  font-size: 24px;
+  opacity: 0.6;
+}
+
+.studentInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.studentName {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.studentMeta {
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+}
+
+
+/* 스크롤 영역 */
+.scrollArea {
+  overflow-y: auto;
+  padding: 0 var(--space-5) var(--space-5);
+  flex: 1;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: var(--space-5);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expandButton {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expandButton:active {
+  background: var(--color-bg-light);
+}
+
+.sectionTitle {
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+
+.sectionSub {
+  font-size: var(--font-xs);
+  font-weight: normal;
+  color: var(--color-text-hint);
+}
+
+/* 테이블 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-xs);
+}
+
+.table th {
+  padding: var(--space-2) var(--space-2);
+  text-align: left;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-dark);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-2) var(--space-2);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td:first-child,
+.table th:first-child {
+  width: 24px;
+  text-align: center;
+  color: var(--color-text-hint);
+}

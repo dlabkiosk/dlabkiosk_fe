@@ -1,0 +1,222 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ── Page Header ── */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pageTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pageTitleIcon {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ── Content Card ── */
+.contentCard {
+  background-color: #ffffff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ── Filter Row ── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.newButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background-color: #ffffff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  margin-right: auto;
+}
+
+.newButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.categorySelect {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  cursor: pointer;
+  outline: none;
+}
+
+.categorySelect:focus {
+  border-color: var(--color-primary);
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.searchInput {
+  padding: 7px 12px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border: none;
+  outline: none;
+  width: 200px;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.searchButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  color: var(--color-text-secondary);
+  transition: color 0.15s;
+}
+
+.searchButton:hover {
+  color: var(--color-text-primary);
+}
+
+/* ── Table ── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+  padding: 11px var(--spacing-md);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-primary-light);
+}
+
+.checkboxCol {
+  width: 40px;
+  text-align: center !important;
+}
+
+.checkboxCol input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.titleCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.titleCell:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.loadingMessage,
+.errorMessage {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
+.errorMessage {
+  color: #e74c3c;
+}
+
+.emptyRow td {
+  text-align: center;
+  padding: var(--spacing-xl) !important;
+  color: var(--color-text-muted);
+}
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) 0;
+}
+
+.pageButton {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.pageButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.pageButtonActive {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}

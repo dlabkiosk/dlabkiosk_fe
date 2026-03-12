@@ -1,0 +1,9 @@
+{
+  "name": "daesung-kiosk",
+  "private": true,
+  "workspaces": [
+    "admin-web",
+    "kiosk-app",
+    "packages/*"
+  ]
+}
