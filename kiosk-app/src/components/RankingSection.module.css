@@ -35,33 +35,24 @@
   line-height: 1;
 }
 
-.tabRow {
-  display: flex;
-  gap: 0;
+.subtitle {
+  font-size: var(--font-xs);
+  color: var(--color-text-hint);
   margin-bottom: var(--space-3);
 }
 
-.tab {
-  flex: 1;
-  padding: var(--space-1h) 0;
-  font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-placeholder);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  text-align: center;
-}
-
-.tabActive {
-  color: var(--color-text);
-  border-bottom-color: var(--color-text);
-}
-
-.columns {
+.summaryRow {
   display: flex;
   gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.summaryItem {
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-semibold);
 }
 
 .rankList {
@@ -90,4 +81,17 @@
 .rankName {
   font-size: var(--font-sm);
   color: var(--color-text-secondary);
+  flex: 1;
+}
+
+.rankTime {
+  font-size: var(--font-xs);
+  color: var(--color-text-hint);
+}
+
+.loading {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+  text-align: center;
+  padding: var(--space-4) 0;
 }

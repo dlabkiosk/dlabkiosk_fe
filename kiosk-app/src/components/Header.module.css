@@ -2,11 +2,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-5) var(--space-5) var(--space-1) var(--space-6);
 }
 
 .logo {
-  height: var(--icon-lg);
+  height: 44px;
   object-fit: contain;
 }
 

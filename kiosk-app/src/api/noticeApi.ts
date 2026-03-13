@@ -16,7 +16,7 @@ export interface Notice {
 
 /* ── API ── */
 
-/** 공지 목록 조회 */
+/** 해당 지점의 활성 공지 목록 조회 (고정 공지 우선, 최신순) */
 export function getNotices(): Promise<Notice[]> {
-  return apiGet<Notice[]>('/api/v1/admin/notices');
+  return apiGet<Notice[]>('/api/v1/kiosk/notices');
 }

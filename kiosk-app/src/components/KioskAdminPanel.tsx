@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { kioskLogout } from '../api/kioskAuthApi';
+import type { KioskSession } from '../api/kioskAuthApi';
 import styles from './KioskAdminPanel.module.css';
 
-const ADMIN_PASSWORD = '1111';
+const ADMIN_PASSWORD = '0000';
 const COUNTDOWN_SECONDS = 3;
 
 interface KioskAdminPanelProps {
   connected: boolean;
   error: string | null;
+  session: KioskSession;
   onConnect: () => void;
   onClose: () => void;
   onStartMealTagging: (label: string) => void;
+  onLogout: () => void;
 }
 
-export default function KioskAdminPanel({ connected, error, onConnect, onClose, onStartMealTagging }: KioskAdminPanelProps) {
+export default function KioskAdminPanel({ connected, error, session, onConnect, onClose, onStartMealTagging, onLogout }: KioskAdminPanelProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -175,16 +179,15 @@ export default function KioskAdminPanel({ connected, error, onConnect, onClose, 
           <h3 className={styles.sectionTitle}>지점 정보</h3>
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>지점명</span>
-            <span className={styles.infoValue}>미설정</span>
+            <span className={styles.infoValue}>{session.storeName}</span>
           </div>
           <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>키오스크 ID</span>
-            <span className={styles.infoValue}>-</span>
+            <span className={styles.infoLabel}>지점 코드</span>
+            <span className={styles.infoValue}>{session.storeCode}</span>
           </div>
         </div>
 
         <div className={styles.section}>
-          {/* <h3 className={styles.sectionTitle}>앱 관리</h3> */}
           <div className={styles.buttonGroup}>
             <button
               type="button"
@@ -194,6 +197,16 @@ export default function KioskAdminPanel({ connected, error, onConnect, onClose, 
               화면 새로고침
             </button>
             <p className={styles.refreshWarning}>화면 새로고침시 카드 리더기를 재연결해야 합니다.</p>
+            <button
+              type="button"
+              className={styles.logoutButton}
+              onClick={() => {
+                kioskLogout().catch(() => {});
+                onLogout();
+              }}
+            >
+              키오스크 로그아웃
+            </button>
           </div>
         </div>
       </div>

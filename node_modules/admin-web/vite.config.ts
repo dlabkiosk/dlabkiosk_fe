@@ -9,6 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://13.124.163.110:8081',
         changeOrigin: true,
+        timeout: 120000,
       },
     },
   },

@@ -1,30 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getStudyRankings } from '../api/rankingApi';
+import type { DsaRankingItem } from '../api/rankingApi';
 import styles from './RankingSection.module.css';
 
-type RankingTab = 'branch' | 'local';
-
-interface RankingEntry {
-  rank: number;
-  name: string;
+interface RankingSectionProps {
+  storeName: string;
 }
-
-const MOCK_BRANCH_RANKING: RankingEntry[] = [
-  { rank: 1, name: '김OO' },
-  { rank: 2, name: '김OO' },
-  { rank: 3, name: '김OO' },
-  { rank: 4, name: '이OO' },
-  { rank: 5, name: '송OO' },
-  { rank: 6, name: '신OO' },
-];
-
-const MOCK_LOCAL_RANKING: RankingEntry[] = [
-  { rank: 1, name: '박OO' },
-  { rank: 2, name: '김OO' },
-  { rank: 3, name: '김OO' },
-  { rank: 4, name: '수OO' },
-  { rank: 5, name: '최OO' },
-  { rank: 6, name: '서OO' },
-];
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'] as const;
 
@@ -33,11 +14,25 @@ function getRankDisplay(rank: number): string {
   return String(rank);
 }
 
-export default function RankingSection() {
-  const [activeTab, setActiveTab] = useState<RankingTab>('branch');
+export default function RankingSection({ storeName }: RankingSectionProps) {
+  const [rankingList, setRankingList] = useState<DsaRankingItem[]>([]);
+  const [firstPlace, setFirstPlace] = useState<DsaRankingItem | null>(null);
+  const [avgStudyTime, setAvgStudyTime] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const branchData = MOCK_BRANCH_RANKING;
-  const localData = MOCK_LOCAL_RANKING;
+  useEffect(() => {
+    getStudyRankings()
+      .then((res) => {
+        setRankingList(res.rankingList?.data ?? []);
+        setFirstPlace(res.firstPlace?.data?.[0] ?? null);
+        setAvgStudyTime(res.averageStudyTime?.study_tm ?? '');
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // storeName에서 간결한 지점명 추출 (예: "대성학원 강남점" → "강남점")
+  const shortName = storeName.split(' ').pop() ?? storeName;
 
   return (
     <section className={styles.container}>
@@ -48,41 +43,44 @@ export default function RankingSection() {
         </button>
       </div>
 
-      <div className={styles.tabRow}>
-        <button
-          type="button"
-          className={`${styles.tab} ${activeTab === 'branch' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('branch')}
-        >
-          지점 전체랭킹
-        </button>
-        <button
-          type="button"
-          className={`${styles.tab} ${activeTab === 'local' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('local')}
-        >
-          목동 랭킹
-        </button>
-      </div>
+      <div className={styles.subtitle}>{shortName} 저번 주 순공시간 랭킹</div>
 
-      <div className={styles.columns}>
-        <ul className={styles.rankList}>
-          {branchData.map((entry) => (
-            <li key={entry.rank} className={styles.rankItem}>
-              <span className={styles.rankBadge}>{getRankDisplay(entry.rank)}</span>
-              <span className={styles.rankName}>{entry.name}</span>
-            </li>
-          ))}
-        </ul>
-        <ul className={styles.rankList}>
-          {localData.map((entry) => (
-            <li key={entry.rank} className={styles.rankItem}>
-              <span className={styles.rankBadge}>{getRankDisplay(entry.rank)}</span>
-              <span className={styles.rankName}>{entry.name}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {loading ? (
+        <p className={styles.loading}>로딩 중...</p>
+      ) : (
+        <>
+          {(firstPlace || avgStudyTime) && (
+            <div className={styles.summaryRow}>
+              {firstPlace && (
+                <span className={styles.summaryItem}>
+                  🏆 1위 {firstPlace.std_nm ?? '–'}
+                </span>
+              )}
+              {avgStudyTime && (
+                <span className={styles.summaryItem}>
+                  평균 {avgStudyTime}
+                </span>
+              )}
+            </div>
+          )}
+
+          <ul className={styles.rankList}>
+            {rankingList.length > 0 ? (
+              rankingList.slice(0, 6).map((entry, idx) => (
+                <li key={idx} className={styles.rankItem}>
+                  <span className={styles.rankBadge}>{getRankDisplay(idx + 1)}</span>
+                  <span className={styles.rankName}>{entry.std_nm ?? '–'}</span>
+                  <span className={styles.rankTime}>{entry.att_tm ?? ''}</span>
+                </li>
+              ))
+            ) : (
+              <li className={styles.rankItem}>
+                <span className={styles.rankName}>데이터 없음</span>
+              </li>
+            )}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

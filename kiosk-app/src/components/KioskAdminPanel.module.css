@@ -239,3 +239,21 @@
   margin-top: var(--space-2);
   text-align: center;
 }
+
+.logoutButton {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.logoutButton:active {
+  background: #fde8ea;
+}

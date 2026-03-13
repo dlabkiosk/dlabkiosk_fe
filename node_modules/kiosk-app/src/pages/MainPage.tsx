@@ -6,6 +6,7 @@ import QuickMenu from '../components/QuickMenu';
 import AdBanner from '../components/AdBanner';
 import AttendanceModal from '../components/AttendanceModal';
 import CardScanModal from '../components/CardScanModal';
+import type { ScanActionParams } from '../components/CardScanModal';
 import StudentInfoModal from '../components/StudentInfoModal';
 import RemoteApplyModal from '../components/RemoteApplyModal';
 import ReasonSelectModal from '../components/ReasonSelectModal';
@@ -13,7 +14,12 @@ import TimeSelectModal from '../components/TimeSelectModal';
 import DateSelectModal from '../components/DateSelectModal';
 import ApprovalWaitingModal from '../components/ApprovalWaitingModal';
 import SeatLeaveReasonModal from '../components/SeatLeaveReasonModal';
+import SeatLeaveInputModal from '../components/SeatLeaveInputModal';
+import WeeklyMealModal from '../components/WeeklyMealModal';
+import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
+import { checkIn, checkOut } from '../api/attendanceApi';
+import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
 import { useCardScanner } from '../hooks/useCardScanner';
 import type { CardScanResult } from '../hooks/useCardScanner';
@@ -36,11 +42,19 @@ interface RemoteFlow {
 
 const NEEDS_MULTI_STEP = ['go-out', 'early-leave', 'absence'];
 
-export default function MainPage() {
+interface MainPageProps {
+  session: KioskSession;
+  onLogout: () => void;
+}
+
+export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAttendance, setShowAttendance] = useState(false);
   const [showRemoteApply, setShowRemoteApply] = useState(false);
   const [showSeatLeaveReason, setShowSeatLeaveReason] = useState(false);
+  const [seatLeaveInput, setSeatLeaveInput] = useState<{ mode: 'start' | 'end'; reasonId?: number; reasonLabel?: string } | null>(null);
+  const [showMealPlan, setShowMealPlan] = useState(false);
+  const [showPhoneSubmission, setShowPhoneSubmission] = useState(false);
   const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean } | null>(null);
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
@@ -65,6 +79,8 @@ export default function MainPage() {
       setShowAttendance(true);
     } else if (menuId === 'remote-apply') {
       setShowRemoteApply(true);
+    } else if (menuId === 'meal-plan') {
+      setShowMealPlan(true);
     } else if (menuId === 'student-info') {
       setScanResult(null);
       setQrResult(null);
@@ -85,23 +101,43 @@ export default function MainPage() {
       setShowSeatLeaveReason(true);
       return;
     }
+    if (actionId === 'return') {
+      setSeatLeaveInput({ mode: 'end' });
+      return;
+    }
     setScanResult(null);
     setQrResult(null);
     setScanTarget({ actionId, label });
   };
 
-  // 좌석 이탈 사유 선택 → 카드 스캔
-  const handleSeatLeaveReasonSelect = (_reasonId: string, _reasonLabel: string) => {
+  // 좌석 이탈 사유 선택 → 좌석번호 입력
+  const handleSeatLeaveReasonSelect = (reasonId: number, reasonLabel: string) => {
     setShowSeatLeaveReason(false);
-    setScanResult(null);
-    setQrResult(null);
-    setScanTarget({ actionId: 'leave-seat', label: '좌석 이탈' });
+    setSeatLeaveInput({ mode: 'start', reasonId, reasonLabel });
   };
 
   const handleScanClose = () => {
     setScanTarget(null);
     setScanResult(null);
     setQrResult(null);
+  };
+
+  // 등원/하원 액션
+  const handleCheckInAction = useCallback(async (params: ScanActionParams) => {
+    const result = await checkIn(params);
+    return { name: result.studentName, message: result.messages?.[0] };
+  }, []);
+
+  const handleCheckOutAction = useCallback(async (params: ScanActionParams) => {
+    const result = await checkOut(params);
+    return { name: result.studentName, message: result.messages?.[0] };
+  }, []);
+
+  const getScanAction = () => {
+    if (!scanTarget) return undefined;
+    if (scanTarget.actionId === 'check-in') return handleCheckInAction;
+    if (scanTarget.actionId === 'check-out') return handleCheckOutAction;
+    return undefined;
   };
 
   const handleStartMealTagging = (label: string) => {
@@ -114,10 +150,14 @@ export default function MainPage() {
   // 비대면 신청 항목 선택
   const handleRemoteSelect = (actionId: string, label: string) => {
     setShowRemoteApply(false);
+    if (actionId === 'no-phone') {
+      setShowPhoneSubmission(true);
+      return;
+    }
     if (NEEDS_MULTI_STEP.includes(actionId)) {
       setRemoteFlow({ action: actionId, label, step: 'reason' });
     } else {
-      // 휴대폰 미소지 / 좌석 변경 → 바로 카드 스캔
+      // 좌석 변경 등 → 바로 카드 스캔
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId, label });
@@ -192,7 +232,7 @@ export default function MainPage() {
 
       <div className={styles.infoSection}>
         <NoticeSection />
-        <RankingSection />
+        <RankingSection storeName={session.storeName} />
       </div>
 
       <QuickMenu onMenuClick={handleMenuClick} />
@@ -215,6 +255,23 @@ export default function MainPage() {
           }}
           onSelect={handleSeatLeaveReasonSelect}
         />
+      )}
+
+      {seatLeaveInput && (
+        <SeatLeaveInputModal
+          mode={seatLeaveInput.mode}
+          reasonId={seatLeaveInput.reasonId}
+          reasonLabel={seatLeaveInput.reasonLabel}
+          onClose={() => setSeatLeaveInput(null)}
+        />
+      )}
+
+      {showMealPlan && (
+        <WeeklyMealModal onClose={() => setShowMealPlan(false)} />
+      )}
+
+      {showPhoneSubmission && (
+        <PhoneSubmissionModal onClose={() => setShowPhoneSubmission(false)} />
       )}
 
       {showRemoteApply && (
@@ -278,6 +335,7 @@ export default function MainPage() {
           secureClose={scanTarget.secureClose}
           onClose={handleScanClose}
           onStudentFound={scanTarget.actionId === 'student-info' ? handleStudentFound : undefined}
+          onAction={getScanAction()}
         />
       )}
 
@@ -292,9 +350,11 @@ export default function MainPage() {
         <KioskAdminPanel
           connected={connected}
           error={error}
+          session={session}
           onConnect={connect}
           onClose={() => setShowAdmin(false)}
           onStartMealTagging={handleStartMealTagging}
+          onLogout={onLogout}
         />
       )}
     </div>

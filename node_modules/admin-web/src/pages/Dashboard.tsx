@@ -1,34 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuChartBar, LuCalendarCheck, LuDoorOpen, LuTrophy, LuUtensils, LuMegaphone, LuClock, LuPlus } from 'react-icons/lu';
-import { useDsaAuth } from '../hooks/useDsaAuth';
-import { useDsaDashboard } from '../hooks/useDsaDashboard';
-import { getNotices } from '../api/noticeApi';
-import type { Notice } from '../api/noticeApi';
+import { getDashboardAll } from '../api/dashboardApi';
+import type { DashboardData } from '../api/dashboardApi';
 import styles from './Dashboard.module.css';
-
-/* ── Mock Data (자체 백엔드 연동 전까지 유지) ── */
-
-const ATTENDANCE_STATS = [
-  { label: '출석', value: '–' },
-  { label: '조퇴', value: '–' },
-  { label: '결석', value: '–' },
-  { label: '외출', value: '–' },
-  { label: '지각', value: '–' },
-];
-
-const SEAT_LEAVE_STATS = [
-  { label: '금일 이탈 횟수', value: '–' },
-  { label: '복귀 대기', value: '–' },
-];
-
-const MEAL_TAG_DATA = [
-  { name: '–', status: '–', time: '–' },
-];
-
-const APPROVAL_DATA = [
-  { id: 0, type: '–', content: '승인 대기 데이터 연동 예정', requester: '–', date: '–' },
-];
 
 /* ── Components ── */
 
@@ -47,10 +22,12 @@ function DashboardCard({ title, icon, children, onMore }: CardProps) {
           <span className={styles.cardIcon}>{icon}</span>
           <h3 className={styles.cardTitle}>{title}</h3>
         </div>
-        <button className={styles.moreButton} type="button" onClick={onMore}>
-          <LuPlus className={styles.moreIcon} />
-          <span>더보기</span>
-        </button>
+        {onMore && (
+          <button className={styles.moreButton} type="button" onClick={onMore}>
+            <LuPlus className={styles.moreIcon} />
+            <span>더보기</span>
+          </button>
+        )}
       </div>
       <div className={styles.cardBody}>{children}</div>
     </div>
@@ -59,7 +36,7 @@ function DashboardCard({ title, icon, children, onMore }: CardProps) {
 
 interface StatRowProps {
   label: string;
-  value: string;
+  value: string | number;
 }
 
 function StatRow({ label, value }: StatRowProps) {
@@ -71,59 +48,61 @@ function StatRow({ label, value }: StatRowProps) {
   );
 }
 
+/* ── 식사 타입 한글 변환 ── */
+function mealTypeLabel(type: string): string {
+  switch (type) {
+    case 'BREAKFAST': return '조식';
+    case 'LUNCH': return '중식';
+    case 'DINNER': return '석식';
+    default: return type;
+  }
+}
+
 /* ── Page ── */
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { isReady } = useDsaAuth();
-  const { data: dsa, isLoading } = useDsaDashboard(isReady);
-
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [noticesLoading, setNoticesLoading] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getNotices()
-      .then((data) => setNotices(data))
+    getDashboardAll()
+      .then(setData)
       .catch(() => {})
-      .finally(() => setNoticesLoading(false));
+      .finally(() => setLoading(false));
   }, []);
 
-  // DSA 데이터 기반 일일 운영 현황
-  const dailyStats = [
-    { label: '등록 학생', value: '–' },  // 자체 백엔드 연동 예정
-    { label: '금일 등원', value: isLoading ? '...' : dsa.totalAttendCount ? `${dsa.totalAttendCount}명` : '–' },
-    { label: '자습 이용', value: '–' },  // 자체 백엔드 연동 예정
-    { label: '식사 신청', value: '–' },  // 자체 백엔드 연동 예정
-  ];
+  const daily = data?.dailyOperation;
+  const att = data?.attendanceSummary;
+  const seat = data?.seatLeaveSummary;
+  const ranking = data?.studyRanking;
+  const meals = data?.mealTags ?? [];
+  const notices = data?.notices ?? [];
+  const approvals = data?.pendingApprovals ?? [];
 
-  // DSA 1등 등원생 정보
-  const firstAttendLabel = dsa.firstAttendStd
-    ? dsa.firstAttendStd.map((s) => `${s.std_nm} (${s.att_tm})`).join(', ')
-    : '–';
+  const placeholder = loading ? '...' : '–';
 
   return (
     <div className={styles.dashboard}>
       {/* Row 1 */}
       <div className={styles.row3}>
         <DashboardCard title="일일 운영 현황" icon={<LuChartBar />}>
-          {dailyStats.map((stat) => (
-            <StatRow key={stat.label} label={stat.label} value={stat.value} />
-          ))}
-          {dsa.firstAttendStd && (
-            <StatRow label="금일 1등 등원" value={firstAttendLabel} />
-          )}
+          <StatRow label="등록 학생" value={daily ? `${daily.registeredStudents}명` : placeholder} />
+          <StatRow label="금일 등원" value={daily ? `${daily.todayAttendance}명` : placeholder} />
+          <StatRow label="식사 신청" value={daily ? `${daily.mealRequests}명` : placeholder} />
         </DashboardCard>
 
         <DashboardCard title="출결 현황 요약" icon={<LuCalendarCheck />}>
-          {ATTENDANCE_STATS.map((stat) => (
-            <StatRow key={stat.label} label={stat.label} value={stat.value} />
-          ))}
+          <StatRow label="출석" value={att ? `${att.present}명` : placeholder} />
+          <StatRow label="조퇴" value={att ? `${att.earlyLeave}명` : placeholder} />
+          <StatRow label="결석" value={att ? `${att.absent}명` : placeholder} />
+          <StatRow label="외출" value={att ? `${att.outing}명` : placeholder} />
+          <StatRow label="지각" value={att ? `${att.late}명` : placeholder} />
         </DashboardCard>
 
         <DashboardCard title="좌석 이탈 현황" icon={<LuDoorOpen />}>
-          {SEAT_LEAVE_STATS.map((stat) => (
-            <StatRow key={stat.label} label={stat.label} value={stat.value} />
-          ))}
+          <StatRow label="금일 이탈 횟수" value={seat ? `${seat.totalLeave}회` : placeholder} />
+          <StatRow label="복귀 대기" value={seat ? `${seat.waitingReturn}명` : placeholder} />
         </DashboardCard>
       </div>
 
@@ -139,14 +118,14 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {loading ? (
                 <tr><td colSpan={3}>로딩 중...</td></tr>
-              ) : dsa.studyTimeRanking && dsa.studyTimeRanking.length > 0 ? (
-                dsa.studyTimeRanking.slice(0, 5).map((row) => (
-                  <tr key={row.rank}>
-                    <td>{row.rank}등</td>
-                    <td>{row.std_nm}</td>
-                    <td>{row.study_tm}</td>
+              ) : ranking?.data && ranking.data.length > 0 ? (
+                ranking.data.slice(0, 5).map((row, idx) => (
+                  <tr key={idx}>
+                    <td>{idx + 1}등</td>
+                    <td>{row.std_nm ?? '–'}</td>
+                    <td>{row.att_tm ?? '–'}</td>
                   </tr>
                 ))
               ) : (
@@ -161,18 +140,24 @@ export default function Dashboard() {
             <thead>
               <tr>
                 <th>이름</th>
-                <th>식사 상태</th>
+                <th>식사 구분</th>
                 <th>태그 시간</th>
               </tr>
             </thead>
             <tbody>
-              {MEAL_TAG_DATA.map((row, idx) => (
-                <tr key={idx}>
-                  <td>{row.name}</td>
-                  <td>{row.status}</td>
-                  <td>{row.time}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan={3}>로딩 중...</td></tr>
+              ) : meals.length > 0 ? (
+                meals.slice(0, 5).map((row, idx) => (
+                  <tr key={idx}>
+                    <td>{row.name}</td>
+                    <td>{mealTypeLabel(row.mealType)}</td>
+                    <td>{row.taggedAt ? row.taggedAt.slice(11, 16) : '–'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={3}>데이터 없음</td></tr>
+              )}
             </tbody>
           </table>
         </DashboardCard>
@@ -190,7 +175,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {noticesLoading ? (
+              {loading ? (
                 <tr><td colSpan={3}>로딩 중...</td></tr>
               ) : notices.length > 0 ? (
                 notices.slice(0, 5).map((row, idx) => (
@@ -207,31 +192,6 @@ export default function Dashboard() {
               ) : (
                 <tr><td colSpan={3}>등록된 공지사항이 없습니다.</td></tr>
               )}
-            </tbody>
-          </table>
-        </DashboardCard>
-
-        <DashboardCard title="승인 대기 건수" icon={<LuClock />}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>번호</th>
-                <th>요청 유형</th>
-                <th>요청 내용</th>
-                <th>요청자</th>
-                <th>요청일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {APPROVAL_DATA.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.id}</td>
-                  <td>{row.type}</td>
-                  <td>{row.content}</td>
-                  <td>{row.requester}</td>
-                  <td>{row.date}</td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </DashboardCard>

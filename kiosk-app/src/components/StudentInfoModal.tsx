@@ -106,7 +106,7 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
           </div>
           <div className={styles.studentInfo}>
             <p className={styles.studentName}>{student.name}</p>
-            <p className={styles.studentMeta}>{student.className} 학번: {student.studentId}</p>
+            <p className={styles.studentMeta}>좌석: {student.assignedSeatLabel} | 학번: {student.studentNumber}</p>
           </div>
         </div>
 

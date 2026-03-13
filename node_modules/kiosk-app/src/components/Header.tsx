@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import logoImg from '../assets/logo.png';
 import { useSecretTap } from '../hooks/useSecretTap';
+import { getExamSchedules } from '../api/examScheduleApi';
+import type { ExamSchedule } from '../api/examScheduleApi';
 import styles from './Header.module.css';
 
 interface DdayItem {
@@ -7,19 +10,51 @@ interface DdayItem {
   dday: string;
 }
 
-const MOCK_DDAYS: DdayItem[] = [
-  { label: '수능', dday: 'D-100' },
-  { label: '모의고사', dday: 'D-50' },
-];
+function calcDday(examDate: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(examDate);
+  target.setHours(0, 0, 0, 0);
+  const diff = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff > 0) return `D-${diff}`;
+  if (diff === 0) return 'D-Day';
+  return `D+${Math.abs(diff)}`;
+}
 
 interface HeaderProps {
   onAdminAccess?: () => void;
 }
 
 export default function Header({ onAdminAccess }: HeaderProps) {
+  const [ddays, setDdays] = useState<DdayItem[]>([]);
+
   const handleLogoTap = useSecretTap(() => {
     onAdminAccess?.();
   });
+
+  useEffect(() => {
+    getExamSchedules()
+      .then((list: ExamSchedule[]) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = list.filter((e) => {
+          const d = new Date(e.examDate);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime() >= today.getTime();
+        });
+
+        setDdays(
+          upcoming.map((e) => ({
+            label: e.examName,
+            dday: calcDday(e.examDate),
+          })),
+        );
+      })
+      .catch(() => {
+        setDdays([]);
+      });
+  }, []);
 
   return (
     <header className={styles.header}>
@@ -30,7 +65,7 @@ export default function Header({ onAdminAccess }: HeaderProps) {
         onClick={handleLogoTap}
       />
       <div className={styles.ddayList}>
-        {MOCK_DDAYS.map((item) => (
+        {ddays.map((item) => (
           <span key={item.label} className={styles.ddayTag}>
             {item.label} {item.dday}
           </span>

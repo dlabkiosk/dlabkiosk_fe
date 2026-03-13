@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
-import StudentManagement from './pages/StudentManagement';
-import StudentDetail from './pages/StudentDetail';
 import AttendanceManagement from './pages/AttendanceManagement';
 import NoticeManagement from './pages/NoticeManagement';
 import NoticeCreate from './pages/NoticeCreate';
 import NoticeDetail from './pages/NoticeDetail';
+import StudyTimeManagement from './pages/StudyTimeManagement';
+import MealManagement from './pages/MealManagement';
+import RemoteApplyManagement from './pages/RemoteApplyManagement';
+import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
@@ -24,12 +26,14 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/students" element={<StudentManagement />} />
-            <Route path="/students/:studentId" element={<StudentDetail />} />
+            <Route path="/study-time" element={<StudyTimeManagement />} />
             <Route path="/attendance" element={<AttendanceManagement />} />
+            <Route path="/meals" element={<MealManagement />} />
+            <Route path="/remote" element={<RemoteApplyManagement />} />
             <Route path="/notices" element={<NoticeManagement />} />
             <Route path="/notices/new" element={<NoticeCreate />} />
             <Route path="/notices/:noticeId" element={<NoticeDetail />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
       </Routes>

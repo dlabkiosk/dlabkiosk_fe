@@ -1,0 +1,170 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-top);
+}
+
+.modal {
+  position: relative;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8) var(--space-6) var(--space-7);
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-white);
+  font-size: var(--font-base);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: var(--font-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.guide {
+  font-size: var(--font-md);
+  color: var(--color-text-hint);
+  margin-bottom: var(--space-2);
+}
+
+.keypadSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.seatDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+  min-height: 64px;
+}
+
+.seatValue {
+  font-size: var(--font-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: 3px;
+}
+
+.seatPlaceholder {
+  color: var(--color-text-placeholder);
+  font-size: var(--font-md);
+  font-weight: normal;
+}
+
+.keypadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.keypadKey {
+  height: 52px;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keypadKey:active:not(:disabled) {
+  background: var(--color-bg-light);
+}
+
+.keypadBackspace {
+  color: var(--color-text-muted);
+  font-size: var(--font-xl);
+}
+
+.submitButton {
+  width: 100%;
+  padding: var(--space-3h) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.submitButton:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 성공 화면 */
+.successSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-8) 0;
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 32px;
+  font-weight: var(--weight-bold);
+}
+
+.successMessage {
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 에러 메시지 */
+.errorMessage {
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error);
+  text-align: center;
+  padding: var(--space-2h) 0;
+  margin: 0;
+}

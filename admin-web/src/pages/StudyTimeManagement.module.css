@@ -1,0 +1,332 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ── Page Header ── */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pageTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pageTitleIcon {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ── Date Picker ── */
+.datePickerWrap {
+  position: relative;
+}
+
+.datePickerButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background: #fff;
+  cursor: pointer;
+}
+
+.datePickerButton:hover {
+  border-color: var(--color-primary);
+}
+
+.calendarIcon {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* ── Calendar Dropdown ── */
+.calendarDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  z-index: 100;
+  min-width: 300px;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.calNavBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calNavBtn:hover {
+  background: var(--color-bg-page);
+}
+
+.calMonthLabel {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.calendarTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendarTable th {
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.calendarTable td {
+  padding: 0;
+  text-align: center;
+}
+
+/* ── Calendar Day Cells ── */
+.calDay {
+  padding: 7px 4px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.calDay:hover {
+  /* hover handled by calDayHover */
+}
+
+/* 선택된 주 (파란 배경) */
+.calDaySelected {
+  background-color: #dbeafe;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.calDaySelected.calDayStart {
+  border-radius: 6px 0 0 6px;
+}
+
+.calDaySelected.calDayEnd {
+  border-radius: 0 6px 6px 0;
+}
+
+/* hover 주 (연한 회색) */
+.calDayHover {
+  background-color: #f3f4f6;
+}
+
+.calDayHover.calDayStart {
+  border-radius: 6px 0 0 6px;
+}
+
+.calDayHover.calDayEnd {
+  border-radius: 0 6px 6px 0;
+}
+
+/* 오늘 표시 */
+.calDayToday {
+  font-weight: 700;
+}
+
+/* ── Content Card ── */
+.contentCard {
+  background-color: #ffffff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ── Filter Row ── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filterInput {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: #fff;
+  outline: none;
+  width: 120px;
+}
+
+.filterInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+.filterInput:focus {
+  border-color: var(--color-primary);
+}
+
+.searchButton {
+  padding: 7px 20px;
+  background-color: var(--color-text-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.searchButton:hover {
+  opacity: 0.9;
+}
+
+.resetButton {
+  padding: 7px 16px;
+  background-color: #fff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+/* ── Excel Button ── */
+.excelButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background-color: #217346;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.excelButton:hover {
+  opacity: 0.9;
+}
+
+/* ── Table ── */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 1100px;
+}
+
+.table th {
+  text-align: center;
+  padding: 10px 8px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  text-align: center;
+  padding: 10px 8px;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-primary-light);
+}
+
+/* Column widths */
+.colCheck { width: 40px; }
+.colNo { width: 50px; }
+.colNumber { width: 70px; }
+.colClass { width: 50px; }
+.colName { width: 80px; }
+.colSeat { width: 60px; }
+.colTotal { width: 70px; }
+
+.checkboxCol {
+  width: 40px;
+  text-align: center !important;
+}
+
+.checkboxCol input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.emptyCell {
+  color: var(--color-text-muted);
+}
+
+.loadingMessage,
+.errorMessage {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
+.emptyRow td {
+  text-align: center;
+  padding: var(--spacing-xl) !important;
+  color: var(--color-text-muted);
+}

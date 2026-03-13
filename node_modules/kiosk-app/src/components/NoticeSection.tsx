@@ -13,14 +13,7 @@ export default function NoticeSection() {
     (async () => {
       try {
         const data = await getNotices();
-        if (!cancelled) {
-          // 고정 공지를 먼저, 나머지는 최신순
-          const sorted = [...data].sort((a, b) => {
-            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-          setNotices(sorted);
-        }
+        if (!cancelled) setNotices(data);
       } catch {
         // 조회 실패 시 빈 목록 유지
       } finally {

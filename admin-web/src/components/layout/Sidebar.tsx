@@ -20,7 +20,7 @@ import styles from './Sidebar.module.css';
 
 const MENU_ITEMS: MenuItem[] = [
   { label: '대시보드', path: '/', icon: LuLayoutDashboard },
-  { label: '학생관리', path: '/students', icon: LuUsers, children: [] },
+  // { label: '학생관리', path: '/students', icon: LuUsers, children: [] },
   { label: '순공관리', path: '/study-time', icon: LuClock, children: [] },
   {
     label: '출결관리',
@@ -30,7 +30,7 @@ const MENU_ITEMS: MenuItem[] = [
   },
   { label: '식사관리', path: '/meals', icon: LuUtensils, children: [] },
   { label: '비대면 신청', path: '/remote', icon: LuMonitor },
-  { label: '좌석관리', path: '/seats', icon: LuArmchair, children: [] },
+  { label: '좌석 현황', path: '/seats', icon: LuArmchair, children: [] },
   // { label: '휴대폰관리', path: '/phones', icon: LuSmartphone, children: [] },
   // {
   //   label: '상·벌점관리',
