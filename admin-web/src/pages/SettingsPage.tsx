@@ -16,9 +16,17 @@ import {
   deleteAdvertisement,
 } from '../api/advertisementApi';
 import type { Advertisement } from '../api/advertisementApi';
+import MealScheduleSettings from '../components/MealScheduleSettings';
+import {
+  getSeatLeaveReasons,
+  createSeatLeaveReason,
+  updateSeatLeaveReason,
+  deleteSeatLeaveReason,
+} from '../api/seatLeaveApi';
+import type { SeatLeaveReason } from '../api/seatLeaveApi';
 
 /* ── 탭 목록 ── */
-const TABS = ['기본설정', '배너관리', '시험일정 관리', '보안설정', '알림설정', '게시판관리'] as const;
+const TABS = ['기본설정', '배너관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '보안설정', '알림설정', '게시판관리'] as const;
 type TabId = typeof TABS[number];
 
 const MEDIA_TYPES = ['IMAGE', 'VIDEO'] as const;
@@ -88,6 +96,8 @@ export default function SettingsPage() {
       {activeTab === '기본설정' && <BasicSettings />}
       {activeTab === '배너관리' && <BannerManagement />}
       {activeTab === '시험일정 관리' && <ExamSchedule />}
+      {activeTab === '식단표 관리' && <MealScheduleSettings />}
+      {activeTab === '이탈사유 관리' && <SeatLeaveReasonSettings />}
       {activeTab === '보안설정' && <PlaceholderTab label="보안설정" />}
       {activeTab === '알림설정' && <PlaceholderTab label="알림설정" />}
       {activeTab === '게시판관리' && <PlaceholderTab label="게시판관리" />}
@@ -729,6 +739,211 @@ function ExamSchedule() {
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
                 />
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
+                {editTarget ? '수정' : '등록'}
+              </button>
+              {editTarget && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => { handleDelete(editTarget.id); closeModal(); }}
+                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                >
+                  삭제
+                </button>
+              )}
+              <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── 이탈사유 관리 탭 ── */
+function SeatLeaveReasonSettings() {
+  const [reasons, setReasons] = useState<SeatLeaveReason[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<SeatLeaveReason | null>(null);
+
+  const [formName, setFormName] = useState('');
+  const [formOrder, setFormOrder] = useState(1);
+  const [formActive, setFormActive] = useState(true);
+
+  const fetchReasons = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getSeatLeaveReasons();
+      setReasons(data.sort((a, b) => a.displayOrder - b.displayOrder));
+    } catch (err) {
+      console.error('이탈 사유 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchReasons(); }, [fetchReasons]);
+
+  const resetForm = () => {
+    setFormName('');
+    setFormOrder(reasons.length + 1);
+    setFormActive(true);
+    setEditTarget(null);
+  };
+
+  const openAdd = () => {
+    resetForm();
+    setFormOrder(reasons.length + 1);
+    setShowModal(true);
+  };
+
+  const openEdit = (reason: SeatLeaveReason) => {
+    setEditTarget(reason);
+    setFormName(reason.reasonName);
+    setFormOrder(reason.displayOrder);
+    setFormActive(reason.active);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditTarget(null);
+    resetForm();
+  };
+
+  const handleSubmit = async () => {
+    if (!formName.trim()) return;
+    try {
+      if (editTarget) {
+        await updateSeatLeaveReason(editTarget.id, {
+          reasonName: formName.trim(),
+          displayOrder: formOrder,
+          active: formActive,
+        });
+      } else {
+        await createSeatLeaveReason({
+          reasonName: formName.trim(),
+          displayOrder: formOrder,
+          active: formActive,
+        });
+      }
+      closeModal();
+      await fetchReasons();
+    } catch (err) {
+      console.error('이탈 사유 저장 실패:', err);
+      alert('저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('이 사유를 삭제하시겠습니까?')) return;
+    try {
+      await deleteSeatLeaveReason(id);
+      await fetchReasons();
+    } catch (err) {
+      console.error('이탈 사유 삭제 실패:', err);
+      alert('삭제에 실패했습니다.');
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>좌석 이탈 사유 관리</h3>
+          <button type="button" className={styles.addBtn} onClick={openAdd}>+ 사유 추가</button>
+        </div>
+
+        {loading ? (
+          <div className={styles.sectionBody}>
+            <p className={styles.placeholderText}>로딩 중...</p>
+          </div>
+        ) : (
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th style={{ width: 60 }}>순서</th>
+                <th>사유명</th>
+                <th style={{ width: 80 }}>상태</th>
+                <th style={{ width: 100 }}>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reasons.length === 0 ? (
+                <tr><td colSpan={4} className={styles.emptyCell}>등록된 사유가 없습니다.</td></tr>
+              ) : (
+                reasons.map((reason) => (
+                  <tr key={reason.id}>
+                    <td>{reason.displayOrder}</td>
+                    <td>{reason.reasonName}</td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${reason.active ? '' : styles.statusInactive}`}>
+                        {reason.active ? '활성' : '비활성'}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" className={styles.editBtn} onClick={() => openEdit(reason)}>&#x270E;</button>
+                      <button
+                        type="button"
+                        className={styles.editBtn}
+                        style={{ color: '#dc2626', marginLeft: 4 }}
+                        onClick={() => handleDelete(reason.id)}
+                      >
+                        &#x2715;
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showModal && (
+        <div className={styles.overlay} onClick={closeModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{editTarget ? '사유 수정' : '사유 추가'}</h3>
+
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>사유명</label>
+                <input
+                  className={styles.formInput}
+                  placeholder="예: 화장실, 상담 등"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>표시 순서</label>
+                <input
+                  type="number"
+                  className={styles.formInput}
+                  min={1}
+                  value={formOrder}
+                  onChange={(e) => setFormOrder(Number(e.target.value))}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>활성 상태</label>
+                <label className={styles.radioLabel}>
+                  <input
+                    type="checkbox"
+                    checked={formActive}
+                    onChange={(e) => setFormActive(e.target.checked)}
+                  />{' '}
+                  활성
+                </label>
               </div>
             </div>
 

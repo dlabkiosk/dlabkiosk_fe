@@ -27,20 +27,6 @@ export interface SeatLeaveSummary {
   waitingReturn: number;
 }
 
-export interface StudyRankingItem {
-  [key: string]: string;
-}
-
-export interface StudyRanking {
-  code: number;
-  message: string;
-  data: StudyRankingItem[];
-  extra: Record<string, string>;
-  success: boolean;
-  total_inwon: string;
-  study_tm: string;
-}
-
 export interface PendingApproval {
   id: number;
   requestType: string;
@@ -55,12 +41,21 @@ export interface DashboardNotice {
   createdAt: string;
 }
 
+export interface SeatChangeRequest {
+  id: number;
+  studentName: string;
+  currentSeatLabel: string;
+  desiredSeat1Label: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
 export interface DashboardData {
   dailyOperation: DailyOperation;
   mealTags: MealTag[];
   attendanceSummary: AttendanceSummary;
   seatLeaveSummary: SeatLeaveSummary;
-  studyRanking: StudyRanking;
+  seatChangeRequests: SeatChangeRequest[];
   pendingApprovals: PendingApproval[];
   notices: DashboardNotice[];
 }

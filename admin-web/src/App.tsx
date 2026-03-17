@@ -7,7 +7,9 @@ import NoticeCreate from './pages/NoticeCreate';
 import NoticeDetail from './pages/NoticeDetail';
 import StudyTimeManagement from './pages/StudyTimeManagement';
 import MealManagement from './pages/MealManagement';
-import RemoteApplyManagement from './pages/RemoteApplyManagement';
+import PhoneManagement from './pages/PhoneManagement';
+import SeatLeaveManagement from './pages/SeatLeaveManagement';
+import SeatManagement from './pages/SeatManagement';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -29,7 +31,9 @@ export default function App() {
             <Route path="/study-time" element={<StudyTimeManagement />} />
             <Route path="/attendance" element={<AttendanceManagement />} />
             <Route path="/meals" element={<MealManagement />} />
-            <Route path="/remote" element={<RemoteApplyManagement />} />
+            <Route path="/phones" element={<PhoneManagement />} />
+            <Route path="/seat-leaves" element={<SeatLeaveManagement />} />
+            <Route path="/seats" element={<SeatManagement />} />
             <Route path="/notices" element={<NoticeManagement />} />
             <Route path="/notices/new" element={<NoticeCreate />} />
             <Route path="/notices/:noticeId" element={<NoticeDetail />} />

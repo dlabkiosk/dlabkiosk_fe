@@ -58,7 +58,23 @@
   --font-size-xl: 18px;
   --font-size-2xl: 20px;
 
+  /* Sizes - Component */
+  --size-input-height: 36px;
+  --size-checkbox: 16px;
+  --size-page-btn: 32px;
+  --size-badge-padding-v: 3px;
+  --size-badge-padding-h: 12px;
+  --size-btn-padding-v: 5px;
+  --size-btn-padding-h: 14px;
+  --size-cell-padding-v: 11px;
+  --size-cell-padding-h: var(--spacing-md);
+  --size-th-padding-v: 12px;
+
   /* Layout */
   --sidebar-width: 220px;
   --navbar-height: 60px;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }

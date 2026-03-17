@@ -7,9 +7,6 @@ interface RemoteAction {
 }
 
 const REMOTE_ACTIONS: RemoteAction[] = [
-  { id: 'go-out', label: '외출', icon: '👞' },
-  { id: 'early-leave', label: '조퇴', icon: '🤚' },
-  { id: 'absence', label: '결석', icon: '✕' },
   { id: 'no-phone', label: '휴대폰 미소지', icon: '📵' },
   { id: 'seat-change', label: '좌석 변경', icon: '💺' },
 ];

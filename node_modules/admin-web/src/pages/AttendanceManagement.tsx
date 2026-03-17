@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LuCalendarCheck } from 'react-icons/lu';
+import {
+  LuCalendarCheck,
+  LuArrowUpDown,
+  LuArrowUp,
+  LuArrowDown,
+} from 'react-icons/lu';
 import styles from './AttendanceManagement.module.css';
 
 /* ── 출결 상태 ── */
@@ -24,7 +28,6 @@ interface AttendanceStudentRow {
   seat: string;
   status: AttendanceStatus;
   phoneSubmitted: boolean;
-  memo: string;
 }
 
 const MOCK_DATA: AttendanceStudentRow[] = Array.from({ length: 12 }, (_, i) => ({
@@ -34,19 +37,42 @@ const MOCK_DATA: AttendanceStudentRow[] = Array.from({ length: 12 }, (_, i) => (
   seat: 'A10',
   status: (i < 3 ? '등원' : '-') as AttendanceStatus,
   phoneSubmitted: i < 5,
-  memo: '-',
 }));
 
 const STATUS_OPTIONS: ('전체' | AttendanceStatus)[] = ['전체', '등원', '외출', '조퇴', '하원', '좌석이탈'];
 const PHONE_OPTIONS = ['전체', 'O', 'X'];
+
+/* ── 정렬 ── */
+
+type SortField = 'name' | 'studentId' | 'className' | 'seat' | 'status' | 'phoneSubmitted';
+type SortDir = 'asc' | 'desc';
+
+interface SortState {
+  field: SortField | null;
+  dir: SortDir;
+}
+
+function compareRows(a: AttendanceStudentRow, b: AttendanceStudentRow, field: SortField, dir: SortDir): number {
+  let va: string;
+  let vb: string;
+
+  if (field === 'phoneSubmitted') {
+    va = a.phoneSubmitted ? 'O' : 'X';
+    vb = b.phoneSubmitted ? 'O' : 'X';
+  } else {
+    va = a[field] ?? '';
+    vb = b[field] ?? '';
+  }
+
+  const cmp = va.localeCompare(vb);
+  return dir === 'desc' ? -cmp : cmp;
+}
 
 const ITEMS_PER_PAGE = 12;
 
 /* ── Page ── */
 
 export default function AttendanceManagement() {
-  const navigate = useNavigate();
-
   /* Filters */
   const [searchStudentId, setSearchStudentId] = useState('');
   const [searchClass, setSearchClass] = useState('');
@@ -61,6 +87,9 @@ export default function AttendanceManagement() {
     status: '전체',
     phone: '전체',
   });
+
+  /* 정렬 */
+  const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
 
   /* Selection */
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -80,8 +109,13 @@ export default function AttendanceManagement() {
     });
   }, [appliedFilters]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-  const pagedData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const sortedData = useMemo(() => {
+    if (!sort.field) return filteredData;
+    return [...filteredData].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
+  }, [filteredData, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / ITEMS_PER_PAGE));
+  const pagedData = sortedData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const handleSearch = () => {
     setAppliedFilters({
@@ -101,6 +135,7 @@ export default function AttendanceManagement() {
     setFilterStatus('전체');
     setFilterPhone('전체');
     setAppliedFilters({ studentId: '', className: '', name: '', status: '전체', phone: '전체' });
+    setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
 
@@ -128,6 +163,22 @@ export default function AttendanceManagement() {
     });
   };
 
+  const handleSort = (field: SortField) => {
+    setSort((prev) => {
+      if (prev.field === field) {
+        return { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      }
+      return { field, dir: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sort.field !== field) return <LuArrowUpDown className={styles.sortIcon} />;
+    return sort.dir === 'asc'
+      ? <LuArrowUp className={styles.sortIconActive} />
+      : <LuArrowDown className={styles.sortIconActive} />;
+  };
+
   const getStatusClass = (status: AttendanceStatus) => {
     switch (status) {
       case '등원': return styles.statusPresent;
@@ -145,13 +196,25 @@ export default function AttendanceManagement() {
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
           <LuCalendarCheck className={styles.pageTitleIcon} />
-          <h2 className={styles.pageTitle}>출결관리</h2>
+          <h2 className={styles.pageTitle}>출결 관리</h2>
         </div>
       </div>
 
       {/* Filter Row */}
       <div className={styles.filterCard}>
         <div className={styles.filterRow}>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel} htmlFor="att-name">학생명</label>
+            <input
+              id="att-name"
+              className={styles.filterInput}
+              type="text"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel} htmlFor="att-sid">학번</label>
             <input
@@ -172,18 +235,6 @@ export default function AttendanceManagement() {
               type="text"
               value={searchClass}
               onChange={(e) => setSearchClass(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="att-name">학생명</label>
-            <input
-              id="att-name"
-              className={styles.filterInputWide}
-              type="text"
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </div>
@@ -225,38 +276,38 @@ export default function AttendanceManagement() {
       </div>
 
       {/* Table */}
-      <div className={styles.tableCard}>
+      <div className={styles.contentCard}>
+        <div className={styles.tableWrap}>
         <table className={styles.table}>
-          <colgroup>
-            <col style={{ width: '4%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '20%' }} />
-            <col style={{ width: '12%' }} />
-          </colgroup>
           <thead>
             <tr>
               <th className={styles.checkboxCol}>
                 <input type="checkbox" checked={allChecked} onChange={toggleAll} />
               </th>
-              <th>이름</th>
-              <th>학번</th>
-              <th>반</th>
-              <th>좌석</th>
-              <th>출결현황</th>
-              <th>휴대폰 미소지</th>
-              <th>메모</th>
-              <th />
+              <th className={styles.sortableCol} onClick={() => handleSort('name')}>
+                이름 <SortIcon field="name" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('studentId')}>
+                학번 <SortIcon field="studentId" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
+                반 <SortIcon field="className" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
+                좌석 <SortIcon field="seat" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('status')}>
+                출결현황 <SortIcon field="status" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('phoneSubmitted')}>
+                휴대폰 미소지 <SortIcon field="phoneSubmitted" />
+              </th>
             </tr>
           </thead>
           <tbody>
             {pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={9}>검색 결과가 없습니다.</td>
+                <td colSpan={7}>검색 결과가 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row, idx) => {
@@ -284,22 +335,13 @@ export default function AttendanceManagement() {
                       )}
                     </td>
                     <td>{row.phoneSubmitted ? 'O' : 'X'}</td>
-                    <td>{row.memo}</td>
-                    <td>
-                      <button
-                        className={styles.detailButton}
-                        type="button"
-                        onClick={() => navigate(`/students/${row.studentId}`)}
-                      >
-                        자세히보기
-                      </button>
-                    </td>
                   </tr>
                 );
               })
             )}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

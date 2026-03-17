@@ -28,224 +28,307 @@
   color: var(--color-text-primary);
 }
 
-.headerButtons {
-  display: flex;
-  gap: var(--spacing-sm);
+/* ── Filter Row ── */
+.filterCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
 }
 
-.editButton,
-.syncButton {
-  padding: 7px 16px;
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  line-height: var(--size-input-height);
+  box-sizing: border-box;
+  background-color: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.filterInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100px;
+}
+
+.filterInput:focus {
+  border-color: var(--color-primary);
+}
+
+/* ── Date Input ── */
+.filterDateInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.filterDateInput:focus {
+  border-color: var(--color-primary);
+}
+
+/* ── Filter Actions ── */
+.filterActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}
+
+.searchButton {
+  padding: 0 var(--spacing-lg);
+  height: var(--size-input-height);
+  background-color: var(--color-text-primary);
+  color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.searchButton:hover {
+  opacity: 0.85;
+}
+
+.resetButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  transition: background-color 0.15s;
+}
+
+.resetButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.excelButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: #217346;
+  color: var(--color-bg-card);
+  border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: opacity 0.15s;
 }
 
-.editButton {
-  background-color: var(--color-primary);
-  color: #fff;
-  border: none;
+.excelButton:hover {
+  opacity: 0.85;
 }
 
-.editButton:hover {
-  opacity: 0.9;
-}
-
-.syncButton {
-  background-color: #fff;
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-.syncButton:hover {
-  background-color: var(--color-bg-page);
-}
-
-/* ── Grid: two columns ── */
-.gridRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-}
-
-/* ── Meal Card ── */
-.mealCard {
-  background-color: #fff;
-  border-radius: var(--radius-sm);
+/* ── Table ── */
+.contentCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-light);
   padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
-}
-
-.cardTitle {
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  text-align: center;
-  margin-bottom: var(--spacing-sm);
-}
-
-/* ── Week Navigation ── */
-.weekNav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
 }
 
-.weekNavButton {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  font-size: var(--font-size-md);
-  cursor: pointer;
-  padding: 4px;
+.tableWrap {
+  overflow: hidden;
 }
 
-.weekNavButton:hover {
-  opacity: 0.7;
-}
-
-.weekRange {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-/* ── Meal Table ── */
-.mealTable {
+.table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.mealTable th {
-  padding: 10px var(--spacing-md);
+.table th {
+  text-align: left;
+  padding: var(--size-th-padding-v) var(--size-cell-padding-h);
+  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 500;
   background-color: var(--color-bg-page);
-  border-bottom: 2px solid var(--color-primary);
-  text-align: center;
-}
-
-.mealTable th:first-child {
-  width: 100px;
-  text-align: center;
-}
-
-.mealTable td {
-  padding: 12px var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border-light);
-  vertical-align: top;
-  line-height: 1.6;
-}
-
-.dayCell {
-  text-align: center;
-  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
 
-.todayBadge {
-  display: inline-block;
-  background-color: var(--color-primary);
-  color: #fff;
+.table td {
+  padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-primary-light);
+}
+
+.checkboxCol {
+  width: 40px;
+  text-align: center !important;
+}
+
+.checkboxCol input[type='checkbox'] {
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* ── Sortable column ── */
+.sortableCol {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableCol:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
   font-size: var(--font-size-xs);
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-bottom: 2px;
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  opacity: 0.4;
 }
 
-.weekendDay {
-  color: #ef4444;
+.sortIconActive {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  color: var(--color-primary);
 }
 
-.holidayCell {
-  text-align: center;
+/* ── Meal cells ── */
+.notRequested {
   color: var(--color-text-muted);
-  font-weight: 500;
 }
 
-.menuContent {
-  white-space: pre-line;
+.tagMark {
+  margin-right: 6px;
+}
+
+.tagTime {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  line-height: 1.7;
 }
 
-.emptyMenu {
-  color: var(--color-text-muted);
-  font-style: italic;
+.needsConfirm {
+  color: #dc2626;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-left: 6px;
 }
 
-/* ── Card Footer ── */
-.cardFooter {
+/* ── Pagination ── */
+.pagination {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: var(--spacing-md);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
-.cardEditButton {
-  padding: 7px 24px;
-  background-color: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.cardEditButton:hover {
-  opacity: 0.9;
-}
-
-/* ── Register button (for next week) ── */
-.registerButton {
-  padding: 10px 20px;
-  background-color: #fff;
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 500;
-  cursor: pointer;
-  align-self: center;
-  margin-top: var(--spacing-lg);
-}
-
-.registerButton:hover {
-  background-color: var(--color-bg-page);
-}
-
-/* ── Edit Mode ── */
-.editTextarea {
-  width: 100%;
-  min-height: 100px;
-  padding: var(--spacing-sm);
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-page-btn);
+  height: var(--size-page-btn);
+  padding: 0 var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  font-family: inherit;
-  line-height: 1.6;
-  resize: vertical;
-  outline: none;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-card);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.editTextarea:focus {
+.pageBtn:hover:not(:disabled) {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pageBtnActive {
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border-color: var(--color-primary);
 }
 
-.loadingMessage {
+.pageBtnActive:hover {
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  opacity: 0.9;
+}
+
+/* ── Empty state ── */
+.emptyRow td {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-xl) !important;
   color: var(--color-text-muted);
-  font-size: var(--font-size-md);
+}
+
+/* ── Print ── */
+@media print {
+  .pageHeader,
+  .filterCard,
+  .pagination,
+  .checkboxCol {
+    display: none !important;
+  }
+
+  .contentCard {
+    border: none;
+    box-shadow: none;
+  }
+
+  .table th,
+  .table td {
+    border: 1px solid #ccc !important;
+    padding: 6px 8px !important;
+  }
 }

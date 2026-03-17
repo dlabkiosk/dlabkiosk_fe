@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuChartBar, LuCalendarCheck, LuDoorOpen, LuTrophy, LuUtensils, LuMegaphone, LuClock, LuPlus } from 'react-icons/lu';
+import { LuChartBar, LuCalendarCheck, LuDoorOpen, LuUtensils, LuMegaphone, LuArrowRightLeft, LuPlus } from 'react-icons/lu';
 import { getDashboardAll } from '../api/dashboardApi';
 import type { DashboardData } from '../api/dashboardApi';
 import styles from './Dashboard.module.css';
@@ -75,17 +75,16 @@ export default function Dashboard() {
   const daily = data?.dailyOperation;
   const att = data?.attendanceSummary;
   const seat = data?.seatLeaveSummary;
-  const ranking = data?.studyRanking;
   const meals = data?.mealTags ?? [];
+  const seatChanges = data?.seatChangeRequests ?? [];
   const notices = data?.notices ?? [];
-  const approvals = data?.pendingApprovals ?? [];
 
   const placeholder = loading ? '...' : '–';
 
   return (
     <div className={styles.dashboard}>
       {/* Row 1 */}
-      <div className={styles.row3}>
+      <div className={styles.row2}>
         <DashboardCard title="일일 운영 현황" icon={<LuChartBar />}>
           <StatRow label="등록 학생" value={daily ? `${daily.registeredStudents}명` : placeholder} />
           <StatRow label="금일 등원" value={daily ? `${daily.todayAttendance}명` : placeholder} />
@@ -99,40 +98,13 @@ export default function Dashboard() {
           <StatRow label="외출" value={att ? `${att.outing}명` : placeholder} />
           <StatRow label="지각" value={att ? `${att.late}명` : placeholder} />
         </DashboardCard>
-
-        <DashboardCard title="좌석 이탈 현황" icon={<LuDoorOpen />}>
-          <StatRow label="금일 이탈 횟수" value={seat ? `${seat.totalLeave}회` : placeholder} />
-          <StatRow label="복귀 대기" value={seat ? `${seat.waitingReturn}명` : placeholder} />
-        </DashboardCard>
       </div>
 
       {/* Row 2 */}
       <div className={styles.row2}>
-        <DashboardCard title="순공 랭킹 요약" icon={<LuTrophy />}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>순위</th>
-                <th>이름</th>
-                <th>순공 시간</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={3}>로딩 중...</td></tr>
-              ) : ranking?.data && ranking.data.length > 0 ? (
-                ranking.data.slice(0, 5).map((row, idx) => (
-                  <tr key={idx}>
-                    <td>{idx + 1}등</td>
-                    <td>{row.std_nm ?? '–'}</td>
-                    <td>{row.att_tm ?? '–'}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={3}>데이터 없음</td></tr>
-              )}
-            </tbody>
-          </table>
+        <DashboardCard title="좌석 이탈 현황" icon={<LuDoorOpen />}>
+          <StatRow label="금일 이탈 횟수" value={seat ? `${seat.totalLeave}회` : placeholder} />
+          <StatRow label="복귀 대기" value={seat ? `${seat.waitingReturn}명` : placeholder} />
         </DashboardCard>
 
         <DashboardCard title="식사 태그 현황" icon={<LuUtensils />}>
@@ -165,6 +137,33 @@ export default function Dashboard() {
 
       {/* Row 3 */}
       <div className={styles.row2}>
+        <DashboardCard title="좌석 변경 신청현황" icon={<LuArrowRightLeft />}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>현재 → 희망</th>
+                <th>신청일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={3}>로딩 중...</td></tr>
+              ) : seatChanges.length > 0 ? (
+                seatChanges.slice(0, 5).map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.studentName}</td>
+                    <td>{row.currentSeatLabel} → {row.desiredSeat1Label}</td>
+                    <td>{row.createdAt.slice(0, 10)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={3}>신청 내역이 없습니다.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </DashboardCard>
+
         <DashboardCard title="공지사항" icon={<LuMegaphone />} onMore={() => navigate('/notices')}>
           <table className={styles.table}>
             <thead>

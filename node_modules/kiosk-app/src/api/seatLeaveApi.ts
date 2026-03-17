@@ -27,12 +27,12 @@ export function getSeatLeaveReasons(): Promise<SeatLeaveReason[]> {
   return apiGet<SeatLeaveReason[]>('/api/v1/kiosk/seat-leaves/reasons');
 }
 
-/** 좌석 이탈 시작 */
-export function startSeatLeave(seatLabel: string, reasonId: number): Promise<SeatLeaveResult> {
-  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/start', { seatLabel, reasonId });
+/** 좌석 이탈 시작 — identifier로 학생 식별 */
+export function startSeatLeave(identifier: string, reasonId: number): Promise<SeatLeaveResult> {
+  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/start', { identifier, reasonId });
 }
 
-/** 좌석 이탈 복귀 */
-export function endSeatLeave(seatLabel: string): Promise<SeatLeaveResult> {
-  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/end', { seatLabel });
+/** 좌석 이탈 복귀 — identifier로 학생 식별 */
+export function endSeatLeave(identifier: string): Promise<SeatLeaveResult> {
+  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/end', { identifier });
 }

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { kioskLogout } from '../api/kioskAuthApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import styles from './KioskAdminPanel.module.css';
 
 const ADMIN_PASSWORD = '0000';
-const COUNTDOWN_SECONDS = 3;
 
 interface KioskAdminPanelProps {
   connected: boolean;
@@ -12,40 +11,13 @@ interface KioskAdminPanelProps {
   session: KioskSession;
   onConnect: () => void;
   onClose: () => void;
-  onStartMealTagging: (label: string) => void;
   onLogout: () => void;
 }
 
-export default function KioskAdminPanel({ connected, error, session, onConnect, onClose, onStartMealTagging, onLogout }: KioskAdminPanelProps) {
+export default function KioskAdminPanel({ connected, error, session, onConnect, onClose, onLogout }: KioskAdminPanelProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const [countdown, setCountdown] = useState<{ type: 'lunch' | 'dinner'; seconds: number } | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startCountdown = useCallback((type: 'lunch' | 'dinner', label: string) => {
-    if (countdown) return;
-    setCountdown({ type, seconds: COUNTDOWN_SECONDS });
-
-    let remaining = COUNTDOWN_SECONDS;
-    countdownRef.current = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) {
-        if (countdownRef.current) clearInterval(countdownRef.current);
-        countdownRef.current = null;
-        setCountdown(null);
-        onStartMealTagging(label);
-      } else {
-        setCountdown({ type, seconds: remaining });
-      }
-    }, 1000);
-  }, [countdown, onStartMealTagging]);
-
-  useEffect(() => {
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
-  }, []);
 
   const handleKeyPress = (key: string) => {
     if (key === 'backspace') {
@@ -150,28 +122,6 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>QR스캐너</span>
             <span className={styles.infoBadgeActive}>자동 감지</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>점심 태깅</span>
-            <button
-              type="button"
-              className={countdown?.type === 'lunch' ? styles.infoBadgeCountdown : connected ? styles.infoBadgeButton : styles.infoBadgeDisabled}
-              onClick={() => startCountdown('lunch', '점심 태깅')}
-              disabled={!connected || countdown !== null}
-            >
-              {countdown?.type === 'lunch' ? `${countdown.seconds}초뒤 시작` : '점심 태깅 시작하기'}
-            </button>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>저녁 태깅</span>
-            <button
-              type="button"
-              className={countdown?.type === 'dinner' ? styles.infoBadgeCountdown : connected ? styles.infoBadgeButton : styles.infoBadgeDisabled}
-              onClick={() => startCountdown('dinner', '저녁 태깅')}
-              disabled={!connected || countdown !== null}
-            >
-              {countdown?.type === 'dinner' ? `${countdown.seconds}초뒤 시작` : '저녁 태깅 시작하기'}
-            </button>
           </div>
         </div>
 

@@ -1,24 +1,20 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../components/Header';
 import NoticeSection from '../components/NoticeSection';
 import RankingSection from '../components/RankingSection';
 import QuickMenu from '../components/QuickMenu';
 import AdBanner from '../components/AdBanner';
-import AttendanceModal from '../components/AttendanceModal';
 import CardScanModal from '../components/CardScanModal';
 import type { ScanActionParams } from '../components/CardScanModal';
 import StudentInfoModal from '../components/StudentInfoModal';
 import RemoteApplyModal from '../components/RemoteApplyModal';
-import ReasonSelectModal from '../components/ReasonSelectModal';
-import TimeSelectModal from '../components/TimeSelectModal';
-import DateSelectModal from '../components/DateSelectModal';
-import ApprovalWaitingModal from '../components/ApprovalWaitingModal';
 import SeatLeaveReasonModal from '../components/SeatLeaveReasonModal';
-import SeatLeaveInputModal from '../components/SeatLeaveInputModal';
 import WeeklyMealModal from '../components/WeeklyMealModal';
 import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
+import SeatChangeModal from '../components/SeatChangeModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
-import { checkIn, checkOut } from '../api/attendanceApi';
+import { tag, tagConfirm } from '../api/tagApi';
+import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
 import { useCardScanner } from '../hooks/useCardScanner';
@@ -27,21 +23,6 @@ import { useQrScanner } from '../hooks/useQrScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
 import styles from './MainPage.module.css';
 
-/** 외출/조퇴/결석 멀티스텝 흐름 */
-type RemoteFlowStep = 'reason' | 'time' | 'date' | 'scan' | 'waiting';
-
-interface RemoteFlow {
-  action: string;
-  label: string;
-  step: RemoteFlowStep;
-  reason?: string;
-  time?: string;
-  date?: string;
-  studentName?: string;
-}
-
-const NEEDS_MULTI_STEP = ['go-out', 'early-leave', 'absence'];
-
 interface MainPageProps {
   session: KioskSession;
   onLogout: () => void;
@@ -49,17 +30,15 @@ interface MainPageProps {
 
 export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showAttendance, setShowAttendance] = useState(false);
   const [showRemoteApply, setShowRemoteApply] = useState(false);
   const [showSeatLeaveReason, setShowSeatLeaveReason] = useState(false);
-  const [seatLeaveInput, setSeatLeaveInput] = useState<{ mode: 'start' | 'end'; reasonId?: number; reasonLabel?: string } | null>(null);
   const [showMealPlan, setShowMealPlan] = useState(false);
-  const [showPhoneSubmission, setShowPhoneSubmission] = useState(false);
-  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean } | null>(null);
+  const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string } | null>(null);
+  const [seatChangeStudent, setSeatChangeStudent] = useState<Student | null>(null);
+  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number } | null>(null);
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
-  const [remoteFlow, setRemoteFlow] = useState<RemoteFlow | null>(null);
 
   const handleScan = useCallback((result: CardScanResult) => {
     console.log('[MainPage] 카드 인식:', result.rawValue);
@@ -74,9 +53,37 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const { connected, error, connect } = useCardScanner(handleScan);
   useQrScanner(handleQrScan);
 
+  // 모달이 하나라도 열려 있는지 확인 (auto-tag 판별용)
+  const isAnyModalOpen = !!(scanTarget || showAdmin || showRemoteApply || showSeatLeaveReason || showMealPlan || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
+  const isAnyModalOpenRef = useRef(isAnyModalOpen);
+  isAnyModalOpenRef.current = isAnyModalOpen;
+
+  // 메인화면에서 카드/QR 인식 시 자동으로 출결 태그 처리
+  const lastAutoTagCard = useRef<string | null>(null);
+  const lastAutoTagQr = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (scanResult && scanResult.rawValue !== lastAutoTagCard.current && !isAnyModalOpenRef.current) {
+      lastAutoTagCard.current = scanResult.rawValue;
+      setScanTarget({ actionId: 'tag', label: '출결' });
+    }
+  }, [scanResult]);
+
+  useEffect(() => {
+    if (qrResult && qrResult.rawValue !== lastAutoTagQr.current && !isAnyModalOpenRef.current) {
+      lastAutoTagQr.current = qrResult.rawValue;
+      setScanTarget({ actionId: 'tag', label: '출결' });
+    }
+  }, [qrResult]);
+
   const handleMenuClick = (menuId: string) => {
-    if (menuId === 'attendance') {
-      setShowAttendance(true);
+    if (menuId === 'seat-leave') {
+      setShowSeatLeaveReason(true);
+    } else if (menuId === 'no-card') {
+      // 카드 미소지 → 키패드(좌석번호/전번)로 출결/급식 태그
+      setScanResult(null);
+      setQrResult(null);
+      setScanTarget({ actionId: 'tag', label: '출결', keypadOnly: true });
     } else if (menuId === 'remote-apply') {
       setShowRemoteApply(true);
     } else if (menuId === 'meal-plan') {
@@ -88,6 +95,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     }
   };
 
+  // 학적 조회: 학생 식별 후 StudentInfoModal 열기
   const handleStudentFound = useCallback((student: Student) => {
     setScanTarget(null);
     setScanResult(null);
@@ -95,25 +103,28 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     setStudentInfoTarget(student);
   }, []);
 
-  const handleAttendanceSelect = (actionId: string, label: string) => {
-    setShowAttendance(false);
-    if (actionId === 'leave-seat') {
-      setShowSeatLeaveReason(true);
-      return;
-    }
-    if (actionId === 'return') {
-      setSeatLeaveInput({ mode: 'end' });
-      return;
-    }
+  // 휴대폰 미소지: 학생 식별 후 날짜/옵션 모달 열기
+  const handlePhoneStudentFound = useCallback((student: Student) => {
+    setScanTarget(null);
     setScanResult(null);
     setQrResult(null);
-    setScanTarget({ actionId, label });
-  };
+    setPhoneSubmissionStudent({ identifier: student.identifier ?? String(student.id), name: student.name });
+  }, []);
 
-  // 좌석 이탈 사유 선택 → 좌석번호 입력
+  // 좌석 변경: 학생 식별 후 좌석 선택 모달 열기
+  const handleSeatChangeStudentFound = useCallback((student: Student) => {
+    setScanTarget(null);
+    setScanResult(null);
+    setQrResult(null);
+    setSeatChangeStudent(student);
+  }, []);
+
+  // 좌석 이탈 사유 선택 → CardScanModal로 학생 식별
   const handleSeatLeaveReasonSelect = (reasonId: number, reasonLabel: string) => {
     setShowSeatLeaveReason(false);
-    setSeatLeaveInput({ mode: 'start', reasonId, reasonLabel });
+    setScanResult(null);
+    setQrResult(null);
+    setScanTarget({ actionId: 'leave-seat', label: `좌석 이탈 (${reasonLabel})`, reasonId });
   };
 
   const handleScanClose = () => {
@@ -122,108 +133,98 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     setQrResult(null);
   };
 
-  // 등원/하원 액션
-  const handleCheckInAction = useCallback(async (params: ScanActionParams) => {
-    const result = await checkIn(params);
-    return { name: result.studentName, message: result.messages?.[0] };
+  // 통합 태그 액션 — /search API가 identifier 하나로 카드/QR/좌석번호/폰뒷자리 전부 처리
+  const resolveIdentifier = useCallback(async (params: ScanActionParams): Promise<string> => {
+    if (params.identifier) return params.identifier;
+    if (params.seatLabel) return params.seatLabel;
+    if (params.phoneLast4) return params.phoneLast4;
+    throw new Error('학생을 식별할 수 없습니다.');
   }, []);
 
-  const handleCheckOutAction = useCallback(async (params: ScanActionParams) => {
-    const result = await checkOut(params);
-    return { name: result.studentName, message: result.messages?.[0] };
+  const handleTagAction = useCallback(async (params: ScanActionParams) => {
+    const identifier = await resolveIdentifier(params);
+
+    // 좌석 이탈 중이면 먼저 복귀 처리
+    try {
+      const leaveResult = await endSeatLeave(identifier);
+      return {
+        name: leaveResult.studentName,
+        message: '좌석 복귀가 완료되었습니다.',
+      };
+    } catch {
+      // 이탈 중이 아니면 무시 → 기존 태그 로직
+    }
+
+    const result = await tag({ identifier });
+    return {
+      name: result.studentName,
+      studentId: result.studentId,
+      message: result.messages?.[0] || `${result.actionLabel} 처리 되었습니다.`,
+      pendingActions: result.pendingActions,
+      identifier,
+    };
+  }, [resolveIdentifier]);
+
+  const handleTagConfirm = useCallback(async (identifier: string, action: string) => {
+    const result = await tagConfirm({ identifier, action });
+    return {
+      name: result.studentName,
+      studentId: result.studentId,
+      message: result.messages?.[0] || `${result.actionLabel} 처리 되었습니다.`,
+    };
   }, []);
+
+  // 좌석 이탈 액션 — identifier로 학생 식별
+  const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
+    if (!scanTarget?.reasonId) throw new Error('이탈 사유를 선택해주세요.');
+    const identifier = await resolveIdentifier(params);
+    const result = await startSeatLeave(identifier, scanTarget.reasonId);
+    return {
+      name: result.studentName,
+      message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
+    };
+  }, [scanTarget?.reasonId, resolveIdentifier]);
 
   const getScanAction = () => {
     if (!scanTarget) return undefined;
-    if (scanTarget.actionId === 'check-in') return handleCheckInAction;
-    if (scanTarget.actionId === 'check-out') return handleCheckOutAction;
+    if (scanTarget.actionId === 'tag') return handleTagAction;
+    if (scanTarget.actionId === 'leave-seat') return handleSeatLeaveAction;
     return undefined;
   };
 
-  const handleStartMealTagging = (label: string) => {
-    setShowAdmin(false);
-    setScanResult(null);
-    setQrResult(null);
-    setScanTarget({ actionId: 'meal-tagging', label, secureClose: true });
+  const getPendingConfirm = () => {
+    if (!scanTarget) return undefined;
+    if (scanTarget.actionId === 'tag') return handleTagConfirm;
+    return undefined;
+  };
+
+  const getOnStudentFound = () => {
+    if (!scanTarget) return undefined;
+    if (scanTarget.actionId === 'student-info') return handleStudentFound;
+    if (scanTarget.actionId === 'no-phone') return handlePhoneStudentFound;
+    if (scanTarget.actionId === 'seat-change') return handleSeatChangeStudentFound;
+    return undefined;
   };
 
   // 비대면 신청 항목 선택
   const handleRemoteSelect = (actionId: string, label: string) => {
     setShowRemoteApply(false);
     if (actionId === 'no-phone') {
-      setShowPhoneSubmission(true);
-      return;
-    }
-    if (NEEDS_MULTI_STEP.includes(actionId)) {
-      setRemoteFlow({ action: actionId, label, step: 'reason' });
-    } else {
-      // 좌석 변경 등 → 바로 카드 스캔
+      // 휴대폰 미소지 → 먼저 CardScanModal로 학생 식별
       setScanResult(null);
       setQrResult(null);
-      setScanTarget({ actionId, label });
+      setScanTarget({ actionId: 'no-phone', label: '휴대폰 미소지' });
+      return;
     }
-  };
-
-  // 사유 선택 → 시간 or 날짜 선택
-  const handleReasonSelect = (_reasonId: string, _reasonLabel: string) => {
-    if (!remoteFlow) return;
-    const nextStep: RemoteFlowStep = remoteFlow.action === 'absence' ? 'date' : 'time';
-    setRemoteFlow({ ...remoteFlow, reason: _reasonLabel, step: nextStep });
-  };
-
-  // 시간 선택 완료 → 카드 스캔
-  const handleTimeSubmit = (time: string) => {
-    if (!remoteFlow) return;
-    setRemoteFlow({ ...remoteFlow, time, step: 'scan' });
-    setScanResult(null);
-    setQrResult(null);
-  };
-
-  // 날짜 선택 완료 → 카드 스캔
-  const handleDateSubmit = (date: string) => {
-    if (!remoteFlow) return;
-    setRemoteFlow({ ...remoteFlow, date, step: 'scan' });
-    setScanResult(null);
-    setQrResult(null);
-  };
-
-  // 비대면 신청 카드 인증 → 승인 대기
-  const handleRemoteStudentFound = useCallback((student: Student) => {
-    setRemoteFlow((prev) => prev ? { ...prev, step: 'waiting', studentName: student.name } : null);
-  }, []);
-
-  // 전체 흐름 닫기
-  const handleRemoteFlowClose = () => {
-    setRemoteFlow(null);
-    setScanResult(null);
-    setQrResult(null);
-  };
-
-  // 뒤로 가기
-  const handleRemoteFlowBack = () => {
-    if (!remoteFlow) return;
-    if (remoteFlow.step === 'reason') {
-      setRemoteFlow(null);
-      setShowRemoteApply(true);
-    } else if (remoteFlow.step === 'time' || remoteFlow.step === 'date') {
-      setRemoteFlow({ ...remoteFlow, step: 'reason', reason: undefined });
-    } else if (remoteFlow.step === 'scan') {
-      const prevStep: RemoteFlowStep = remoteFlow.action === 'absence' ? 'date' : 'time';
-      setRemoteFlow({ ...remoteFlow, step: prevStep, time: undefined, date: undefined });
+    if (actionId === 'seat-change') {
+      setScanResult(null);
+      setQrResult(null);
+      setScanTarget({ actionId: 'seat-change', label: '좌석 변경' });
+      return;
     }
-  };
-
-  // 비대면 신청 제목 (사유 선택 모달용)
-  const getReasonTitle = () => {
-    if (!remoteFlow) return '';
-    if (remoteFlow.action === 'absence') return '결석';
-    return '외출/조퇴';
-  };
-
-  // 비대면 신청 카드스캔 제목
-  const getRemoteScanTitle = () => {
-    if (!remoteFlow) return '';
-    return remoteFlow.label;
+    setScanResult(null);
+    setQrResult(null);
+    setScanTarget({ actionId, label });
   };
 
   return (
@@ -239,39 +240,15 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
 
       <AdBanner />
 
-      {showAttendance && (
-        <AttendanceModal
-          onClose={() => setShowAttendance(false)}
-          onSelect={handleAttendanceSelect}
-        />
-      )}
-
       {showSeatLeaveReason && (
         <SeatLeaveReasonModal
           onClose={() => setShowSeatLeaveReason(false)}
-          onBack={() => {
-            setShowSeatLeaveReason(false);
-            setShowAttendance(true);
-          }}
           onSelect={handleSeatLeaveReasonSelect}
-        />
-      )}
-
-      {seatLeaveInput && (
-        <SeatLeaveInputModal
-          mode={seatLeaveInput.mode}
-          reasonId={seatLeaveInput.reasonId}
-          reasonLabel={seatLeaveInput.reasonLabel}
-          onClose={() => setSeatLeaveInput(null)}
         />
       )}
 
       {showMealPlan && (
         <WeeklyMealModal onClose={() => setShowMealPlan(false)} />
-      )}
-
-      {showPhoneSubmission && (
-        <PhoneSubmissionModal onClose={() => setShowPhoneSubmission(false)} />
       )}
 
       {showRemoteApply && (
@@ -281,61 +258,35 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
         />
       )}
 
-      {/* 비대면 신청 멀티스텝 */}
-      {remoteFlow?.step === 'reason' && (
-        <ReasonSelectModal
-          title={getReasonTitle()}
-          onClose={handleRemoteFlowClose}
-          onBack={handleRemoteFlowBack}
-          onSelect={handleReasonSelect}
-        />
-      )}
-
-      {remoteFlow?.step === 'time' && (
-        <TimeSelectModal
-          title={remoteFlow.label}
-          onClose={handleRemoteFlowClose}
-          onBack={handleRemoteFlowBack}
-          onSubmit={handleTimeSubmit}
-        />
-      )}
-
-      {remoteFlow?.step === 'date' && (
-        <DateSelectModal
-          title={remoteFlow.label}
-          onClose={handleRemoteFlowClose}
-          onBack={handleRemoteFlowBack}
-          onSubmit={handleDateSubmit}
-        />
-      )}
-
-      {remoteFlow?.step === 'scan' && (
-        <CardScanModal
-          title={getRemoteScanTitle()}
-          scanResult={scanResult}
-          qrResult={qrResult}
-          onClose={handleRemoteFlowClose}
-          onStudentFound={handleRemoteStudentFound}
-        />
-      )}
-
-      {remoteFlow?.step === 'waiting' && remoteFlow.studentName && (
-        <ApprovalWaitingModal
-          studentName={remoteFlow.studentName}
-          onClose={handleRemoteFlowClose}
-        />
-      )}
-
-      {/* 일반 카드스캔 (출결/학적조회/식사태깅 등) */}
+      {/* 공통 카드스캔 모달 (카드/QR/좌석번호/전번뒷자리) */}
       {scanTarget && (
         <CardScanModal
           title={scanTarget.label}
           scanResult={scanResult}
           qrResult={qrResult}
           secureClose={scanTarget.secureClose}
+          keypadOnly={scanTarget.keypadOnly}
           onClose={handleScanClose}
-          onStudentFound={scanTarget.actionId === 'student-info' ? handleStudentFound : undefined}
+          onStudentFound={getOnStudentFound()}
           onAction={getScanAction()}
+          onPendingConfirm={getPendingConfirm()}
+        />
+      )}
+
+      {/* 휴대폰 미소지 - 학생 식별 후 날짜/옵션 선택 */}
+      {phoneSubmissionStudent && (
+        <PhoneSubmissionModal
+          identifier={phoneSubmissionStudent.identifier}
+          studentName={phoneSubmissionStudent.name}
+          onClose={() => setPhoneSubmissionStudent(null)}
+        />
+      )}
+
+      {/* 좌석 변경 - 학생 식별 후 좌석 선택 */}
+      {seatChangeStudent && (
+        <SeatChangeModal
+          student={seatChangeStudent}
+          onClose={() => setSeatChangeStudent(null)}
         />
       )}
 
@@ -353,7 +304,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           session={session}
           onConnect={connect}
           onClose={() => setShowAdmin(false)}
-          onStartMealTagging={handleStartMealTagging}
           onLogout={onLogout}
         />
       )}

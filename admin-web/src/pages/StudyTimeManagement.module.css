@@ -37,14 +37,16 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 7px 14px;
+  padding: 0 var(--size-btn-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 500;
   color: var(--color-text-primary);
-  background: #fff;
+  background: var(--color-bg-card);
   cursor: pointer;
 }
 
@@ -53,7 +55,7 @@
 }
 
 .calendarIcon {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -65,8 +67,8 @@
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  padding: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: var(--size-badge-padding-h);
   z-index: 100;
   min-width: 300px;
 }
@@ -167,18 +169,14 @@
   font-weight: 700;
 }
 
-/* ── Content Card ── */
-.contentCard {
-  background-color: #ffffff;
-  border-radius: var(--radius-sm);
+/* ── Filter Card ── */
+.filterCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   border: 1px solid var(--color-border-light);
-  padding: var(--spacing-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
-/* ── Filter Row ── */
 .filterRow {
   display: flex;
   align-items: center;
@@ -186,91 +184,127 @@
   flex-wrap: wrap;
 }
 
-.filterInput {
-  padding: 7px 12px;
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  line-height: var(--size-input-height);
+  box-sizing: border-box;
+  background-color: var(--color-bg-page);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-right: none;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.filterInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   font-size: var(--font-size-md);
-  font-family: inherit;
   color: var(--color-text-primary);
-  background: #fff;
+  background-color: var(--color-bg-card);
   outline: none;
-  width: 120px;
+  transition: border-color 0.15s;
+  width: 100px;
 }
 
-.filterInput::placeholder {
-  color: var(--color-text-muted);
+.filterInputShort {
+  composes: filterInput;
+  width: 70px;
 }
 
-.filterInput:focus {
+.filterInput:focus,
+.filterInputShort:focus {
   border-color: var(--color-primary);
 }
 
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
 .searchButton {
-  padding: 7px 20px;
+  padding: 0 var(--spacing-lg);
+  height: var(--size-input-height);
   background-color: var(--color-text-primary);
-  color: #fff;
-  border: none;
+  color: var(--color-bg-card);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   font-weight: 500;
-  cursor: pointer;
+  transition: opacity 0.15s;
 }
 
 .searchButton:hover {
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 .resetButton {
-  padding: 7px 16px;
-  background-color: #fff;
-  color: var(--color-text-primary);
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
-  font-weight: 500;
-  cursor: pointer;
+  transition: background-color 0.15s;
 }
 
 .resetButton:hover {
   background-color: var(--color-bg-page);
 }
 
-/* ── Excel Button ── */
 .excelButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
   background-color: #217346;
-  color: #fff;
-  border: none;
+  color: var(--color-bg-card);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
-  font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
+  font-weight: 500;
+  transition: opacity 0.15s;
 }
 
 .excelButton:hover {
-  opacity: 0.9;
+  opacity: 0.85;
+}
+
+/* ── Content Card ── */
+.contentCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 /* ── Table ── */
 .tableWrap {
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-  min-width: 1100px;
 }
 
 .table th {
-  text-align: center;
-  padding: 10px 8px;
+  text-align: left;
+  padding: var(--size-th-padding-v) var(--size-cell-padding-h);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -280,26 +314,19 @@
 }
 
 .table td {
-  text-align: center;
-  padding: 10px 8px;
+  padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
-  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .table tbody tr:hover {
   background-color: var(--color-primary-light);
 }
-
-/* Column widths */
-.colCheck { width: 40px; }
-.colNo { width: 50px; }
-.colNumber { width: 70px; }
-.colClass { width: 50px; }
-.colName { width: 80px; }
-.colSeat { width: 60px; }
-.colTotal { width: 70px; }
 
 .checkboxCol {
   width: 40px;
@@ -307,10 +334,34 @@
 }
 
 .checkboxCol input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   cursor: pointer;
   accent-color: var(--color-primary);
+}
+
+/* ── Sortable column ── */
+.sortableCol {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableCol:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  opacity: 0.4;
+}
+
+.sortIconActive {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  color: var(--color-primary);
 }
 
 .emptyCell {

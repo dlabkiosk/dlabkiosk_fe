@@ -1,23 +1,64 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { submitPhoneSubmission } from '../api/phoneSubmissionApi';
-import type { PhoneSubmissionResult } from '../api/phoneSubmissionApi';
+import type { SubmissionType } from '../api/phoneSubmissionApi';
 import styles from './PhoneSubmissionModal.module.css';
 
-const SEAT_LABEL_MAX_LENGTH = 10;
 const SUCCESS_DISPLAY_MS = 2000;
 
-const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', 'A', '-', '0', 'backspace'] as const;
+function formatDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getWeekdayLabel(d: Date): string {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  return days[d.getDay()];
+}
+
+/** 오늘 포함 앞으로 14일(평일만) */
+function getUpcomingWeekdays(): Date[] {
+  const result: Date[] = [];
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  while (result.length < 14) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) {
+      result.push(new Date(d));
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return result;
+}
+
+/** dateStr이 start~end 범위 안에 있는지 (문자열 비교로 충분) */
+function isInRange(dateStr: string, start: string | null, end: string | null): boolean {
+  if (!start) return false;
+  if (!end) return dateStr === start;
+  const lo = start <= end ? start : end;
+  const hi = start <= end ? end : start;
+  return dateStr >= lo && dateStr <= hi;
+}
 
 interface PhoneSubmissionModalProps {
+  /** 학생 식별자 (rfidUid / 좌석번호 / 전번 뒷자리) */
+  identifier: string;
+  studentName: string;
   onClose: () => void;
 }
 
-export default function PhoneSubmissionModal({ onClose }: PhoneSubmissionModalProps) {
-  const [seatLabel, setSeatLabel] = useState('');
+export default function PhoneSubmissionModal({ identifier, studentName, onClose }: PhoneSubmissionModalProps) {
+  const todayStr = useMemo(() => formatDate(new Date()), []);
+  const [startDate, setStartDate] = useState<string | null>(todayStr);
+  const [endDate, setEndDate] = useState<string | null>(null);
+  const [noPhone, setNoPhone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successResult, setSuccessResult] = useState<PhoneSubmissionResult | null>(null);
+  const [success, setSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const weekdays = useMemo(() => getUpcomingWeekdays(), []);
 
   useEffect(() => {
     return () => {
@@ -25,25 +66,53 @@ export default function PhoneSubmissionModal({ onClose }: PhoneSubmissionModalPr
     };
   }, []);
 
-  const handleKeypadPress = useCallback((key: string) => {
-    if (key === 'backspace') {
-      setSeatLabel((prev) => prev.slice(0, -1));
-      return;
+  const handleDateClick = useCallback((dateStr: string) => {
+    if (noPhone) return;
+    if (!startDate || (startDate && endDate)) {
+      // 첫 클릭 또는 이미 범위 완성 → 시작일 재설정
+      setStartDate(dateStr);
+      setEndDate(null);
+    } else {
+      // 시작일만 있는 상태 → 종료일 설정
+      if (dateStr === startDate) {
+        // 같은 날 다시 클릭 → 단일 날짜
+        setEndDate(null);
+      } else {
+        setEndDate(dateStr);
+      }
     }
-    setSeatLabel((prev) => {
-      if (prev.length >= SEAT_LABEL_MAX_LENGTH) return prev;
-      return prev + key;
-    });
-    setErrorMessage(null);
-  }, []);
+  }, [noPhone, startDate, endDate]);
+
+  // 정렬된 시작/끝
+  const sortedStart = startDate && endDate
+    ? (startDate <= endDate ? startDate : endDate)
+    : startDate;
+  const sortedEnd = startDate && endDate
+    ? (startDate <= endDate ? endDate : startDate)
+    : null;
+
+  const rangeLabel = sortedStart
+    ? sortedEnd
+      ? `${sortedStart} ~ ${sortedEnd}`
+      : sortedStart
+    : '';
 
   const handleSubmit = useCallback(async () => {
-    if (seatLabel.length === 0 || submitting) return;
+    if (submitting) return;
+    if (!noPhone && !startDate) return;
     setSubmitting(true);
     setErrorMessage(null);
     try {
-      const result = await submitPhoneSubmission(seatLabel);
-      setSuccessResult(result);
+      const submissionType: SubmissionType = noPhone
+        ? 'NO_PHONE'
+        : (sortedEnd && sortedEnd !== sortedStart ? 'PERIOD' : 'DAILY');
+      await submitPhoneSubmission({
+        identifier,
+        submissionType,
+        startDate: noPhone ? undefined : (sortedStart ?? undefined),
+        endDate: noPhone ? undefined : (sortedEnd ?? sortedStart ?? undefined),
+      });
+      setSuccess(true);
       successTimer.current = setTimeout(() => {
         onClose();
       }, SUCCESS_DISPLAY_MS);
@@ -52,18 +121,19 @@ export default function PhoneSubmissionModal({ onClose }: PhoneSubmissionModalPr
     } finally {
       setSubmitting(false);
     }
-  }, [seatLabel, submitting, onClose]);
+  }, [identifier, sortedStart, sortedEnd, noPhone, submitting, onClose]);
 
   // 성공 화면
-  if (successResult) {
+  if (success) {
     return (
       <div className={styles.overlay}>
         <div className={styles.modal}>
           <div className={styles.successSection}>
             <span className={styles.successIcon}>&#x2713;</span>
             <p className={styles.successMessage}>
-              {successResult.studentName} 학생<br />
+              {studentName} 학생<br />
               휴대폰 미소지 신청 완료
+              {noPhone && <><br /><span className={styles.noPhoneTag}>휴대폰 없음 (계속 유지)</span></>}
             </p>
           </div>
         </div>
@@ -80,38 +150,66 @@ export default function PhoneSubmissionModal({ onClose }: PhoneSubmissionModalPr
 
         <h2 className={styles.title}>휴대폰 미소지</h2>
 
-        <div className={styles.keypadSection}>
-          <p className={styles.guide}>좌석번호를 입력해주세요</p>
+        <div className={styles.optionSection}>
+          <p className={styles.guide}>{studentName} 학생</p>
 
-          <div className={styles.seatDisplay}>
-            <span className={seatLabel ? styles.seatValue : styles.seatPlaceholder}>
-              {seatLabel || '예: A-1'}
-            </span>
+          {/* 기간 선택 */}
+          <div className={styles.dateSection}>
+            <p className={styles.optionLabel}>
+              {!startDate || endDate !== null
+                ? '시작일을 선택하세요'
+                : '종료일을 선택하세요'}
+            </p>
+            {rangeLabel && !noPhone && (
+              <p className={styles.rangeLabel}>{rangeLabel}</p>
+            )}
+            <div className={styles.dateGrid}>
+              {weekdays.map((d) => {
+                const dateStr = formatDate(d);
+                const inRange = isInRange(dateStr, startDate, endDate);
+                const isStart = dateStr === startDate;
+                const isEnd = dateStr === endDate;
+                const isToday = dateStr === todayStr;
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    className={[
+                      styles.dateButton,
+                      inRange && !noPhone ? styles.dateInRange : '',
+                      (isStart || isEnd) && !noPhone ? styles.dateEndpoint : '',
+                      noPhone ? styles.dateDisabled : '',
+                    ].filter(Boolean).join(' ')}
+                    onClick={() => handleDateClick(dateStr)}
+                  >
+                    <span className={styles.dateDay}>{d.getMonth() + 1}/{d.getDate()}</span>
+                    <span className={styles.dateDayLabel}>
+                      {isToday ? '오늘' : getWeekdayLabel(d)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* 휴대폰 없음 옵션 */}
+          <button
+            type="button"
+            className={`${styles.noPhoneButton} ${noPhone ? styles.noPhoneSelected : ''}`}
+            onClick={() => setNoPhone(!noPhone)}
+          >
+            📵 휴대폰 없음 (계속 유지)
+          </button>
 
           {errorMessage && (
             <p className={styles.errorMessage}>{errorMessage}</p>
           )}
 
-          <div className={styles.keypadGrid}>
-            {KEYPAD_KEYS.map((key, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className={`${styles.keypadKey} ${key === 'backspace' ? styles.keypadBackspace : ''}`}
-                onClick={() => handleKeypadPress(key)}
-                aria-label={key === 'backspace' ? '지우기' : key}
-              >
-                {key === 'backspace' ? '⌫' : key}
-              </button>
-            ))}
-          </div>
-
           <button
             type="button"
             className={styles.submitButton}
             onClick={handleSubmit}
-            disabled={seatLabel.length === 0 || submitting}
+            disabled={submitting || (!noPhone && !startDate)}
           >
             {submitting ? '신청 중...' : '신청하기'}
           </button>

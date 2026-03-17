@@ -87,16 +87,20 @@
   margin-top: var(--space-1);
 }
 
-/* 학번 인증 버튼 */
+/* 대체 인증 버튼 영역 */
+.fallbackButtons {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .studentIdButton {
-  /* margin-top: var(--space-5); */
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
+  flex: 1;
+  padding: var(--space-3) var(--space-2);
   border: 1px solid var(--color-border-medium);
   border-radius: var(--radius-md);
   background: var(--color-bg-white);
   color: var(--color-text-muted);
-  font-size: var(--font-md);
+  font-size: var(--font-sm);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -249,6 +253,77 @@
   line-height: 1.5;
 }
 
+/* 학생 메시지 */
+.studentMessages {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.studentMessageItem {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error);
+  text-align: center;
+  padding: var(--space-2h) var(--space-3);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-error);
+}
+
+/* pendingActions 확인 */
+.pendingSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.pendingConfirmButton {
+  width: 100%;
+  padding: var(--space-3h) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pendingConfirmButton:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.pendingConfirmButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pendingDismissButton {
+  width: 100%;
+  padding: var(--space-2h) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-hint);
+  font-size: var(--font-sm);
+  cursor: pointer;
+}
+
+.pendingDismissButton:active {
+  color: var(--color-text-muted);
+}
+
+.pendingDismissButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* 에러 메시지 */
 .errorMessage {
   font-size: var(--font-md);
@@ -256,4 +331,39 @@
   color: var(--color-error);
   text-align: center;
   padding: var(--space-2h) 0;
+}
+
+/* 카드 미소지 — 좌석번호/전번 선택 */
+.keypadOnlyButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.keypadOnlyButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  background: var(--color-bg-gray);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.keypadOnlyButton:active {
+  background-color: #e8e8e8;
+}
+
+.keypadOnlyIcon {
+  font-size: var(--icon-md);
+  line-height: 1;
+}
+
+.keypadOnlyLabel {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }

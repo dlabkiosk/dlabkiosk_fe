@@ -54,7 +54,10 @@
   font-weight: 500;
   color: var(--color-text-secondary);
   white-space: nowrap;
-  padding: 7px 12px;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  line-height: var(--size-input-height);
+  box-sizing: border-box;
   background-color: var(--color-bg-page);
   border: 1px solid var(--color-border);
   border-right: none;
@@ -62,43 +65,42 @@
 }
 
 .filterInput {
-  padding: 7px 12px;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
-  background-color: #ffffff;
+  background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
   width: 100px;
 }
 
-.filterInputWide {
-  composes: filterInput;
-  width: 140px;
-}
-
-.filterInput:focus,
-.filterInputWide:focus {
+.filterInput:focus {
   border-color: var(--color-primary);
 }
 
 .filterSelect {
-  padding: 7px 12px;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
-  background-color: #ffffff;
+  background-color: var(--color-bg-card);
   outline: none;
   cursor: pointer;
   min-width: 80px;
 }
 
 .searchButton {
-  padding: 7px 24px;
+  padding: 0 var(--spacing-lg);
+  height: var(--size-input-height);
   background-color: var(--color-text-primary);
-  color: #ffffff;
+  color: var(--color-bg-card);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   font-weight: 500;
@@ -111,8 +113,9 @@
 }
 
 .resetButton {
-  padding: 7px 16px;
-  background-color: #ffffff;
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -125,31 +128,38 @@
 }
 
 /* ── Table ── */
-.tableCard {
+.contentCard {
   background-color: var(--color-bg-card);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-light);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.tableWrap {
   overflow: hidden;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
 .table th {
   text-align: left;
-  padding: 12px var(--spacing-md);
+  padding: var(--size-th-padding-v) var(--size-cell-padding-h);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
   background-color: var(--color-bg-page);
   border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
 }
 
 .table td {
-  padding: 11px var(--spacing-md);
+  padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
@@ -169,16 +179,40 @@
 }
 
 .checkboxCol input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   cursor: pointer;
   accent-color: var(--color-primary);
+}
+
+/* ── Sortable column ── */
+.sortableCol {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableCol:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  opacity: 0.4;
+}
+
+.sortIconActive {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  color: var(--color-primary);
 }
 
 /* ── Status Badges ── */
 .statusBadge {
   display: inline-block;
-  padding: 3px 12px;
+  padding: var(--size-badge-padding-v) var(--size-badge-padding-h);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -209,30 +243,12 @@
   color: #7b1fa2;
 }
 
-/* ── Detail Button ── */
-.detailButton {
-  padding: 5px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  background-color: #ffffff;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.detailButton:hover {
-  background-color: var(--color-bg-page);
-  color: var(--color-text-primary);
-}
-
 /* ── Pagination ── */
 .pagination {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  justify-content: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-md) var(--spacing-lg);
 }
 
@@ -240,14 +256,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
-  padding: 0 8px;
+  min-width: var(--size-page-btn);
+  height: var(--size-page-btn);
+  padding: 0 var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  background-color: #ffffff;
+  background-color: var(--color-bg-card);
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
@@ -264,13 +280,13 @@
 
 .pageBtnActive {
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-bg-card);
   border-color: var(--color-primary);
 }
 
 .pageBtnActive:hover {
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-bg-card);
   opacity: 0.9;
 }
 

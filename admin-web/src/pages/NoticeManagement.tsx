@@ -66,7 +66,7 @@ export default function NoticeManagement() {
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
           <LuMegaphone className={styles.pageTitleIcon} />
-          <h1 className={styles.pageTitle}>공지관리</h1>
+          <h1 className={styles.pageTitle}>공지 관리</h1>
         </div>
       </div>
 

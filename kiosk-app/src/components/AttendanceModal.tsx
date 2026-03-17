@@ -7,17 +7,14 @@ interface AttendanceAction {
 }
 
 const ATTENDANCE_ACTIONS: AttendanceAction[] = [
-  { id: 'check-in', label: '등원', icon: '👟' },
-  { id: 'check-out', label: '하원', icon: '🎒' },
-  { id: 'early-leave', label: '조퇴', icon: '🚪' },
-  { id: 'go-out', label: '외출', icon: '👞' },
+  { id: 'tag', label: '출결 태그', icon: '📋' },
   { id: 'leave-seat', label: '좌석 이탈', icon: 'ℹ️' },
-  { id: 'return', label: '복귀', icon: '🔄' },
+  { id: 'return', label: '좌석 복귀', icon: '🔄' },
 ];
 
 interface AttendanceModalProps {
   onClose: () => void;
-  onSelect: (actionId: string, label: string) => void;
+  onSelect: (actionId: string) => void;
 }
 
 export default function AttendanceModal({ onClose, onSelect }: AttendanceModalProps) {
@@ -28,14 +25,14 @@ export default function AttendanceModal({ onClose, onSelect }: AttendanceModalPr
           ✕
         </button>
         <h2 className={styles.title}>출결 관리</h2>
-        <p className={styles.subtitle}>원하는 항목을 누른 후 카드를 태그해주세요</p>
+        <p className={styles.subtitle}>원하는 항목을 선택해주세요</p>
         <div className={styles.grid}>
           {ATTENDANCE_ACTIONS.map((action) => (
             <button
               key={action.id}
               type="button"
               className={styles.actionButton}
-              onClick={() => onSelect(action.id, action.label)}
+              onClick={() => onSelect(action.id)}
             >
               <span className={styles.actionIcon}>{action.icon}</span>
               <span className={styles.actionLabel}>{action.label}</span>

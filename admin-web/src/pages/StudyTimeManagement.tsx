@@ -1,5 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { LuClock } from 'react-icons/lu';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import {
+  LuClock,
+  LuArrowUpDown,
+  LuArrowUp,
+  LuArrowDown,
+} from 'react-icons/lu';
 import styles from './StudyTimeManagement.module.css';
 
 /* ── 날짜 유틸 ── */
@@ -83,6 +88,23 @@ interface StudentStudyRow {
   dailyTimes: Record<string, string>;
 }
 
+/* ── 정렬 ── */
+
+type SortField = 'name' | 'studentNumber' | 'className' | 'seat';
+type SortDir = 'asc' | 'desc';
+
+interface SortState {
+  field: SortField | null;
+  dir: SortDir;
+}
+
+function compareStudyRows(a: StudentStudyRow, b: StudentStudyRow, field: SortField, dir: SortDir): number {
+  const va = a[field] ?? '';
+  const vb = b[field] ?? '';
+  const cmp = va.localeCompare(vb);
+  return dir === 'desc' ? -cmp : cmp;
+}
+
 /* ── 목 데이터 ── */
 
 function generateMockData(monday: Date): StudentStudyRow[] {
@@ -131,7 +153,9 @@ export default function StudyTimeManagement() {
   const [filterNumber, setFilterNumber] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [filterName, setFilterName] = useState('');
-  const [filterSeat, setFilterSeat] = useState('');
+
+  // 정렬
+  const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -155,19 +179,25 @@ export default function StudyTimeManagement() {
 
   const mockData = generateMockData(startDate);
 
-  const filtered = mockData.filter((row) => {
-    if (filterNumber && !row.studentNumber.includes(filterNumber)) return false;
-    if (filterClass && !row.className.includes(filterClass)) return false;
-    if (filterName && !row.name.includes(filterName)) return false;
-    if (filterSeat && !row.seat.includes(filterSeat)) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return mockData.filter((row) => {
+      if (filterNumber && !row.studentNumber.includes(filterNumber)) return false;
+      if (filterClass && !row.className.includes(filterClass)) return false;
+      if (filterName && !row.name.includes(filterName)) return false;
+      return true;
+    });
+  }, [mockData, filterNumber, filterClass, filterName]);
+
+  const sortedData = useMemo(() => {
+    if (!sort.field) return filtered;
+    return [...filtered].sort((a, b) => compareStudyRows(a, b, sort.field!, sort.dir));
+  }, [filtered, sort]);
 
   const handleReset = () => {
     setFilterNumber('');
     setFilterClass('');
     setFilterName('');
-    setFilterSeat('');
+    setSort({ field: null, dir: 'asc' });
   };
 
   const calcTotal = (dailyTimes: Record<string, string>): string => {
@@ -226,44 +256,58 @@ export default function StudyTimeManagement() {
     return 'mid';
   };
 
+  const handleSort = (field: SortField) => {
+    setSort((prev) => {
+      if (prev.field === field) {
+        return { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      }
+      return { field, dir: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sort.field !== field) return <LuArrowUpDown className={styles.sortIcon} />;
+    return sort.dir === 'asc'
+      ? <LuArrowUp className={styles.sortIconActive} />
+      : <LuArrowDown className={styles.sortIconActive} />;
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
           <LuClock className={styles.pageTitleIcon} />
-          <h2 className={styles.pageTitle}>순공관리</h2>
+          <h2 className={styles.pageTitle}>순공 관리</h2>
         </div>
       </div>
 
-      <div className={styles.contentCard}>
-        {/* 필터 */}
+      {/* 필터 */}
+      <div className={styles.filterCard}>
         <div className={styles.filterRow}>
-          <input
-            className={styles.filterInput}
-            placeholder="학번"
-            value={filterNumber}
-            onChange={(e) => setFilterNumber(e.target.value)}
-          />
-          <input
-            className={styles.filterInput}
-            placeholder="반"
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            style={{ width: 80 }}
-          />
-          <input
-            className={styles.filterInput}
-            placeholder="학생명"
-            value={filterName}
-            onChange={(e) => setFilterName(e.target.value)}
-          />
-          <input
-            className={styles.filterInput}
-            placeholder="좌석"
-            value={filterSeat}
-            onChange={(e) => setFilterSeat(e.target.value)}
-            style={{ width: 80 }}
-          />
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>학생명</label>
+            <input
+              className={styles.filterInput}
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>학번</label>
+            <input
+              className={styles.filterInput}
+              value={filterNumber}
+              onChange={(e) => setFilterNumber(e.target.value)}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>반</label>
+            <input
+              className={styles.filterInputShort}
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+            />
+          </div>
 
           <div className={styles.datePickerWrap} ref={calRef}>
             <button type="button" className={styles.datePickerButton} onClick={toggleCalendar}>
@@ -328,36 +372,36 @@ export default function StudyTimeManagement() {
             )}
           </div>
 
-          <button type="button" className={styles.searchButton}>검색</button>
-          <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
+          <div className={styles.filterActions}>
+            <button type="button" className={styles.searchButton}>검색</button>
+            <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={styles.excelButton}>EXCEL</button>
+          </div>
         </div>
+      </div>
 
-        {/* 엑셀 */}
-        <button type="button" className={styles.excelButton}>EXCEL</button>
+      <div className={styles.contentCard}>
 
         {/* 테이블 */}
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <colgroup>
-              <col className={styles.colCheck} />
-              <col className={styles.colNo} />
-              <col className={styles.colNumber} />
-              <col className={styles.colClass} />
-              <col className={styles.colName} />
-              <col className={styles.colSeat} />
-              <col className={styles.colTotal} />
-              {dayHeaders.map((_, i) => <col key={i} />)}
-            </colgroup>
             <thead>
               <tr>
                 <th className={styles.checkboxCol}>
                   <input type="checkbox" />
                 </th>
-                <th>NO</th>
-                <th>학번</th>
-                <th>반</th>
-                <th>이름</th>
-                <th>좌석</th>
+                <th className={styles.sortableCol} onClick={() => handleSort('name')}>
+                  이름 <SortIcon field="name" />
+                </th>
+                <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
+                  학번 <SortIcon field="studentNumber" />
+                </th>
+                <th className={styles.sortableCol} onClick={() => handleSort('className')}>
+                  반 <SortIcon field="className" />
+                </th>
+                <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
+                  좌석 <SortIcon field="seat" />
+                </th>
                 <th>합계</th>
                 {dayHeaders.map((d) => (
                   <th key={d.toISOString()}>{formatDateShort(d)}</th>
@@ -365,20 +409,19 @@ export default function StudyTimeManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={7 + dayHeaders.length}>데이터가 없습니다.</td>
+                  <td colSpan={6 + dayHeaders.length}>데이터가 없습니다.</td>
                 </tr>
               ) : (
-                filtered.map((row, idx) => (
+                sortedData.map((row) => (
                   <tr key={row.id}>
                     <td className={styles.checkboxCol}>
                       <input type="checkbox" />
                     </td>
-                    <td>{String(idx + 1).padStart(2, '0')}</td>
+                    <td>{row.name}</td>
                     <td>{row.studentNumber}</td>
                     <td>{row.className}</td>
-                    <td>{row.name}</td>
                     <td>{row.seat}</td>
                     <td>{calcTotal(row.dailyTimes)}</td>
                     {dayHeaders.map((d) => {

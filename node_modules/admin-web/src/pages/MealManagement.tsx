@@ -1,281 +1,365 @@
-import { useState } from 'react';
-import { LuUtensils, LuChevronLeft, LuChevronRight } from 'react-icons/lu';
+import { useState, useMemo, useCallback } from 'react';
+import { LuUtensils, LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { getMealCheckList } from '../api/mealCheckApi';
+import type { MealCheckRow, MealCheckListResponse } from '../api/mealCheckApi';
 import styles from './MealManagement.module.css';
 
-/* ── 날짜 유틸 ── */
+/* ── Mock Data ── */
 
-/** 해당 날짜가 속한 주의 월요일을 반환 */
-function getMonday(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+const MOCK_DATA: MealCheckRow[] = [
+  { id: 1, studentName: '홍길동', className: '1', studentNumber: '2345', seatLabel: '23', lunchRequested: true, lunchTaggedAt: '12:11', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:00', dinnerNeedsConfirm: false },
+  { id: 2, studentName: '홍길동', className: '2', studentNumber: '1111', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:05', dinnerNeedsConfirm: false },
+  { id: 3, studentName: '홍길동', className: '3', studentNumber: '2122', seatLabel: '25', lunchRequested: true, lunchTaggedAt: '12:10', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:09', dinnerNeedsConfirm: true },
+  { id: 4, studentName: '홍길동', className: '2', studentNumber: '3133', seatLabel: '20', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: true, dinnerTaggedAt: '18:10', dinnerNeedsConfirm: false },
+  { id: 5, studentName: '홍길동', className: '1', studentNumber: '4544', seatLabel: '55', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: false, dinnerTaggedAt: '18:22', dinnerNeedsConfirm: false },
+  { id: 6, studentName: '홍길동', className: '3', studentNumber: '4444', seatLabel: '32', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: false },
+  { id: 7, studentName: '홍길동', className: '2', studentNumber: '2222', seatLabel: '44', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: null, dinnerNeedsConfirm: false },
+  { id: 8, studentName: '홍길동', className: '1', studentNumber: '2323', seatLabel: '33', lunchRequested: true, lunchTaggedAt: '12:15', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: true },
+  { id: 9, studentName: '홍길동', className: '3', studentNumber: '2122', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:30', dinnerNeedsConfirm: false },
+];
+
+const ITEMS_PER_PAGE = 10;
+
+/* ── 정렬 ── */
+
+type SortField = 'studentName' | 'className' | 'studentNumber' | 'seatLabel' | 'lunchRequested' | 'lunchTaggedAt' | 'dinnerRequested' | 'dinnerTaggedAt';
+type SortDir = 'asc' | 'desc';
+
+interface SortState {
+  field: SortField | null;
+  dir: SortDir;
 }
 
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
+function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, dir: SortDir): number {
+  let va: string | number | boolean | null;
+  let vb: string | number | boolean | null;
 
-function formatDate(date: Date): string {
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${m}/${d}`;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
-
-/* ── 타입 ── */
-
-interface DayMeal {
-  lunch: string;
-  dinner: string;
-  isHoliday: boolean;
-}
-
-type WeekMeals = Record<number, DayMeal>; // 0=월 ~ 6=일
-
-/* ── 목 데이터 ── */
-
-function createMockWeek(mondayDate: Date): WeekMeals {
-  const today = new Date();
-  const monday = getMonday(today);
-  const isThisWeek = isSameDay(mondayDate, monday);
-
-  if (!isThisWeek) {
-    // 다음 주: 빈 식단
-    return Object.fromEntries(
-      Array.from({ length: 7 }, (_, i) => [i, { lunch: '', dinner: '', isHoliday: i >= 5 }]),
-    );
+  switch (field) {
+    case 'studentName': va = a.studentName; vb = b.studentName; break;
+    case 'className': va = a.className; vb = b.className; break;
+    case 'studentNumber': va = a.studentNumber; vb = b.studentNumber; break;
+    case 'seatLabel': va = a.seatLabel; vb = b.seatLabel; break;
+    case 'lunchRequested': va = a.lunchRequested; vb = b.lunchRequested; break;
+    case 'lunchTaggedAt': va = a.lunchTaggedAt; vb = b.lunchTaggedAt; break;
+    case 'dinnerRequested': va = a.dinnerRequested; vb = b.dinnerRequested; break;
+    case 'dinnerTaggedAt': va = a.dinnerTaggedAt; vb = b.dinnerTaggedAt; break;
   }
 
-  // 이번 주 목 데이터
-  return {
-    0: {
-      lunch: '카츠김치나베\n새콤달달볶음소스\n메추리알조림/뱅어포\n석박지\n동그랑땡/매콤무',
-      dinner: '카타쿠리나베볶음\n삼겹김치비빔밥/무나물\n옥·배장조림\n석박지/매실주스',
-      isHoliday: false,
-    },
-    1: {
-      lunch: '킹스시타볶음밥\n갈비찜볶음\n팽이버섯국\n오이무침\n명엽채무침',
-      dinner: '원조베이컨고르곤졸라\n잡채밥/비빔소스\n닭가슴살\n미역무침/샐러드',
-      isHoliday: false,
-    },
-    2: {
-      lunch: '사태찌개볶음밥\n탕수육\n고추잡채\n머위나물\n배추김치',
-      dinner: '사태살나베볶음\n야채비빔밥/잡곡\n고등어구이\n배추김치/샐러드',
-      isHoliday: false,
-    },
-    3: {
-      lunch: '순대국\n야채김치볶음밥\n춘권/스프링롤\n깻잎무침\n배추김치',
-      dinner: '된장나베볶음\n햄김치비빔밥/잡곡\n달걀후라이\n배추김치/매실주스',
-      isHoliday: false,
-    },
-    4: {
-      lunch: '마제소바\n해물누룽지탕\n교자만두볶음\n오이소박이\n배추김치',
-      dinner: '김치나베볶음\n참치마요비빔밥\n돈까스/샐러드\n미역줄기무침',
-      isHoliday: false,
-    },
-    5: { lunch: '', dinner: '', isHoliday: true },
-    6: { lunch: '', dinner: '', isHoliday: true },
-  };
+  // null을 맨 뒤로
+  if (va === null && vb === null) return 0;
+  if (va === null) return 1;
+  if (vb === null) return -1;
+
+  let cmp = 0;
+  if (typeof va === 'boolean' && typeof vb === 'boolean') {
+    cmp = (va === vb) ? 0 : va ? -1 : 1;
+  } else if (typeof va === 'string' && typeof vb === 'string') {
+    cmp = va.localeCompare(vb);
+  }
+
+  return dir === 'desc' ? -cmp : cmp;
 }
 
-/* ── 주간 식단표 컴포넌트 ── */
+/* ── 엑셀 다운로드 ── */
 
-interface WeekMealCardProps {
-  title: string;
-  monday: Date;
-  meals: WeekMeals;
-  onPrevWeek?: () => void;
-  onNextWeek?: () => void;
-  showRegister?: boolean;
-  editing: boolean;
-  editMeals: WeekMeals;
-  onEditChange: (dayIdx: number, field: 'lunch' | 'dinner', value: string) => void;
+function downloadCsv(rows: MealCheckRow[], yearMonth: string) {
+  const header = '이름,반,번호,좌석,점심신청,점심체크,저녁신청,저녁체크';
+  const lines = rows.map((r) => {
+    const lunch = r.lunchRequested ? 'O' : '미신청';
+    const lunchCheck = r.lunchTaggedAt
+      ? `O ${r.lunchTaggedAt}${r.lunchNeedsConfirm ? ' *확인필요' : ''}`
+      : '';
+    const dinner = r.dinnerRequested ? 'O' : '미신청';
+    const dinnerCheck = r.dinnerTaggedAt
+      ? `O ${r.dinnerTaggedAt}${r.dinnerNeedsConfirm ? ' *확인필요' : ''}`
+      : '';
+    return `${r.studentName},${r.className},${r.studentNumber},${r.seatLabel},${lunch},${lunchCheck},${dinner},${dinnerCheck}`;
+  });
+
+  const bom = '\uFEFF';
+  const csv = bom + [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `급식명단_${yearMonth}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
-function WeekMealCard({
-  title,
-  monday,
-  meals,
-  onPrevWeek,
-  onNextWeek,
-  showRegister,
-  editing,
-  editMeals,
-  onEditChange,
-}: WeekMealCardProps) {
-  const today = new Date();
-  const sunday = addDays(monday, 6);
-  const weekRange = `${formatDate(monday)}~${formatDate(sunday)}`;
-  const data = editing ? editMeals : meals;
-  const isEmpty = Object.values(meals).every((d) => !d.lunch && !d.dinner);
+/* ── 인쇄 ── */
 
-  return (
-    <div className={styles.mealCard}>
-      <h3 className={styles.cardTitle}>{title}</h3>
-
-      <div className={styles.weekNav}>
-        {onPrevWeek && (
-          <button type="button" className={styles.weekNavButton} onClick={onPrevWeek}>
-            <LuChevronLeft />
-          </button>
-        )}
-        <span className={styles.weekRange}>{weekRange}</span>
-        {onNextWeek && (
-          <button type="button" className={styles.weekNavButton} onClick={onNextWeek}>
-            <LuChevronRight />
-          </button>
-        )}
-      </div>
-
-      {isEmpty && !editing && showRegister ? (
-        <button type="button" className={styles.registerButton}>
-          다음주 식단표 등록
-        </button>
-      ) : (
-        <table className={styles.mealTable}>
-          <thead>
-            <tr>
-              <th></th>
-              <th>점심</th>
-              <th>석식</th>
-            </tr>
-          </thead>
-          <tbody>
-            {DAY_LABELS.map((label, idx) => {
-              const dayDate = addDays(monday, idx);
-              const isToday = isSameDay(dayDate, today);
-              const isWeekend = idx >= 5;
-              const day = data[idx];
-              const dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}(${label})`;
-
-              return (
-                <tr key={idx}>
-                  <td className={styles.dayCell}>
-                    {isToday && <span className={styles.todayBadge}>TODAY</span>}
-                    <br />
-                    <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
-                  </td>
-                  {day?.isHoliday && !editing ? (
-                    <td colSpan={2} className={styles.holidayCell}>
-                      휴무
-                    </td>
-                  ) : editing ? (
-                    <>
-                      <td>
-                        <textarea
-                          className={styles.editTextarea}
-                          value={day?.lunch ?? ''}
-                          onChange={(e) => onEditChange(idx, 'lunch', e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <textarea
-                          className={styles.editTextarea}
-                          value={day?.dinner ?? ''}
-                          onChange={(e) => onEditChange(idx, 'dinner', e.target.value)}
-                        />
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td>
-                        {day?.lunch ? (
-                          <div className={styles.menuContent}>{day.lunch}</div>
-                        ) : (
-                          <span className={styles.emptyMenu}>-</span>
-                        )}
-                      </td>
-                      <td>
-                        {day?.dinner ? (
-                          <div className={styles.menuContent}>{day.dinner}</div>
-                        ) : (
-                          <span className={styles.emptyMenu}>-</span>
-                        )}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
-      <div className={styles.cardFooter}>
-        <button type="button" className={styles.cardEditButton}>
-          수정
-        </button>
-      </div>
-    </div>
-  );
+function printTable() {
+  window.print();
 }
 
 /* ── Page ── */
 
 export default function MealManagement() {
-  const today = new Date();
-  const thisMonday = getMonday(today);
-  const nextMonday = addDays(thisMonday, 7);
+  const today = new Date().toISOString().slice(0, 10);
 
-  const [thisWeekMeals] = useState<WeekMeals>(() => createMockWeek(thisMonday));
-  const [nextWeekMeals] = useState<WeekMeals>(() => createMockWeek(nextMonday));
+  /* 필터 */
+  const [searchName, setSearchName] = useState('');
+  const [searchClass, setSearchClass] = useState('');
+  const [searchNumber, setSearchNumber] = useState('');
+  const [searchDate, setSearchDate] = useState(today);
+  const [appliedFilters, setAppliedFilters] = useState({ name: '', className: '', number: '', date: today });
 
-  // 편집 모드 (추후 API 연결 시 활용)
-  const [editingThis, setEditingThis] = useState(false);
-  const [editingNext, setEditingNext] = useState(false);
-  const [editThisMeals, setEditThisMeals] = useState<WeekMeals>({ ...thisWeekMeals });
-  const [editNextMeals, setEditNextMeals] = useState<WeekMeals>({ ...nextWeekMeals });
+  /* 정렬 */
+  const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
 
-  const handleEditChange = (
-    setFn: React.Dispatch<React.SetStateAction<WeekMeals>>,
-  ) => (dayIdx: number, field: 'lunch' | 'dinner', value: string) => {
-    setFn((prev) => ({
-      ...prev,
-      [dayIdx]: { ...prev[dayIdx], [field]: value },
-    }));
+  /* 페이지 */
+  const [page, setPage] = useState(1);
+
+  /* 선택 */
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const handleSearch = () => {
+    setAppliedFilters({ name: searchName, className: searchClass, number: searchNumber, date: searchDate });
+    setPage(1);
   };
+
+  const handleReset = () => {
+    setSearchName('');
+    setSearchClass('');
+    setSearchNumber('');
+    setSearchDate(today);
+    setAppliedFilters({ name: '', className: '', number: '', date: today });
+    setSort({ field: null, dir: 'asc' });
+    setPage(1);
+  };
+
+  const handleSort = (field: SortField) => {
+    setSort((prev) => {
+      if (prev.field === field) {
+        return { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      }
+      return { field, dir: 'asc' };
+    });
+  };
+
+  const filteredData = useMemo(() => {
+    let data = [...MOCK_DATA];
+
+    if (appliedFilters.name) {
+      data = data.filter((r) => r.studentName.includes(appliedFilters.name));
+    }
+    if (appliedFilters.className) {
+      data = data.filter((r) => r.className === appliedFilters.className);
+    }
+    if (appliedFilters.number) {
+      data = data.filter((r) => r.studentNumber.includes(appliedFilters.number));
+    }
+
+    if (sort.field) {
+      data.sort((a, b) => compareMealCheck(a, b, sort.field!, sort.dir));
+    }
+
+    return data;
+  }, [appliedFilters, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
+  const pageData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const allSelected = pageData.length > 0 && pageData.every((r) => selectedIds.has(r.id));
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pageData.map((r) => r.id)));
+    }
+  };
+  const handleSelectRow = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sort.field !== field) return <LuArrowUpDown className={styles.sortIcon} />;
+    return sort.dir === 'asc'
+      ? <LuArrowUp className={styles.sortIconActive} />
+      : <LuArrowDown className={styles.sortIconActive} />;
+  };
+
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }, [page, totalPages]);
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
           <LuUtensils className={styles.pageTitleIcon} />
-          <h2 className={styles.pageTitle}>식사/식단표 관리</h2>
-        </div>
-        <div className={styles.headerButtons}>
-          <button type="button" className={styles.editButton}>수정</button>
-          <button type="button" className={styles.syncButton}>동기화</button>
+          <h2 className={styles.pageTitle}>급식 신청 및 체크명단</h2>
         </div>
       </div>
 
-      <div className={styles.gridRow}>
-        <WeekMealCard
-          title="주간 식단표"
-          monday={thisMonday}
-          meals={thisWeekMeals}
-          editing={editingThis}
-          editMeals={editThisMeals}
-          onEditChange={handleEditChange(setEditThisMeals)}
-        />
-        <WeekMealCard
-          title="주간 식단표"
-          monday={nextMonday}
-          meals={nextWeekMeals}
-          showRegister
-          editing={editingNext}
-          editMeals={editNextMeals}
-          onEditChange={handleEditChange(setEditNextMeals)}
-        />
+      {/* 필터 */}
+      <div className={styles.filterCard}>
+        <div className={styles.filterRow}>
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>학생명</span>
+            <input
+              className={styles.filterInput}
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>학번</span>
+            <input
+              className={styles.filterInput}
+              value={searchNumber}
+              onChange={(e) => setSearchNumber(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>반</span>
+            <input
+              className={styles.filterInput}
+              value={searchClass}
+              onChange={(e) => setSearchClass(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}>날짜</span>
+            <input
+              type="date"
+              className={styles.filterDateInput}
+              value={searchDate}
+              onChange={(e) => setSearchDate(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filterActions}>
+            <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
+            <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={styles.excelButton} onClick={() => downloadCsv(filteredData, appliedFilters.date || today)}>EXCEL</button>
+          </div>
+        </div>
+      </div>
+
+      {/* 테이블 */}
+      <div className={styles.contentCard}>
+        <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th className={styles.checkboxCol}>
+                <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
+                이름 <SortIcon field="studentName" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
+                학번 <SortIcon field="studentNumber" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
+                반 <SortIcon field="className" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('seatLabel')}>
+                좌석 <SortIcon field="seatLabel" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('lunchRequested')}>
+                점심신청 <SortIcon field="lunchRequested" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('lunchTaggedAt')}>
+                점심체크 <SortIcon field="lunchTaggedAt" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('dinnerRequested')}>
+                저녁신청 <SortIcon field="dinnerRequested" />
+              </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('dinnerTaggedAt')}>
+                저녁체크 <SortIcon field="dinnerTaggedAt" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageData.length === 0 ? (
+              <tr className={styles.emptyRow}>
+                <td colSpan={9}>데이터가 없습니다.</td>
+              </tr>
+            ) : (
+              pageData.map((row) => (
+                <tr key={row.id}>
+                  <td className={styles.checkboxCol}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.id)}
+                      onChange={() => handleSelectRow(row.id)}
+                    />
+                  </td>
+                  <td>{row.studentName}</td>
+                  <td>{row.studentNumber}</td>
+                  <td>{row.className}</td>
+                  <td>{row.seatLabel}</td>
+                  <td>{row.lunchRequested ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
+                  <td>
+                    {row.lunchTaggedAt ? (
+                      <>
+                        <span className={styles.tagMark}>O</span>
+                        <span className={styles.tagTime}>{row.lunchTaggedAt}</span>
+                        {row.lunchNeedsConfirm && <span className={styles.needsConfirm}>*확인필요</span>}
+                      </>
+                    ) : null}
+                  </td>
+                  <td>{row.dinnerRequested ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
+                  <td>
+                    {row.dinnerTaggedAt ? (
+                      <>
+                        <span className={styles.tagMark}>O</span>
+                        <span className={styles.tagTime}>{row.dinnerTaggedAt}</span>
+                        {row.dinnerNeedsConfirm && <span className={styles.needsConfirm}>*확인필요</span>}
+                      </>
+                    ) : null}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        </div>
+
+        {/* 페이지네이션 */}
+        <div className={styles.pagination}>
+          <button
+            type="button"
+            className={styles.pageBtn}
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            &lt;
+          </button>
+          {pageNumbers.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`}
+              onClick={() => setPage(p)}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={styles.pageBtn}
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            &gt;
+          </button>
+        </div>
       </div>
     </div>
   );

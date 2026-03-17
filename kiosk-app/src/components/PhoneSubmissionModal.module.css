@@ -159,6 +159,146 @@
   line-height: 1.5;
 }
 
+/* 옵션 선택 화면 */
+.optionSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.optionLabel {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  margin: 0;
+  text-align: left;
+}
+
+.dateSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.dateButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-1);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.dateButton:active {
+  background: var(--color-bg-light);
+}
+
+.dateInRange {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.dateEndpoint {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+.dateEndpoint .dateDay,
+.dateEndpoint .dateDayLabel {
+  color: var(--color-bg-white);
+}
+
+.rangeLabel {
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.dateDisabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dateDay {
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.dateDayLabel {
+  font-size: var(--font-xs);
+  color: var(--color-text-hint);
+}
+
+/* 휴대폰 없음 버튼 */
+.noPhoneButton {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.noPhoneButton:active {
+  background: var(--color-bg-light);
+}
+
+.noPhoneSelected {
+  border-color: var(--color-primary);
+  border-style: solid;
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+.noPhoneTag {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+}
+
+/* 옵션 액션 버튼 */
+.optionActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.backBtn {
+  flex: 0 0 auto;
+  padding: var(--space-3h) var(--space-5);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.backBtn:active {
+  background: var(--color-bg-light);
+}
+
+.optionActions .submitButton {
+  flex: 1;
+}
+
 /* 에러 메시지 */
 .errorMessage {
   font-size: var(--font-md);

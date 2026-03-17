@@ -6,9 +6,9 @@ import {
   LuClock,
   LuCalendarCheck,
   LuUtensils,
-  LuMonitor,
   LuArmchair,
   LuSmartphone,
+  LuDoorOpen,
   LuStar,
   LuWallet,
   LuMegaphone,
@@ -21,17 +21,17 @@ import styles from './Sidebar.module.css';
 const MENU_ITEMS: MenuItem[] = [
   { label: '대시보드', path: '/', icon: LuLayoutDashboard },
   // { label: '학생관리', path: '/students', icon: LuUsers, children: [] },
-  { label: '순공관리', path: '/study-time', icon: LuClock, children: [] },
   {
-    label: '출결관리',
+    label: '출결 관리',
     path: '/attendance',
     icon: LuCalendarCheck,
     children: [],
   },
-  { label: '식사관리', path: '/meals', icon: LuUtensils, children: [] },
-  { label: '비대면 신청', path: '/remote', icon: LuMonitor },
-  { label: '좌석 현황', path: '/seats', icon: LuArmchair, children: [] },
-  // { label: '휴대폰관리', path: '/phones', icon: LuSmartphone, children: [] },
+  { label: '식사 신청 및 체크명단', path: '/meals', icon: LuUtensils },
+  { label: '휴대폰 미소지 관리', path: '/phones', icon: LuSmartphone },
+  { label: '좌석 이탈 관리', path: '/seat-leaves', icon: LuDoorOpen },
+  { label: '좌석 관리', path: '/seats', icon: LuArmchair, children: [] },
+  { label: '순공 관리', path: '/study-time', icon: LuClock, children: [] },
   // {
   //   label: '상·벌점관리',
   //   path: '/points',
@@ -39,7 +39,7 @@ const MENU_ITEMS: MenuItem[] = [
   //   children: [],
   // },
   // { label: '수납관리', path: '/billing', icon: LuWallet, children: [] },
-  { label: '공지관리', path: '/notices', icon: LuMegaphone, children: [] },
+  { label: '공지 관리', path: '/notices', icon: LuMegaphone, children: [] },
   { label: '설정', path: '/settings', icon: LuSettings, children: [] },
 ];
 

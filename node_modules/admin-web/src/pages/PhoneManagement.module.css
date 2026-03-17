@@ -1,0 +1,388 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ── Page Header ── */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pageTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pageTitleIcon {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ── Filter Row ── */
+.filterCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  line-height: var(--size-input-height);
+  box-sizing: border-box;
+  background-color: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.filterInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100px;
+}
+
+.filterInput:focus {
+  border-color: var(--color-primary);
+}
+
+.filterDateInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 140px;
+}
+
+.filterDateInput:focus {
+  border-color: var(--color-primary);
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}
+
+.searchButton {
+  padding: 0 var(--spacing-lg);
+  height: var(--size-input-height);
+  background-color: var(--color-text-primary);
+  color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.searchButton:hover {
+  opacity: 0.85;
+}
+
+.resetButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  transition: background-color 0.15s;
+}
+
+.resetButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.excelButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: #217346;
+  color: var(--color-bg-card);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.excelButton:hover {
+  opacity: 0.85;
+}
+
+/* ── Table ── */
+.contentCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.tableWrap {
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: var(--size-th-padding-v) var(--size-cell-padding-h);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-primary-light);
+}
+
+.checkboxCol {
+  width: 40px;
+  text-align: center !important;
+}
+
+.checkboxCol input[type='checkbox'] {
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* ── Sortable column ── */
+.sortableCol {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableCol:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  opacity: 0.4;
+}
+
+.sortIconActive {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  color: var(--color-primary);
+}
+
+/* ── Permanent badge ── */
+.permanentBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+/* ── Memo cell ── */
+.memoCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.memoText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memoInput {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.memoEditBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.memoEditBtn:hover {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+/* ── Action buttons ── */
+.actionCol {
+  white-space: nowrap;
+}
+
+.deleteButton {
+  padding: 5px 14px;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: #dc2626;
+  background-color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+}
+
+.deleteButton:hover {
+  background-color: #fef2f2;
+}
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-page-btn);
+  height: var(--size-page-btn);
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-card);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pageBtnActive {
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  border-color: var(--color-primary);
+}
+
+.pageBtnActive:hover {
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  opacity: 0.9;
+}
+
+/* ── Empty state ── */
+.emptyRow td {
+  text-align: center;
+  padding: var(--spacing-xl) !important;
+  color: var(--color-text-muted);
+}
+
+/* ── Print ── */
+@media print {
+  .pageHeader,
+  .filterCard,
+  .pagination,
+  .checkboxCol,
+  .actionCol {
+    display: none !important;
+  }
+
+  .contentCard {
+    border: none;
+    box-shadow: none;
+  }
+
+  .table th,
+  .table td {
+    border: 1px solid #ccc !important;
+    padding: 6px 8px !important;
+  }
+}

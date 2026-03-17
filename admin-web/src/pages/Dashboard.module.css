@@ -5,12 +5,6 @@
 }
 
 /* Grid rows */
-.row3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-lg);
-}
-
 .row2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
