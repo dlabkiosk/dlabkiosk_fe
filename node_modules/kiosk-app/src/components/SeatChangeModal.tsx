@@ -158,17 +158,18 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
             {seats.map((seat) => {
               const current = isCurrentSeat(seat.seatLabel);
               const selected = isSelected(seat.seatId);
-              const disabled = current || (!seat.available && !selected);
+              const occupied = !seat.available && !current;
               return (
                 <button
                   key={seat.seatId}
                   type="button"
-                  className={`${styles.seatButton} ${selected ? styles.seatSelected : ''} ${current ? styles.seatCurrent : ''} ${disabled && !current ? styles.seatUnavailable : ''}`}
-                  onClick={() => !disabled && handleSeatToggle(seat.seatId)}
-                  disabled={disabled}
+                  className={`${styles.seatButton} ${selected ? styles.seatSelected : ''} ${current ? styles.seatCurrent : ''} ${occupied && !selected ? styles.seatOccupied : ''}`}
+                  onClick={() => !current && handleSeatToggle(seat.seatId)}
+                  disabled={current}
                 >
                   {seat.seatLabel}
                   {current && <span className={styles.currentBadge}>현재</span>}
+                  {occupied && <span className={`${styles.occupiedBadge} ${selected ? styles.occupiedBadgeSelected : ''}`}>사용중</span>}
                 </button>
               );
             })}

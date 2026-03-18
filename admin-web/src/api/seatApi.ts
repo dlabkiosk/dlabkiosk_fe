@@ -140,9 +140,9 @@ export function getSeatStatus(storeId?: number): Promise<SeatStatusItem[]> {
   return apiGet<SeatStatusItem[]>(`/api/v1/admin/seat-change-requests/seat-status${query}`);
 }
 
-/** 좌석 변경 신청 승인 */
-export function approveSeatChangeRequest(requestId: number): Promise<SeatChangeRequest> {
-  return apiPut<SeatChangeRequest>(`/api/v1/admin/seat-change-requests/${requestId}/approve`);
+/** 좌석 변경 신청 승인 (seatLabel: 승인할 좌석 라벨) */
+export function approveSeatChangeRequest(requestId: number, seatLabel: string): Promise<SeatChangeRequest> {
+  return apiPut<SeatChangeRequest>(`/api/v1/admin/seat-change-requests/${requestId}/approve?seatLabel=${encodeURIComponent(seatLabel)}`);
 }
 
 /** 좌석 변경 신청 거절 */

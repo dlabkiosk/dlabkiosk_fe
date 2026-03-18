@@ -12,8 +12,8 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-2xl);
-  padding: var(--space-8) var(--space-6) var(--space-7);
-  width: 360px;
+  padding: var(--space-7) var(--space-6) var(--space-6);
+  width: 380px;
   max-width: 90vw;
   text-align: center;
 }
@@ -39,15 +39,269 @@
   font-size: var(--font-3xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.subtitle {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+  margin: 0 0 var(--space-5) 0;
+}
+
+/* ── Calendar Navigation ── */
+.calendarNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
-.guide {
-  font-size: var(--font-md);
-  color: var(--color-text-hint);
-  margin-bottom: var(--space-2);
+.navBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
 }
 
+.navBtn:active:not(:disabled) {
+  background: var(--color-bg-light);
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.navTitle {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  min-width: 140px;
+}
+
+/* ── Calendar Grid ── */
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: var(--space-4);
+}
+
+.dayHeader {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  padding: var(--space-2) 0;
+  text-align: center;
+}
+
+.dayCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  font-size: var(--font-md);
+  color: var(--color-text);
+  border-radius: var(--radius-full);
+}
+
+.dayCellActive {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dayCellActive:active:not(:disabled) {
+  background: var(--color-bg-light);
+}
+
+.dayCellToday {
+  font-weight: var(--weight-bold);
+  box-shadow: inset 0 0 0 1px var(--color-border-medium);
+}
+
+.dayCellPast {
+  color: var(--color-text-hint);
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dayCellSubmitted {
+  background: var(--color-bg-light);
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dayCellInRange {
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 4px;
+}
+
+.dayCellEndpoint {
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-full);
+}
+
+/* ── No Phone Button ── */
+.noPhoneButton {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: var(--space-3);
+}
+
+.noPhoneButton:active {
+  background: var(--color-bg-light);
+}
+
+.noPhoneSelected {
+  border-color: var(--color-primary);
+  border-style: solid;
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+/* ── Bottom Actions ── */
+.bottomActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.noPhoneBtn {
+  flex: 1;
+  padding: var(--space-3h) var(--space-4);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-white);
+  font-size: var(--font-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.noPhoneBtn:active {
+  background: var(--color-bg-light);
+}
+
+.noPhoneBtnSelected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+.submitButton {
+  flex: 2;
+  padding: var(--space-3h) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-bg-white);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.submitButton:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Error Message ── */
+.errorMessage {
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error);
+  text-align: center;
+  padding: 0 0 var(--space-2) 0;
+  margin: 0;
+}
+
+/* ── Success ── */
+.successSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-8) 0;
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 32px;
+  font-weight: var(--weight-bold);
+}
+
+.successMessage {
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.noPhoneTag {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+}
+
+/* ── No Phone Notice ── */
+.noPhoneNotice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+}
+
+.noPhoneNoticeIcon {
+  font-size: 48px;
+}
+
+.noPhoneNoticeText {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Keypad (used by other modals sharing this CSS) ── */
 .keypadSection {
   display: flex;
   flex-direction: column;
@@ -107,176 +361,16 @@
   font-size: var(--font-xl);
 }
 
-.submitButton {
-  width: 100%;
-  padding: var(--space-3h) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-  font-size: var(--font-lg);
-  font-weight: var(--weight-bold);
-  cursor: pointer;
-  transition: background 0.15s;
+.guide {
+  font-size: var(--font-md);
+  color: var(--color-text-hint);
+  margin-bottom: var(--space-2);
 }
 
-.submitButton:active:not(:disabled) {
-  background: var(--color-primary-active);
-}
-
-.submitButton:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* 성공 화면 */
-.successSection {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-5);
-  padding: var(--space-8) 0;
-}
-
-.successIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-full);
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  font-size: 32px;
-  font-weight: var(--weight-bold);
-}
-
-.successMessage {
-  font-size: var(--font-2xl);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-  text-align: center;
-  line-height: 1.5;
-}
-
-/* 옵션 선택 화면 */
 .optionSection {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.optionLabel {
-  font-size: var(--font-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
-  margin: 0;
-  text-align: left;
-}
-
-.dateSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.dateGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
-}
-
-.dateButton {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--space-2) var(--space-1);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-white);
-  cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
-}
-
-.dateButton:active {
-  background: var(--color-bg-light);
-}
-
-.dateInRange {
-  border-color: var(--color-primary);
-  background: rgba(59, 130, 246, 0.1);
-}
-
-.dateEndpoint {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-}
-
-.dateEndpoint .dateDay,
-.dateEndpoint .dateDayLabel {
-  color: var(--color-bg-white);
-}
-
-.rangeLabel {
-  font-size: var(--font-md);
-  font-weight: var(--weight-bold);
-  color: var(--color-primary);
-  text-align: center;
-  margin: 0;
-}
-
-.dateDisabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.dateDay {
-  font-size: var(--font-md);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
-.dateDayLabel {
-  font-size: var(--font-xs);
-  color: var(--color-text-hint);
-}
-
-/* 휴대폰 없음 버튼 */
-.noPhoneButton {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 2px dashed var(--color-border-medium);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-white);
-  font-size: var(--font-md);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.noPhoneButton:active {
-  background: var(--color-bg-light);
-}
-
-.noPhoneSelected {
-  border-color: var(--color-primary);
-  border-style: solid;
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-}
-
-.noPhoneTag {
-  font-size: var(--font-sm);
-  color: var(--color-text-hint);
-}
-
-/* 옵션 액션 버튼 */
-.optionActions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 .backBtn {
@@ -295,16 +389,11 @@
   background: var(--color-bg-light);
 }
 
-.optionActions .submitButton {
-  flex: 1;
+.optionActions {
+  display: flex;
+  gap: var(--space-2);
 }
 
-/* 에러 메시지 */
-.errorMessage {
-  font-size: var(--font-md);
-  font-weight: var(--weight-semibold);
-  color: var(--color-error);
-  text-align: center;
-  padding: var(--space-2h) 0;
-  margin: 0;
+.optionActions .submitButton {
+  flex: 1;
 }

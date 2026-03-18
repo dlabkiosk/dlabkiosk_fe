@@ -31,7 +31,7 @@
 /* ── Filter Row ── */
 .filterCard {
   background-color: var(--color-bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   border: 1px solid var(--color-border-light);
 }
@@ -92,8 +92,8 @@
   color: var(--color-text-primary);
   background-color: var(--color-bg-card);
   outline: none;
+  cursor: pointer;
   transition: border-color 0.15s;
-  width: 140px;
 }
 
 .filterDateInput:focus {
@@ -156,7 +156,7 @@
 /* ── Table ── */
 .contentCard {
   background-color: var(--color-bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border-light);
   padding: var(--spacing-lg);
   display: flex;
@@ -174,7 +174,7 @@
 }
 
 .table th {
-  text-align: left;
+  text-align: center;
   padding: var(--size-th-padding-v) var(--size-cell-padding-h);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -185,6 +185,8 @@
 }
 
 .table td {
+  text-align: center;
+  vertical-align: middle;
   padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
@@ -197,6 +199,10 @@
 
 .table tbody tr:hover {
   background-color: var(--color-primary-light);
+}
+
+.clickableRow {
+  cursor: pointer;
 }
 
 .checkboxCol {
@@ -290,12 +296,68 @@
   color: var(--color-text-primary);
 }
 
-/* ── Action buttons ── */
-.actionCol {
+/* ── No Phone badge ── */
+.noPhoneBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* ── Memo td ── */
+.memoTd {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.deleteButton {
+/* ── Action buttons ── */
+.actionCol {
+  white-space: nowrap;
+  text-align: center !important;
+}
+
+.actionGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.iconBtn:hover {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.iconBtnDanger {
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.iconBtnDanger:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.bulkDeleteButton {
   padding: 5px 14px;
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
@@ -307,8 +369,175 @@
   transition: background-color 0.15s;
 }
 
-.deleteButton:hover {
+.bulkDeleteButton:hover {
   background-color: #fef2f2;
+}
+
+/* ── Modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  position: relative;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 32px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalClose:hover {
+  color: var(--color-text-primary);
+}
+
+.modalTitle {
+  text-align: center;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 20px;
+}
+
+.detailTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.detailTable th {
+  text-align: right;
+  padding: 8px 16px 8px 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  width: 120px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.detailTable td {
+  padding: 8px 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.detailMemo {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: 12px;
+}
+
+.modalBtnPrimary {
+  padding: 8px 24px;
+  background-color: var(--color-text-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalBtnPrimary:hover {
+  opacity: 0.9;
+}
+
+.modalBtnSecondary {
+  padding: 8px 24px;
+  background-color: #fff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modalBtnSecondary:hover {
+  background-color: var(--color-bg-page);
+}
+
+.modalBtnDanger {
+  padding: 8px 24px;
+  background-color: #fff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalBtnDanger:hover {
+  background-color: #fef2f2;
+}
+
+/* ── Edit inputs ── */
+.editInput {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.editInput:focus {
+  border-color: var(--color-primary);
+}
+
+.editTextarea {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.editTextarea:focus {
+  border-color: var(--color-primary);
 }
 
 /* ── Pagination ── */

@@ -2,7 +2,7 @@ import { apiGet, apiDelete, apiPut } from './client';
 
 /* ── 타입 ── */
 
-export type SubmissionType = 'DAILY' | 'PERMANENT';
+export type SubmissionType = 'DAILY' | 'PERIOD' | 'PERMANENT' | 'NO_PHONE';
 
 export interface PhoneSubmission {
   id: number;
@@ -58,7 +58,13 @@ export function getPhoneSubmissions(params?: {
 
 export function updatePhoneSubmission(
   id: number,
-  body: { endDate?: string | null; submissionType?: SubmissionType },
+  body: {
+    startDate?: string;
+    endDate?: string | null;
+    submissionType?: SubmissionType;
+    memo?: string;
+    parentPhoneNumber?: string;
+  },
 ): Promise<PhoneSubmission> {
   return apiPut<PhoneSubmission>(
     `/api/v1/admin/phone-submissions/${id}`,

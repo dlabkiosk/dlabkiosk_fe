@@ -4,6 +4,7 @@ export interface ExamSchedule {
   storeName: string;
   examName: string;
   examDate: string;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,4 +57,13 @@ export async function deleteExamSchedule(id: number): Promise<void> {
   });
   const json: ApiResponse<string> = await res.json();
   if (!json.success) throw new Error(json.error?.message || '시험일정 삭제 실패');
+}
+
+export async function toggleExamScheduleActive(id: number): Promise<ExamSchedule> {
+  const res = await fetch(`/api/v1/admin/exam-schedules/${id}/toggle-active`, {
+    method: 'PATCH',
+  });
+  const json: ApiResponse<ExamSchedule> = await res.json();
+  if (!json.success) throw new Error(json.error?.message || '활성화 상태 변경 실패');
+  return json.data;
 }

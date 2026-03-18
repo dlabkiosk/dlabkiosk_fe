@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuChartBar, LuCalendarCheck, LuDoorOpen, LuUtensils, LuMegaphone, LuArrowRightLeft, LuPlus } from 'react-icons/lu';
+import { LuChartBar, LuCalendarCheck, LuDoorOpen, LuUtensils, LuMegaphone, LuArrowRightLeft, LuPlus, LuLayoutDashboard } from 'react-icons/lu';
 import { getDashboardAll } from '../api/dashboardApi';
 import type { DashboardData } from '../api/dashboardApi';
 import styles from './Dashboard.module.css';
@@ -83,6 +83,12 @@ export default function Dashboard() {
 
   return (
     <div className={styles.dashboard}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageTitleGroup}>
+          <LuLayoutDashboard className={styles.pageTitleIcon} />
+          <h2 className={styles.pageTitle}>대시보드</h2>
+        </div>
+      </div>
       {/* Row 1 */}
       <div className={styles.row2}>
         <DashboardCard title="일일 운영 현황" icon={<LuChartBar />}>
@@ -91,7 +97,7 @@ export default function Dashboard() {
           <StatRow label="식사 신청" value={daily ? `${daily.mealRequests}명` : placeholder} />
         </DashboardCard>
 
-        <DashboardCard title="출결 현황 요약" icon={<LuCalendarCheck />}>
+        <DashboardCard title="출결 현황 요약" icon={<LuCalendarCheck />} onMore={() => navigate('/attendance')}>
           <StatRow label="출석" value={att ? `${att.present}명` : placeholder} />
           <StatRow label="조퇴" value={att ? `${att.earlyLeave}명` : placeholder} />
           <StatRow label="결석" value={att ? `${att.absent}명` : placeholder} />
@@ -128,7 +134,7 @@ export default function Dashboard() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={3}>데이터 없음</td></tr>
+                <tr><td colSpan={3} className={styles.emptyCell}>데이터 없음</td></tr>
               )}
             </tbody>
           </table>
@@ -137,7 +143,7 @@ export default function Dashboard() {
 
       {/* Row 3 */}
       <div className={styles.row2}>
-        <DashboardCard title="좌석 변경 신청현황" icon={<LuArrowRightLeft />}>
+        <DashboardCard title="좌석 변경 신청현황" icon={<LuArrowRightLeft />} onMore={() => navigate('/seats?view=waiting')}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -153,12 +159,16 @@ export default function Dashboard() {
                 seatChanges.slice(0, 5).map((row) => (
                   <tr key={row.id}>
                     <td>{row.studentName}</td>
-                    <td>{row.currentSeatLabel} → {row.desiredSeat1Label}</td>
-                    <td>{row.createdAt.slice(0, 10)}</td>
+                    <td>
+                      {row.currentSeatLabel} → {row.desiredSeat1Label}
+                      {row.desiredSeat2Label && `, ${row.desiredSeat2Label}`}
+                      {row.desiredSeat3Label && `, ${row.desiredSeat3Label}`}
+                    </td>
+                    <td>{row.requestedAt.slice(0, 10)}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={3}>신청 내역이 없습니다.</td></tr>
+                <tr><td colSpan={3} className={styles.emptyCell}>신청 내역이 없습니다.</td></tr>
               )}
             </tbody>
           </table>
@@ -169,7 +179,7 @@ export default function Dashboard() {
             <thead>
               <tr>
                 <th>번호</th>
-                <th>공지명</th>
+                <th className={styles.textLeft}>공지명</th>
                 <th>공지일</th>
               </tr>
             </thead>
@@ -184,12 +194,12 @@ export default function Dashboard() {
                     onClick={() => navigate(`/notices/${row.id}`)}
                   >
                     <td>{idx + 1}</td>
-                    <td>{row.title}</td>
+                    <td className={styles.textLeft}>{row.title}</td>
                     <td>{row.createdAt.slice(0, 10)}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={3}>등록된 공지사항이 없습니다.</td></tr>
+                <tr><td colSpan={3} className={styles.emptyCell}>등록된 공지사항이 없습니다.</td></tr>
               )}
             </tbody>
           </table>

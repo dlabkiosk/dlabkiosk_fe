@@ -125,7 +125,7 @@
 }
 
 .table th {
-  text-align: left;
+  text-align: center;
   padding: 12px var(--spacing-md);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -135,6 +135,8 @@
 }
 
 .table td {
+  text-align: center;
+  vertical-align: middle;
   padding: 11px var(--spacing-md);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
@@ -161,6 +163,11 @@
   accent-color: var(--color-primary);
 }
 
+.table th.titleCell,
+.table td.titleCell {
+  text-align: left;
+}
+
 .titleCell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -168,10 +175,10 @@
   cursor: pointer;
 }
 
-.titleCell:hover {
+/* .titleCell:hover {
   color: var(--color-primary);
   text-decoration: underline;
-}
+} */
 
 .loadingMessage,
 .errorMessage {

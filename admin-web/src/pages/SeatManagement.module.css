@@ -38,8 +38,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 0 var(--spacing-lg);
-  height: var(--size-input-height);
+  padding: 0 var(--spacing-md);
+  height: 30px;
   background-color: var(--color-bg-card);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -70,8 +70,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 0 var(--spacing-lg);
-  height: var(--size-input-height);
+  padding: 0 var(--spacing-md);
+  height: 30px;
   background-color: var(--color-text-primary);
   color: var(--color-bg-card);
   border: none;
@@ -88,7 +88,7 @@
 
 .refreshBtn {
   padding: 0 var(--spacing-md);
-  height: var(--size-input-height);
+  height: 30px;
   background-color: var(--color-bg-card);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -105,7 +105,7 @@
 /* ── Filter Card ── */
 .filterCard {
   background-color: var(--color-bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   border: 1px solid var(--color-border-light);
 }
@@ -209,7 +209,7 @@
 /* ── Seat Layout Card ── */
 .contentCard {
   background-color: var(--color-bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border-light);
   padding: var(--spacing-lg);
   display: flex;
@@ -572,7 +572,7 @@
 }
 
 .table th {
-  text-align: left;
+  text-align: center;
   padding: var(--size-th-padding-v) var(--size-cell-padding-h);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -583,6 +583,8 @@
 }
 
 .table td {
+  text-align: center;
+  vertical-align: middle;
   padding: var(--size-cell-padding-v) var(--size-cell-padding-h);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
@@ -786,6 +788,54 @@
 
 .rejectBtn:hover {
   background-color: #fef2f2;
+}
+
+/* ── 승인 좌석 선택 ── */
+.seatChoiceGroup {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: 0 0 var(--spacing-sm) 0;
+}
+
+.seatChoiceBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.seatChoiceBtn:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.seatChoiceBtnActive {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+
+.seatChoiceBtnActive .seatChoiceLabel,
+.seatChoiceBtnActive .seatChoiceValue {
+  color: #ffffff;
+}
+
+.seatChoiceLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.seatChoiceValue {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 /* ── Pagination ── */

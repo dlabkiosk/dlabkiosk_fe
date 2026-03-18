@@ -34,6 +34,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   STUDENT_NOT_FOUND: '등록되지 않은 학생입니다.',
   SEAT_NOT_FOUND: '존재하지 않는 좌석입니다.',
   SAME_SEAT: '현재 좌석과 동일한 좌석은 선택할 수 없습니다.',
+  SEAT_NOT_AVAILABLE: '해당 좌석은 선택할 수 없습니다.',
 };
 
 export function getAvailableSeats(): Promise<AvailableSeat[]> {

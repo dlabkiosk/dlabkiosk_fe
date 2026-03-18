@@ -8,15 +8,15 @@ import {
 import {
   getSeatLeaves,
   forceReturnSeatLeave,
-  exportSeatLeaves,
 } from '../api/seatLeaveApi';
 import type { SeatLeaveRecord } from '../api/seatLeaveApi';
 import { getStudents } from '../api/studentApi';
+import useConfirm from '../hooks/useConfirm';
 import styles from './SeatLeaveManagement.module.css';
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'studentNumber' | 'className' | 'seatLabel' | 'startedAt' | 'reasonName';
+type SortField = 'studentName' | 'studentNumber' | 'className' | 'seatLabel' | 'startedAt' | 'elapsed' | 'reasonName';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -25,6 +25,12 @@ interface SortState {
 }
 
 function compareRows(a: SeatLeaveRecord, b: SeatLeaveRecord, field: SortField, dir: SortDir): number {
+  if (field === 'elapsed') {
+    const ea = getElapsedMinutes(a.startedAt, a.endedAt);
+    const eb = getElapsedMinutes(b.startedAt, b.endedAt);
+    const cmp = ea - eb;
+    return dir === 'desc' ? -cmp : cmp;
+  }
   const va = (a[field] ?? '') as string;
   const vb = (b[field] ?? '') as string;
   const cmp = va.localeCompare(vb);
@@ -53,6 +59,7 @@ const ITEMS_PER_PAGE = 20;
 /* ── Page ── */
 
 export default function SeatLeaveManagement() {
+  const { confirm, alert, ConfirmDialog } = useConfirm();
   const today = new Date().toISOString().slice(0, 10);
 
   /* 필터 */
@@ -161,22 +168,14 @@ export default function SeatLeaveManagement() {
 
   /* ── 강제 복귀 ── */
   const handleForceReturn = async (record: SeatLeaveRecord) => {
-    if (!window.confirm(`${record.studentName} (${record.seatLabel}) 학생을 강제 복귀 처리하시겠습니까?`)) return;
+    if (!await confirm(`${record.studentName} (${record.seatLabel}) 학생을 강제 복귀 처리하시겠습니까?`)) return;
     try {
       await forceReturnSeatLeave(record.id);
       await fetchData();
     } catch (err) {
       console.error('강제 복귀 실패:', err);
-      alert('강제 복귀에 실패했습니다.');
+      await alert('강제 복귀에 실패했습니다.');
     }
-  };
-
-  /* ── EXCEL ── */
-  const handleExcel = () => {
-    exportSeatLeaves({
-      startDate: appliedFilters.start || undefined,
-      endDate: appliedFilters.end || undefined,
-    }).catch(() => alert('엑셀 다운로드에 실패했습니다.'));
   };
 
   /* ── 클라이언트 필터 + 정렬 ── */
@@ -193,6 +192,37 @@ export default function SeatLeaveManagement() {
     if (!sort.field) return filteredData;
     return [...filteredData].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
   }, [filteredData, sort]);
+
+  /* ── EXCEL (현재 검색 결과만 CSV) ── */
+  const handleExcel = () => {
+    if (sortedData.length === 0) {
+      void alert('다운로드할 데이터가 없습니다.');
+      return;
+    }
+    const header = ['이름', '학번', '반', '좌석', '이탈신청시간', '상태', '경과', '사유'];
+    const csvRows = sortedData.map((row) => {
+      const elapsed = getElapsedMinutes(row.startedAt, row.endedAt);
+      return [
+        row.studentName,
+        row.studentNumber ?? '',
+        row.className ?? '',
+        row.seatLabel,
+        row.startedAt ? row.startedAt.replace('T', ' ').slice(0, 16) : '',
+        row.endedAt ? '복귀' : '이탈중',
+        formatElapsed(elapsed),
+        row.reasonName,
+      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+    const bom = '\uFEFF';
+    const csv = bom + [header.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `좌석이탈_${appliedFilters.start || 'all'}_${appliedFilters.end || 'all'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const totalPages = Math.max(1, Math.ceil(totalElements / ITEMS_PER_PAGE));
 
@@ -326,7 +356,9 @@ export default function SeatLeaveManagement() {
                 이탈신청시간 <SortIcon field="startedAt" />
               </th>
               <th>상태</th>
-              <th>경과</th>
+              <th className={styles.sortableCol} onClick={() => handleSort('elapsed')}>
+                경과 <SortIcon field="elapsed" />
+              </th>
               <th>사유</th>
               <th className={styles.actionCol} />
             </tr>
@@ -416,6 +448,7 @@ export default function SeatLeaveManagement() {
           </button>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

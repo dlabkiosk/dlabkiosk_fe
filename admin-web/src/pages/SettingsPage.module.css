@@ -550,7 +550,9 @@
 /* ── Table Toolbar ── */
 .tableToolbar {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
 }
 
@@ -649,4 +651,33 @@
 .timeSep {
   font-size: var(--font-size-md);
   color: var(--color-text-muted);
+}
+
+/* ── Toggle Button (키오스크 활성화) ── */
+.toggleBtn {
+  padding: 4px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.toggleBtn:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.toggleBtnActive {
+  background-color: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.toggleBtnActive:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
 }

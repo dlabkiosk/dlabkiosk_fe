@@ -1,4 +1,4 @@
-import { apiPost, ApiError } from './client';
+import { apiGet, apiPost, ApiError } from './client';
 
 export type SubmissionType = 'DAILY' | 'PERIOD' | 'NO_PHONE';
 
@@ -18,11 +18,25 @@ export interface PhoneSubmissionResult {
   submittedAt: string;
 }
 
+/** /my 엔드포인트 응답 항목 */
+export interface ActiveSubmissionPeriod {
+  startDate: string;
+  endDate: string;
+  submissionType: SubmissionType;
+}
+
 const ERROR_MESSAGES: Record<string, string> = {
   ALREADY_SUBMITTED: '이미 해당 기간에 휴대폰 미소지 신청이 되어있습니다.',
   STUDENT_NOT_FOUND: '등록되지 않은 학생입니다.',
   SEAT_NOT_FOUND: '존재하지 않는 좌석번호입니다.',
 };
+
+/** 해당 학생의 활성 신청 기간 목록 조회 (달력 블러 처리용) */
+export function getMyPhoneSubmissions(identifier: string): Promise<ActiveSubmissionPeriod[]> {
+  return apiGet<ActiveSubmissionPeriod[]>(
+    `/api/v1/kiosk/phone-submissions/my?identifier=${encodeURIComponent(identifier)}`,
+  );
+}
 
 export async function submitPhoneSubmission(params: {
   identifier: string;

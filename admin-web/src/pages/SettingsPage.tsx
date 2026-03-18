@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { LuSettings } from 'react-icons/lu';
+import { LuSettings, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import styles from './SettingsPage.module.css';
 import {
   getExamSchedules,
   createExamSchedule,
   updateExamSchedule,
   deleteExamSchedule,
+  toggleExamScheduleActive,
 } from '../api/examScheduleApi';
 import type { ExamSchedule as ExamScheduleType } from '../api/examScheduleApi';
 import {
@@ -24,9 +25,10 @@ import {
   deleteSeatLeaveReason,
 } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
+import useConfirm from '../hooks/useConfirm';
 
 /* ── 탭 목록 ── */
-const TABS = ['기본설정', '배너관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '보안설정', '알림설정', '게시판관리'] as const;
+const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리','지점 정보'] as const;
 type TabId = typeof TABS[number];
 
 const MEDIA_TYPES = ['IMAGE', 'VIDEO'] as const;
@@ -63,7 +65,7 @@ export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(
-    tabParam && (TABS as readonly string[]).includes(tabParam) ? tabParam : '기본설정',
+    tabParam && (TABS as readonly string[]).includes(tabParam) ? tabParam : '배너 관리',
   );
 
   const handleTabChange = (tab: TabId) => {
@@ -94,7 +96,7 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === '기본설정' && <BasicSettings />}
-      {activeTab === '배너관리' && <BannerManagement />}
+      {activeTab === '배너 관리' && <BannerManagement />}
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
       {activeTab === '이탈사유 관리' && <SeatLeaveReasonSettings />}
@@ -121,6 +123,7 @@ function BasicSettings() {
 
 /* ── 배너관리 탭 ── */
 function BannerManagement() {
+  const { alert, ConfirmDialog } = useConfirm();
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -232,14 +235,14 @@ function BannerManagement() {
           active,
         });
       } else {
-        if (!file) { alert('파일을 선택해주세요.'); setSubmitting(false); return; }
+        if (!file) { await alert('파일을 선택해주세요.'); setSubmitting(false); return; }
         await createAdvertisement({ file, mediaType, displayOrder: ads.length + 1, displaySeconds });
       }
       resetForm();
       await fetchAds();
     } catch (err) {
       console.error('[배너 저장] 에러:', err);
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
+      await alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -483,12 +486,14 @@ function BannerManagement() {
           </table>
         )}
       </div>
+      {ConfirmDialog}
     </>
   );
 }
 
 /* ── 시험일정 관리 탭 ── */
 function ExamSchedule() {
+  const { alert, ConfirmDialog: ExamConfirmDialog } = useConfirm();
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth() + 1);
@@ -500,6 +505,9 @@ function ExamSchedule() {
 
   const [formName, setFormName] = useState('');
   const [formDate, setFormDate] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateSortDir, setDateSortDir] = useState<'asc' | 'desc'>('asc');
 
   const grid = getCalendarGrid(calYear, calMonth);
   const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -593,11 +601,40 @@ function ExamSchedule() {
     }
   };
 
+  const MAX_ACTIVE = 2;
+
+  const handleToggleActive = async (exam: ExamScheduleType) => {
+    // 활성화하려는 경우 최대 개수 체크
+    if (!exam.active && exams.filter((e) => e.active).length >= MAX_ACTIVE) {
+      void alert(`키오스크 활성화는 최대 ${MAX_ACTIVE}개까지 가능합니다.`);
+      return;
+    }
+    try {
+      await toggleExamScheduleActive(exam.id);
+      await fetchExams();
+    } catch (err) {
+      console.error('활성화 상태 변경 실패:', err);
+    }
+  };
+
   const closeModal = () => {
     setShowAddModal(false);
     setEditTarget(null);
     resetForm();
   };
+
+  const toggleDateSort = () => setDateSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+
+  /** 검색 → active 상단 고정 → 날짜 정렬 */
+  const displayedExams = exams
+    .filter((e) => !searchQuery || e.examName.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      // active(ON) 상단 고정
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      // 날짜 정렬
+      const cmp = a.examDate.localeCompare(b.examDate);
+      return dateSortDir === 'desc' ? -cmp : cmp;
+    });
 
   return (
     <>
@@ -672,6 +709,13 @@ function ExamSchedule() {
         ) : (
           <div className={styles.sectionBody}>
             <div className={styles.tableToolbar}>
+              <input
+                className={styles.formInputSm}
+                placeholder="시험명 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ marginRight: 'auto', width: 200 }}
+              />
               <button type="button" className={styles.addBtn} onClick={openAddModal}>+ 시험 추가</button>
             </div>
             <table className={styles.dataTable}>
@@ -679,17 +723,20 @@ function ExamSchedule() {
                 <tr>
                   <th style={{ width: 40 }}><input type="checkbox" /></th>
                   <th>시험명</th>
-                  <th>날짜</th>
+                  <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={toggleDateSort}>
+                    날짜 {dateSortDir === 'asc' ? <LuArrowUp /> : <LuArrowDown />}
+                  </th>
                   <th>지점</th>
                   <th>상태</th>
+                  <th>키오스크 <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>(최대 2개)</span></th>
                   <th style={{ width: 50 }}>구분</th>
                 </tr>
               </thead>
               <tbody>
-                {exams.length === 0 ? (
-                  <tr><td colSpan={6} className={styles.emptyCell}>등록된 시험이 없습니다.</td></tr>
+                {displayedExams.length === 0 ? (
+                  <tr><td colSpan={7} className={styles.emptyCell}>{searchQuery ? '검색 결과가 없습니다.' : '등록된 시험이 없습니다.'}</td></tr>
                 ) : (
-                  exams.map((exam) => {
+                  displayedExams.map((exam) => {
                     const status = getExamStatus(exam.examDate);
                     return (
                       <tr key={exam.id}>
@@ -701,6 +748,15 @@ function ExamSchedule() {
                           <span className={`${styles.examStatusBadge} ${getExamStatusClass(status)}`}>
                             {status}
                           </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={`${styles.toggleBtn} ${exam.active ? styles.toggleBtnActive : ''}`}
+                            onClick={() => handleToggleActive(exam)}
+                          >
+                            {exam.active ? 'ON' : 'OFF'}
+                          </button>
                         </td>
                         <td><button type="button" className={styles.editBtn} onClick={() => openEditModal(exam)}>&#x270E;</button></td>
                       </tr>
@@ -761,12 +817,14 @@ function ExamSchedule() {
           </div>
         </div>
       )}
+      {ExamConfirmDialog}
     </>
   );
 }
 
 /* ── 이탈사유 관리 탭 ── */
 function SeatLeaveReasonSettings() {
+  const { confirm, alert, ConfirmDialog } = useConfirm();
   const [reasons, setReasons] = useState<SeatLeaveReason[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -775,6 +833,9 @@ function SeatLeaveReasonSettings() {
   const [formName, setFormName] = useState('');
   const [formOrder, setFormOrder] = useState(1);
   const [formActive, setFormActive] = useState(true);
+
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const fetchReasons = useCallback(async () => {
     setLoading(true);
@@ -837,19 +898,59 @@ function SeatLeaveReasonSettings() {
       await fetchReasons();
     } catch (err) {
       console.error('이탈 사유 저장 실패:', err);
-      alert('저장에 실패했습니다.');
+      await alert('저장에 실패했습니다.');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('이 사유를 삭제하시겠습니까?')) return;
+    if (!(await confirm('이 사유를 삭제하시겠습니까?'))) return;
     try {
       await deleteSeatLeaveReason(id);
       await fetchReasons();
     } catch (err) {
       console.error('이탈 사유 삭제 실패:', err);
-      alert('삭제에 실패했습니다.');
+      await alert('삭제에 실패했습니다.');
     }
+  };
+
+  const handleDragStart = (idx: number) => {
+    dragIdx.current = idx;
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+
+  const handleDrop = async (targetIdx: number) => {
+    const fromIdx = dragIdx.current;
+    dragIdx.current = null;
+    setDragOverIdx(null);
+    if (fromIdx === null || fromIdx === targetIdx) return;
+
+    const reordered = [...reasons];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+
+    // 낙관적 UI 업데이트
+    const updated = reordered.map((r, i) => ({ ...r, displayOrder: i + 1 }));
+    setReasons(updated);
+
+    // 변경된 항목들만 서버에 반영
+    try {
+      const promises = updated
+        .filter((r, i) => r.displayOrder !== reasons.find((o) => o.id === r.id)?.displayOrder)
+        .map((r) => updateSeatLeaveReason(r.id, { reasonName: r.reasonName, displayOrder: r.displayOrder, active: r.active }));
+      await Promise.all(promises);
+    } catch {
+      await alert('순서 변경에 실패했습니다.');
+      await fetchReasons();
+    }
+  };
+
+  const handleDragEnd = () => {
+    dragIdx.current = null;
+    setDragOverIdx(null);
   };
 
   return (
@@ -868,6 +969,7 @@ function SeatLeaveReasonSettings() {
           <table className={styles.dataTable}>
             <thead>
               <tr>
+                <th style={{ width: 40 }}></th>
                 <th style={{ width: 60 }}>순서</th>
                 <th>사유명</th>
                 <th style={{ width: 80 }}>상태</th>
@@ -876,10 +978,20 @@ function SeatLeaveReasonSettings() {
             </thead>
             <tbody>
               {reasons.length === 0 ? (
-                <tr><td colSpan={4} className={styles.emptyCell}>등록된 사유가 없습니다.</td></tr>
+                <tr><td colSpan={5} className={styles.emptyCell}>등록된 사유가 없습니다.</td></tr>
               ) : (
-                reasons.map((reason) => (
-                  <tr key={reason.id}>
+                reasons.map((reason, idx) => (
+                  <tr
+                    key={reason.id}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDrop={() => handleDrop(idx)}
+                    onDragEnd={handleDragEnd}
+                    className={dragOverIdx === idx ? styles.draggingRow : ''}
+                    style={{ cursor: 'grab' }}
+                  >
+                    <td className={styles.dragHandle}>&#x2630;</td>
                     <td>{reason.displayOrder}</td>
                     <td>{reason.reasonName}</td>
                     <td>
@@ -966,6 +1078,7 @@ function SeatLeaveReasonSettings() {
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </>
   );
 }

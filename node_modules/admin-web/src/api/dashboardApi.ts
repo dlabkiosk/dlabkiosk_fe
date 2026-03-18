@@ -27,6 +27,16 @@ export interface SeatLeaveSummary {
   waitingReturn: number;
 }
 
+export interface StudyRanking {
+  code: number;
+  message: string;
+  data: Record<string, string>[];
+  extra: Record<string, string>;
+  success: boolean;
+  total_inwon: string;
+  study_tm: string;
+}
+
 export interface PendingApproval {
   id: number;
   requestType: string;
@@ -46,8 +56,9 @@ export interface SeatChangeRequest {
   studentName: string;
   currentSeatLabel: string;
   desiredSeat1Label: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
+  desiredSeat2Label: string;
+  desiredSeat3Label: string;
+  requestedAt: string;
 }
 
 export interface DashboardData {
@@ -55,6 +66,7 @@ export interface DashboardData {
   mealTags: MealTag[];
   attendanceSummary: AttendanceSummary;
   seatLeaveSummary: SeatLeaveSummary;
+  studyRanking: StudyRanking;
   seatChangeRequests: SeatChangeRequest[];
   pendingApprovals: PendingApproval[];
   notices: DashboardNotice[];
@@ -62,6 +74,7 @@ export interface DashboardData {
 
 /* ── API 호출 ── */
 
-export function getDashboardAll(): Promise<DashboardData> {
-  return apiGet<DashboardData>('/api/v1/admin/dashboard/all');
+export function getDashboardAll(storeId?: number): Promise<DashboardData> {
+  const params = storeId !== undefined ? `?storeId=${storeId}` : '';
+  return apiGet<DashboardData>(`/api/v1/admin/dashboard/all${params}`);
 }

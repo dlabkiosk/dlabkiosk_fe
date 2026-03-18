@@ -132,7 +132,7 @@ export default function NoticeManagement() {
                   <input type="checkbox" />
                 </th>
                 <th>No</th>
-                <th>제목</th>
+                <th className={styles.titleCell}>제목</th>
                 <th>날짜</th>
                 <th>관리자</th>
               </tr>

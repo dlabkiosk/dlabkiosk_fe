@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   LuArmchair,
   LuArrowUpDown,
@@ -23,6 +24,7 @@ import {
   rejectSeatChangeRequest,
 } from '../api/seatApi';
 import type { Seat, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
+import useConfirm from '../hooks/useConfirm';
 import styles from './SeatManagement.module.css';
 
 /* ── 배치도용 합성 타입 ── */
@@ -62,7 +64,10 @@ type StatusFilter = 'PENDING' | 'APPROVED' | 'REJECTED';
 /* ── Page ── */
 
 export default function SeatManagement() {
-  const [view, setView] = useState<ViewMode>('layout');
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'waiting' ? 'waiting' : 'layout';
+  const { confirm, alert, ConfirmDialog } = useConfirm();
+  const [view, setView] = useState<ViewMode>(initialView);
 
   /* ── 배치도 상태 ── */
   const [seats, setSeats] = useState<SeatWithStatus[]>([]);
@@ -102,6 +107,7 @@ export default function SeatManagement() {
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [modalItem, setModalItem] = useState<SeatChangeRequest | null>(null);
+  const [approvalSeat, setApprovalSeat] = useState<string | null>(null);
 
   /* ── 대기 리스트 필터 ── */
   const [wSearchName, setWSearchName] = useState('');
@@ -281,8 +287,12 @@ export default function SeatManagement() {
   };
 
   const handleAddSeat = async () => {
-    if (!newSeatLabel.trim()) { alert('좌석 라벨을 입력해주세요.'); return; }
-    if (!newXPos || !newYPos) { alert('좌표(X, Y)를 입력해주세요.'); return; }
+    if (!newSeatLabel.trim()) { await alert('좌석 라벨을 입력해주세요.'); return; }
+    if (!newXPos || !newYPos) { await alert('좌표(X, Y)를 입력해주세요.'); return; }
+    if (seats.some((s) => s.seatLabel === newSeatLabel.trim())) {
+      await alert('이미 동일한 좌석 번호가 존재합니다.');
+      return;
+    }
     setAddLoading(true);
     try {
       await createSeat({
@@ -295,7 +305,7 @@ export default function SeatManagement() {
       loadLayout();
     } catch (err) {
       console.error('좌석 추가 실패:', err);
-      alert('좌석 추가에 실패했습니다.');
+      await alert('좌석 추가에 실패했습니다.');
     } finally {
       setAddLoading(false);
     }
@@ -325,20 +335,27 @@ export default function SeatManagement() {
 
   const handleDeleteSeat = async () => {
     if (!selectedSeat) return;
-    if (!window.confirm(`좌석 "${selectedSeat.seatLabel}"을(를) 삭제하시겠습니까?`)) return;
+    const msg = selectedSeat.assignedStudentName
+      ? `좌석 "${selectedSeat.seatLabel}"을(를) 삭제하시겠습니까?\n\n해당 학생의 좌석 배치를 다시 설정해야 합니다.`
+      : `좌석 "${selectedSeat.seatLabel}"을(를) 삭제하시겠습니까?`;
+    if (!await confirm(msg)) return;
     try {
       await deleteSeat(selectedSeat.id);
       closeSeatDetail();
       loadLayout();
     } catch (err) {
       console.error('좌석 삭제 실패:', err);
-      alert('좌석 삭제에 실패했습니다.');
+      await alert('좌석 삭제에 실패했습니다.');
     }
   };
 
   const handleEditSeat = async () => {
     if (!selectedSeat) return;
-    if (!editLabel.trim()) { alert('좌석 라벨을 입력해주세요.'); return; }
+    if (!editLabel.trim()) { await alert('좌석 라벨을 입력해주세요.'); return; }
+    if (seats.some((s) => s.id !== selectedSeat.id && s.seatLabel === editLabel.trim())) {
+      await alert('이미 동일한 좌석 번호가 존재합니다.');
+      return;
+    }
     setEditLoading(true);
     try {
       await updateSeat(selectedSeat.id, {
@@ -352,7 +369,7 @@ export default function SeatManagement() {
       loadLayout();
     } catch (err) {
       console.error('좌석 수정 실패:', err);
-      alert('좌석 수정에 실패했습니다.');
+      await alert('좌석 수정에 실패했습니다.');
     } finally {
       setEditLoading(false);
     }
@@ -429,17 +446,24 @@ export default function SeatManagement() {
 
   const handleProcess = async (id: number, action: 'APPROVED' | 'REJECTED') => {
     const label = action === 'APPROVED' ? '승인' : '거절';
-    if (!window.confirm(`해당 요청을 ${label} 하시겠습니까?`)) return;
+    if (action === 'APPROVED' && !approvalSeat) {
+      await alert('승인할 좌석을 선택해주세요.');
+      return;
+    }
+    const confirmMsg = action === 'APPROVED'
+      ? `${approvalSeat} 좌석으로 승인하시겠습니까?`
+      : '해당 요청을 거절하시겠습니까?';
+    if (!await confirm(confirmMsg)) return;
     try {
       if (action === 'APPROVED') {
-        await approveSeatChangeRequest(id);
+        await approveSeatChangeRequest(id, approvalSeat!);
       } else {
         await rejectSeatChangeRequest(id);
       }
       loadWaiting();
     } catch (err) {
       console.error(`좌석 변경 ${label} 실패:`, err);
-      alert(`${label}에 실패했습니다.`);
+      await alert(`${label}에 실패했습니다.`);
     }
     setModalItem(null);
   };
@@ -682,7 +706,7 @@ export default function SeatManagement() {
                   </tr>
                 ) : (
                   sortedWaiting.map((row) => (
-                    <tr key={row.id} className={styles.clickableRow} onClick={() => setModalItem(row)}>
+                    <tr key={row.id} className={styles.clickableRow} onClick={() => { setModalItem(row); setApprovalSeat(row.desiredSeat1Label); }}>
                       <td className={styles.checkboxCol} onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -1035,26 +1059,51 @@ export default function SeatManagement() {
               )}
             </div>
             {modalItem.status === 'PENDING' && (
-              <div className={styles.modalFooter}>
-                <button
-                  type="button"
-                  className={styles.approveBtn}
-                  onClick={() => handleProcess(modalItem.id, 'APPROVED')}
-                >
-                  승인
-                </button>
-                <button
-                  type="button"
-                  className={styles.rejectBtn}
-                  onClick={() => handleProcess(modalItem.id, 'REJECTED')}
-                >
-                  거절
-                </button>
-              </div>
+              <>
+                <div className={styles.modalBody}>
+                  <div className={styles.modalRow}>
+                    <span className={styles.modalLabel}>승인 좌석 선택</span>
+                  </div>
+                  <div className={styles.seatChoiceGroup}>
+                    {[
+                      { label: '1순위', value: modalItem.desiredSeat1Label },
+                      { label: '2순위', value: modalItem.desiredSeat2Label },
+                      { label: '3순위', value: modalItem.desiredSeat3Label },
+                    ].filter((s) => s.value).map((s) => (
+                      <button
+                        key={s.label}
+                        type="button"
+                        className={`${styles.seatChoiceBtn} ${approvalSeat === s.value ? styles.seatChoiceBtnActive : ''}`}
+                        onClick={() => setApprovalSeat(s.value)}
+                      >
+                        <span className={styles.seatChoiceLabel}>{s.label}</span>
+                        <span className={styles.seatChoiceValue}>{s.value}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.modalFooter}>
+                  <button
+                    type="button"
+                    className={styles.approveBtn}
+                    onClick={() => handleProcess(modalItem.id, 'APPROVED')}
+                  >
+                    승인
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.rejectBtn}
+                    onClick={() => handleProcess(modalItem.id, 'REJECTED')}
+                  >
+                    거절
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { LuMegaphone, LuArrowLeft } from 'react-icons/lu';
 import { getNotice, updateNotice, deleteNotice } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import { ApiError } from '../api/client';
+import useConfirm from '../hooks/useConfirm';
 import styles from './NoticeDetail.module.css';
 
 const CATEGORY_OPTIONS = ['일반공지', '긴급공지'];
@@ -11,6 +12,7 @@ const CATEGORY_OPTIONS = ['일반공지', '긴급공지'];
 export default function NoticeDetail() {
   const { noticeId } = useParams<{ noticeId: string }>();
   const navigate = useNavigate();
+  const { confirm, alert, ConfirmDialog } = useConfirm();
 
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,12 +96,12 @@ export default function NoticeDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('정말 이 공지사항을 삭제하시겠습니까?')) return;
+    if (!(await confirm('정말 이 공지사항을 삭제하시겠습니까?'))) return;
     try {
       await deleteNotice(Number(noticeId));
       navigate('/notices');
     } catch {
-      alert('삭제에 실패했습니다.');
+      await alert('삭제에 실패했습니다.');
     }
   };
 
@@ -250,6 +252,7 @@ export default function NoticeDetail() {
           </>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 :root {
   /* Colors - Sidebar */
-  --color-sidebar-bg: #dce3eb;
-  --color-sidebar-text: #4a5568;
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-text: #999999;
   --color-sidebar-text-active: #1a1a2e;
-  --color-sidebar-hover: rgba(0, 0, 0, 0.06);
+  --color-sidebar-hover: #BBDCF6;
   --color-sidebar-logo: #1a1a2e;
 
   /* Colors - Primary */

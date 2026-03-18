@@ -65,7 +65,13 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new ApiError('HTTP_ERROR', `HTTP ${res.status}: ${res.statusText}`);
   }
 
-  const json = (await res.json()) as ApiResponse<T>;
+  // 204 No Content 또는 빈 응답 body 처리
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  const json = JSON.parse(text) as ApiResponse<T>;
 
   if (!json.success) {
     throw new ApiError(

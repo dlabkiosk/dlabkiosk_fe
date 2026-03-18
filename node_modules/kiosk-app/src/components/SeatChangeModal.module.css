@@ -147,9 +147,9 @@
   cursor: default;
 }
 
-.seatUnavailable {
-  opacity: 0.35;
-  cursor: default;
+.seatOccupied {
+  border-color: var(--color-border-medium);
+  background: var(--color-bg-light);
 }
 
 .currentBadge {
@@ -157,6 +157,17 @@
   font-weight: normal;
   color: var(--color-text-hint);
   line-height: 1;
+}
+
+.occupiedBadge {
+  font-size: 9px;
+  font-weight: normal;
+  color: var(--color-text-hint);
+  line-height: 1;
+}
+
+.occupiedBadgeSelected {
+  color: var(--color-bg-white);
 }
 
 .loadingText {
