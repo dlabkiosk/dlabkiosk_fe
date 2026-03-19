@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import KioskLoginPage from './pages/KioskLoginPage';
 import MainPage from './pages/MainPage';
 import { kioskMe } from './api/kioskAuthApi';
+import { ApiError } from './api/client';
 import type { KioskSession } from './api/kioskAuthApi';
 
 export default function App() {
@@ -22,8 +23,13 @@ export default function App() {
         setSession(s);
         sessionStorage.setItem('kioskSession', JSON.stringify(s));
       })
-      .catch(() => {
-        if (!saved) setSession(null);
+      .catch((err) => {
+        // 401 = 세션 만료 → 저장된 세션도 무효
+        if (err instanceof ApiError && err.code === 'UNAUTHORIZED') {
+          sessionStorage.removeItem('kioskSession');
+          setSession(null);
+        }
+        // 그 외 에러(네트워크 등) → saved 세션 유지
       })
       .finally(() => setChecking(false));
   }, []);

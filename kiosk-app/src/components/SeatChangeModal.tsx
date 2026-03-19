@@ -58,7 +58,7 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
       const next = [...prev];
       next[index] = null;
       // 앞으로 당기기: [A, null, B] → [A, B, null]
-      const compacted = next.filter((s) => s !== null);
+      const compacted: (number | null)[] = next.filter((s) => s !== null);
       while (compacted.length < 3) compacted.push(null);
       return compacted;
     });

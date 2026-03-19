@@ -44,10 +44,7 @@ async function request<T>(
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  // 401 → 세션 만료 → 로그인 페이지로 이동
   if (res.status === 401) {
-    sessionStorage.removeItem('kioskSession');
-    window.location.reload();
     throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.');
   }
 
@@ -94,14 +91,14 @@ export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'GET' });
 }
 
-export function apiPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+export function apiPost<T>(path: string, body?: object): Promise<T> {
   return request<T>(path, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
   });
 }
 
-export function apiDelete<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+export function apiDelete<T>(path: string, body?: object): Promise<T> {
   return request<T>(path, {
     method: 'DELETE',
     body: body ? JSON.stringify(body) : undefined,

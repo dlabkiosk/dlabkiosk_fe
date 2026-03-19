@@ -43,7 +43,7 @@ export function getAvailableSeats(): Promise<AvailableSeat[]> {
 
 export async function submitSeatChangeRequest(body: SeatChangeRequestBody): Promise<SeatChangeResult> {
   try {
-    return await apiPost<SeatChangeResult>('/api/v1/kiosk/seat-change-requests', body as Record<string, unknown>);
+    return await apiPost<SeatChangeResult>('/api/v1/kiosk/seat-change-requests', body);
   } catch (err) {
     if (err instanceof ApiError && ERROR_MESSAGES[err.code]) {
       throw new ApiError(err.code, ERROR_MESSAGES[err.code]);
@@ -53,5 +53,5 @@ export async function submitSeatChangeRequest(body: SeatChangeRequestBody): Prom
 }
 
 export function cancelSeatChangeRequest(requestId: number, params: { identifier?: string; studentNumber?: string }): Promise<string> {
-  return apiDelete<string>(`/api/v1/kiosk/seat-change-requests/${requestId}`, params as Record<string, unknown>);
+  return apiDelete<string>(`/api/v1/kiosk/seat-change-requests/${requestId}`, params);
 }
