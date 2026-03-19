@@ -15,3 +15,4 @@ export interface Advertisement {
 export function getAdvertisements(): Promise<Advertisement[]> {
   return apiGet<Advertisement[]>('/api/v1/kiosk/advertisements');
 }
+
