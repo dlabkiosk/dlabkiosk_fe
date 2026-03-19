@@ -3,7 +3,10 @@
   "private": true,
   "workspaces": [
     "admin-web",
-    "kiosk-app",
-    "packages/*"
-  ]
+    "kiosk-app"
+  ],
+  "scripts": {
+    "build:admin": "npm run build --workspace=admin-web",
+    "build:kiosk": "npm run build --workspace=kiosk-app"
+  }
 }

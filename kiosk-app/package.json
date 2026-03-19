@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@daesung/shared-api": "*",
     "pretendard": "^1.3.9",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
