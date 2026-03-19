@@ -180,6 +180,16 @@
   text-decoration: underline;
 } */
 
+/* ── Pinned Row ── */
+.pinnedRow td {
+  font-weight: 600;
+}
+
+.pinIcon {
+  margin-right: 6px;
+  font-size: var(--font-size-sm);
+}
+
 .loadingMessage,
 .errorMessage {
   text-align: center;

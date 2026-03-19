@@ -34,6 +34,8 @@ export type {
   LessonItem,
   GetLessonInfoResponse,
   AttGn,
+  DlabItem,
+  GetDlabListResponse,
 } from './types/dsa.types.ts';
 
 export {
@@ -89,3 +91,8 @@ export {
   getScheduleInfo,
   getLessonInfo,
 } from './scheduleApi.ts';
+
+// 지점 API
+export {
+  getDlabList,
+} from './branchApi.ts';

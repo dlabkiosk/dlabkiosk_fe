@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import ConfirmModal from '../components/ConfirmModal';
+import ConfirmModal, { PromptModal } from '../components/ConfirmModal';
 
 interface ConfirmOptions {
   confirmLabel?: string;
@@ -12,8 +12,15 @@ interface ConfirmState {
   options?: ConfirmOptions;
 }
 
+interface PromptState {
+  message: string;
+  placeholder?: string;
+  resolve: (value: string | null) => void;
+}
+
 export default function useConfirm() {
   const [state, setState] = useState<ConfirmState | null>(null);
+  const [promptState, setPromptState] = useState<PromptState | null>(null);
 
   const confirm = useCallback(
     (message: string, options?: ConfirmOptions): Promise<boolean> =>
@@ -42,20 +49,56 @@ export default function useConfirm() {
     [],
   );
 
-  const ConfirmDialog = useMemo(() => {
-    if (!state) return null;
-    // cancelLabel이 빈 문자열이면 alert 모드 (확인만)
-    const isAlert = state.options?.cancelLabel === '';
-    return (
-      <ConfirmModal
-        message={state.message}
-        onConfirm={handleConfirm}
-        onCancel={isAlert ? handleConfirm : handleCancel}
-        confirmLabel={state.options?.confirmLabel ?? '확인'}
-        cancelLabel={isAlert ? '' : (state.options?.cancelLabel ?? '취소')}
-      />
-    );
-  }, [state, handleConfirm, handleCancel]);
+  /** prompt 대체 — 값 입력 모달 */
+  const prompt = useCallback(
+    (message: string, placeholder?: string): Promise<string | null> =>
+      new Promise((resolve) => {
+        setPromptState({ message, placeholder, resolve });
+      }),
+    [],
+  );
 
-  return { confirm, alert, ConfirmDialog };
+  const handlePromptConfirm = useCallback((value: string) => {
+    promptState?.resolve(value);
+    setPromptState(null);
+  }, [promptState]);
+
+  const handlePromptCancel = useCallback(() => {
+    promptState?.resolve(null);
+    setPromptState(null);
+  }, [promptState]);
+
+  const ConfirmDialog = useMemo(() => {
+    const elements: React.ReactNode[] = [];
+
+    if (state) {
+      const isAlert = state.options?.cancelLabel === '';
+      elements.push(
+        <ConfirmModal
+          key="confirm"
+          message={state.message}
+          onConfirm={handleConfirm}
+          onCancel={isAlert ? handleConfirm : handleCancel}
+          confirmLabel={state.options?.confirmLabel ?? '확인'}
+          cancelLabel={isAlert ? '' : (state.options?.cancelLabel ?? '취소')}
+        />
+      );
+    }
+
+    if (promptState) {
+      elements.push(
+        <PromptModal
+          key="prompt"
+          message={promptState.message}
+          placeholder={promptState.placeholder}
+          onConfirm={handlePromptConfirm}
+          onCancel={handlePromptCancel}
+        />
+      );
+    }
+
+    return elements.length > 0 ? <>{elements}</> : null;
+  }, [state, promptState, handleConfirm, handleCancel, handlePromptConfirm, handlePromptCancel]);
+
+  return { confirm, alert, prompt, ConfirmDialog };
 }

@@ -29,7 +29,7 @@ export async function getExamSchedule(id: number): Promise<ExamSchedule> {
   return json.data;
 }
 
-export async function createExamSchedule(body: { examName: string; examDate: string; storeId?: number }): Promise<ExamSchedule> {
+export async function createExamSchedule(body: { examName: string; examDate: string; storeId?: number; active?: boolean }): Promise<ExamSchedule> {
   const res = await fetch('/api/v1/admin/exam-schedules', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

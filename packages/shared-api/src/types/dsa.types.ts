@@ -296,3 +296,19 @@ export interface LessonItem {
 export interface GetLessonInfoResponse extends DsaBaseResponse {
   data: LessonItem[] | null;
 }
+
+// ============================================
+// 7. 지점 (Branch / DLab)
+// ============================================
+
+/** 지점 정보 항목 */
+export interface DlabItem {
+  acad_cd: string;
+  acad_nm: string;
+  full_nm: string;
+}
+
+/** 지점 목록 조회 응답 */
+export interface GetDlabListResponse extends DsaBaseResponse {
+  data: DlabItem[] | null;
+}

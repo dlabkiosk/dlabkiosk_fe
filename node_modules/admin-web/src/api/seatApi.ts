@@ -122,7 +122,7 @@ export function getSeatChangeRequests(params?: {
   sort?: string;
 }): Promise<PageResponse<SeatChangeRequest>> {
   const query = new URLSearchParams();
-  query.set('status', params?.status ?? 'PENDING');
+  if (params?.status) query.set('status', params.status);
   query.set('page', String(params?.page ?? 0));
   query.set('size', String(params?.size ?? 20));
   if (params?.sort) query.set('sort', params.sort);

@@ -282,9 +282,10 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  padding: 6px 4px;
+  padding: 4px 4px;
   width: 80px;
   height: 60px;
+  gap: 1px;
   border: 1px solid var(--color-border);
   cursor: default;
   transition: box-shadow 0.15s, border-color 0.15s;
@@ -380,6 +381,45 @@
   text-overflow: ellipsis;
   max-width: 72px;
   text-align: center;
+}
+
+/* ── Seat Attendance Status ── */
+.seatAttStatus {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 72px;
+  text-align: center;
+}
+
+.attPresent {
+  color: #15803d;
+  background-color: #dcfce7;
+}
+
+.attOuting {
+  color: #b45309;
+  background-color: #fef3c7;
+}
+
+.attEarlyLeave {
+  color: #9333ea;
+  background-color: #f3e8ff;
+}
+
+.attCheckedOut {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.attSeatLeave {
+  color: #dc2626;
+  background-color: #fee2e2;
 }
 
 /* ── Section Divider ── */
@@ -666,6 +706,19 @@
   color: #c62828;
 }
 
+/* ── Status Cell ── */
+.statusCellWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.statusExtra {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
 /* ── Clickable row ── */
 .clickableRow {
   cursor: pointer;
@@ -883,6 +936,80 @@
   background-color: var(--color-primary);
   color: var(--color-bg-card);
   opacity: 0.9;
+}
+
+/* ── Edit Mode Save Button ── */
+.editSaveBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-md);
+  height: 30px;
+  background-color: #2e7d32;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.editSaveBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.editSaveBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Edit Mode: Seat States ── */
+.seatEditable {
+  cursor: grab;
+  user-select: none;
+}
+
+.seatEditable:active {
+  cursor: grabbing;
+}
+
+.seatDragging {
+  opacity: 0.4 !important;
+}
+
+.seatDeleted {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  opacity: 0.6;
+  cursor: default !important;
+  text-decoration: line-through;
+}
+
+.seatPendingAdd {
+  background-color: #e3f2fd;
+  border: 2px dashed #42a5f5;
+}
+
+.dragHandle {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.deletedLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.newLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: #1565c0;
 }
 
 /* ── Empty state ── */
