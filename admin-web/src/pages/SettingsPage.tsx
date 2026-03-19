@@ -26,6 +26,9 @@ import {
 } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
 import useConfirm from '../hooks/useConfirm';
+import { getStores, getStore, createStore, updateStore, deleteStore } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
+import { getMe } from '../api/authApi';
 
 /* ── 탭 목록 ── */
 const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리','지점 정보'] as const;
@@ -100,9 +103,8 @@ export default function SettingsPage() {
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
       {activeTab === '이탈사유 관리' && <SeatLeaveReasonSettings />}
-      {activeTab === '보안설정' && <PlaceholderTab label="보안설정" />}
-      {activeTab === '알림설정' && <PlaceholderTab label="알림설정" />}
-      {activeTab === '게시판관리' && <PlaceholderTab label="게시판관리" />}
+      {activeTab === '메시지 관리' && <PlaceholderTab label="메시지 관리" />}
+      {activeTab === '지점 정보' && <BranchInfo />}
     </div>
   );
 }
@@ -493,7 +495,7 @@ function BannerManagement() {
 
 /* ── 시험일정 관리 탭 ── */
 function ExamSchedule() {
-  const { alert, ConfirmDialog: ExamConfirmDialog } = useConfirm();
+  const { alert, confirm, ConfirmDialog: ExamConfirmDialog } = useConfirm();
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth() + 1);
@@ -508,6 +510,7 @@ function ExamSchedule() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dateSortDir, setDateSortDir] = useState<'asc' | 'desc'>('asc');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const grid = getCalendarGrid(calYear, calMonth);
   const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -581,7 +584,7 @@ function ExamSchedule() {
       if (editTarget) {
         await updateExamSchedule(editTarget.id, { examName: formName, examDate: formDate });
       } else {
-        await createExamSchedule({ examName: formName, examDate: formDate });
+        await createExamSchedule({ examName: formName, examDate: formDate, active: false });
       }
       setShowAddModal(false);
       resetForm();
@@ -593,11 +596,42 @@ function ExamSchedule() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!(await confirm('이 시험일정을 삭제하시겠습니까?'))) return;
     try {
       await deleteExamSchedule(id);
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
       await fetchExams();
     } catch (err) {
       console.error('시험일정 삭제 실패:', err);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!(await confirm(`선택한 ${selectedIds.size}개의 시험일정을 삭제하시겠습니까?`))) return;
+    try {
+      await Promise.all([...selectedIds].map((id) => deleteExamSchedule(id)));
+      setSelectedIds(new Set());
+      await fetchExams();
+    } catch (err) {
+      console.error('시험일정 일괄 삭제 실패:', err);
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === displayedExams.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(displayedExams.map((e) => e.id)));
     }
   };
 
@@ -716,12 +750,28 @@ function ExamSchedule() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ marginRight: 'auto', width: 200 }}
               />
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  className={styles.addBtn}
+                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                  onClick={handleBulkDelete}
+                >
+                  선택 삭제 ({selectedIds.size})
+                </button>
+              )}
               <button type="button" className={styles.addBtn} onClick={openAddModal}>+ 시험 추가</button>
             </div>
             <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}><input type="checkbox" /></th>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={displayedExams.length > 0 && selectedIds.size === displayedExams.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th>시험명</th>
                   <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={toggleDateSort}>
                     날짜 {dateSortDir === 'asc' ? <LuArrowUp /> : <LuArrowDown />}
@@ -740,7 +790,13 @@ function ExamSchedule() {
                     const status = getExamStatus(exam.examDate);
                     return (
                       <tr key={exam.id}>
-                        <td><input type="checkbox" /></td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(exam.id)}
+                            onChange={() => toggleSelect(exam.id)}
+                          />
+                        </td>
                         <td>{exam.examName}</td>
                         <td>{exam.examDate}</td>
                         <td>{exam.storeName}</td>
@@ -1079,6 +1135,421 @@ function SeatLeaveReasonSettings() {
         </div>
       )}
       {ConfirmDialog}
+    </>
+  );
+}
+
+/* ── 지점 정보 탭 ── */
+function BranchInfo() {
+  const { confirm, alert, ConfirmDialog: StoreConfirmDialog } = useConfirm();
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+  const [role, setRole] = useState<string | null>(null);
+  const [myStoreId, setMyStoreId] = useState<number | null>(null);
+
+  // 모달 상태
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // 수정 폼
+  const [formStoreName, setFormStoreName] = useState('');
+  const [formAddress, setFormAddress] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [formActive, setFormActive] = useState(true);
+  const [formKioskPin, setFormKioskPin] = useState('');
+  const [formDsaAcadCd, setFormDsaAcadCd] = useState('');
+  const [formDsaClientId, setFormDsaClientId] = useState('');
+  const [formDsaSecretId, setFormDsaSecretId] = useState('');
+
+  // 등록 폼
+  const [createStoreCode, setCreateStoreCode] = useState('');
+  const [createStoreName, setCreateStoreName] = useState('');
+  const [createAddress, setCreateAddress] = useState('');
+  const [createPhone, setCreatePhone] = useState('');
+  const [createKioskPin, setCreateKioskPin] = useState('');
+  const [createDsaAcadCd, setCreateDsaAcadCd] = useState('');
+  const [createDsaClientId, setCreateDsaClientId] = useState('');
+  const [createDsaSecretId, setCreateDsaSecretId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchStores = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const data = await getStores();
+      setStores(data);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setFetchError(`지점 목록 조회 실패: ${msg}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const me = await getMe();
+        setRole(me.role);
+        setMyStoreId(me.storeId);
+      } catch {
+        setFetchError('사용자 정보를 불러올 수 없습니다.');
+      }
+      await fetchStores();
+    }
+    init();
+  }, [fetchStores]);
+
+  const openDetail = async (store: Store) => {
+    try {
+      const detail = await getStore(store.id);
+      setSelectedStore(detail);
+      setIsEditing(false);
+      setShowModal(true);
+    } catch {
+      await alert('지점 정보를 불러올 수 없습니다.');
+    }
+  };
+
+  const startEdit = () => {
+    if (!selectedStore) return;
+    setFormStoreName(selectedStore.storeName);
+    setFormAddress(selectedStore.address);
+    setFormPhone(selectedStore.phone);
+    setFormActive(selectedStore.active);
+    setFormKioskPin('');
+    setFormDsaAcadCd('');
+    setFormDsaClientId('');
+    setFormDsaSecretId('');
+    setIsEditing(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedStore || submitting) return;
+    setSubmitting(true);
+    try {
+      await updateStore(selectedStore.id, {
+        storeName: formStoreName,
+        address: formAddress,
+        phone: formPhone,
+        active: formActive,
+        kioskPin: formKioskPin,
+        dsaAcadCd: formDsaAcadCd,
+        dsaClientId: formDsaClientId,
+        dsaSecretId: formDsaSecretId,
+      });
+      setShowModal(false);
+      setIsEditing(false);
+      await fetchStores();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '수정에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteStore = async (id: number) => {
+    if (!(await confirm('이 지점을 삭제하시겠습니까?'))) return;
+    try {
+      await deleteStore(id);
+      setShowModal(false);
+      await fetchStores();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
+    }
+  };
+
+  const resetCreateForm = () => {
+    setCreateStoreCode('');
+    setCreateStoreName('');
+    setCreateAddress('');
+    setCreatePhone('');
+    setCreateKioskPin('');
+    setCreateDsaAcadCd('');
+    setCreateDsaClientId('');
+    setCreateDsaSecretId('');
+  };
+
+  const handleCreate = async () => {
+    if (!createStoreName.trim() || !createStoreCode.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await createStore({
+        storeName: createStoreName,
+        storeCode: createStoreCode,
+        address: createAddress,
+        phone: createPhone,
+        kioskPin: createKioskPin,
+        dsaAcadCd: createDsaAcadCd,
+        dsaClientId: createDsaClientId,
+        dsaSecretId: createDsaSecretId,
+      });
+      setShowCreateModal(false);
+      resetCreateForm();
+      await fetchStores();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '등록에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // MANAGER: 자기 지점만 바로 표시
+  const isManager = role === 'MANAGER';
+  const myStore = isManager ? stores.find((s) => s.id === myStoreId) ?? null : null;
+
+  // MANAGER일 때 자기 지점 자동 로드
+  useEffect(() => {
+    if (isManager && myStore && !showModal) {
+      setSelectedStore(myStore);
+    }
+  }, [isManager, myStore, showModal]);
+
+  if (loading) {
+    return (
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}><h3 className={styles.sectionTitle}>지점 정보</h3></div>
+        <div className={styles.sectionBody}><p className={styles.placeholderText}>로딩 중...</p></div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}><h3 className={styles.sectionTitle}>지점 정보</h3></div>
+        <div className={styles.sectionBody}><p style={{ color: '#dc2626', fontWeight: 600 }}>{fetchError}</p></div>
+      </div>
+    );
+  }
+
+  /* ── 상세/수정 모달 렌더 (ADMIN 클릭 시 + MANAGER 인라인 공용) ── */
+  const renderStoreDetail = (store: Store, inline?: boolean) => (
+    <div className={inline ? styles.sectionBody : styles.modalForm}>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>지점명</label>
+        {isEditing ? (
+          <input className={styles.formInput} value={formStoreName} onChange={(e) => setFormStoreName(e.target.value)} />
+        ) : (
+          <p className={styles.formValue}>{store.storeName}</p>
+        )}
+      </div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>지점코드</label>
+        <p className={styles.formValue}>{store.storeCode}</p>
+      </div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>주소</label>
+        {isEditing ? (
+          <input className={styles.formInput} value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
+        ) : (
+          <p className={styles.formValue}>{store.address || '-'}</p>
+        )}
+      </div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>전화번호</label>
+        {isEditing ? (
+          <input className={styles.formInput} value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+        ) : (
+          <p className={styles.formValue}>{store.phone || '-'}</p>
+        )}
+      </div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>활성화</label>
+        {isEditing ? (
+          <label className={styles.radioLabel}>
+            <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} /> 활성
+          </label>
+        ) : (
+          <span className={`${styles.statusBadge} ${store.active ? '' : styles.statusInactive}`}>
+            {store.active ? '활성' : '비활성'}
+          </span>
+        )}
+      </div>
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>DSA 연결</label>
+        <span className={`${styles.statusBadge} ${store.dsaConnected ? '' : styles.statusInactive}`}>
+          {store.dsaConnected ? '연결됨' : '미연결'}
+        </span>
+      </div>
+
+      {isEditing && (
+        <>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>키오스크 PIN</label>
+            <input className={styles.formInput} value={formKioskPin} onChange={(e) => setFormKioskPin(e.target.value)} placeholder="변경 시 입력" />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA 학원코드</label>
+            <input className={styles.formInput} value={formDsaAcadCd} onChange={(e) => setFormDsaAcadCd(e.target.value)} placeholder="변경 시 입력" />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA Client ID</label>
+            <input className={styles.formInput} value={formDsaClientId} onChange={(e) => setFormDsaClientId(e.target.value)} placeholder="변경 시 입력" />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA Secret ID</label>
+            <input className={styles.formInput} value={formDsaSecretId} onChange={(e) => setFormDsaSecretId(e.target.value)} placeholder="변경 시 입력" />
+          </div>
+        </>
+      )}
+
+      <div className={styles.modalActions}>
+        {isEditing ? (
+          <>
+            <button type="button" className={styles.btnPrimary} onClick={handleUpdate} disabled={submitting}>
+              {submitting ? '저장 중...' : '저장'}
+            </button>
+            <button type="button" className={styles.btnSecondary} onClick={() => setIsEditing(false)}>취소</button>
+          </>
+        ) : (
+          <>
+            <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              style={{ color: '#dc2626', borderColor: '#dc2626' }}
+              onClick={() => handleDeleteStore(store.id)}
+            >
+              삭제
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // MANAGER: 자기 지점 정보만 표시
+  if (isManager) {
+    return (
+      <>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>지점 정보</h3>
+          </div>
+          {myStore ? renderStoreDetail(myStore, true) : (
+            <div className={styles.sectionBody}>
+              <p className={styles.placeholderText}>소속 지점 정보를 찾을 수 없습니다.</p>
+            </div>
+          )}
+        </div>
+        {StoreConfirmDialog}
+      </>
+    );
+  }
+
+  // ADMIN: 지점 목록 + 클릭 시 모달
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>지점 정보</h3>
+          <button type="button" className={styles.addBtn} onClick={() => setShowCreateModal(true)}>+ 지점 추가</button>
+        </div>
+
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th style={{ width: 80 }}>지점코드</th>
+              <th>지점명</th>
+              <th>주소</th>
+              <th style={{ width: 100 }}>전화번호</th>
+              <th style={{ width: 70 }}>상태</th>
+              <th style={{ width: 80 }}>DSA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stores.length === 0 ? (
+              <tr><td colSpan={6} className={styles.emptyCell}>등록된 지점이 없습니다.</td></tr>
+            ) : (
+              stores.map((store) => (
+                <tr key={store.id} style={{ cursor: 'pointer' }} onClick={() => openDetail(store)}>
+                  <td>{store.storeCode}</td>
+                  <td>{store.storeName}</td>
+                  <td>{store.address || '-'}</td>
+                  <td>{store.phone || '-'}</td>
+                  <td>
+                    <span className={`${styles.statusBadge} ${store.active ? '' : styles.statusInactive}`}>
+                      {store.active ? '활성' : '비활성'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`${styles.statusBadge} ${store.dsaConnected ? '' : styles.statusInactive}`}>
+                      {store.dsaConnected ? '연결' : '미연결'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 상세/수정 모달 */}
+      {showModal && selectedStore && (
+        <div className={styles.overlay} onClick={() => { setShowModal(false); setIsEditing(false); }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={() => { setShowModal(false); setIsEditing(false); }}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{isEditing ? '지점 수정' : '지점 상세'}</h3>
+            {renderStoreDetail(selectedStore)}
+          </div>
+        </div>
+      )}
+
+      {/* 등록 모달 */}
+      {showCreateModal && (
+        <div className={styles.overlay} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>지점 등록</h3>
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>지점코드 *</label>
+                <input className={styles.formInput} placeholder="예: DS-001" value={createStoreCode} onChange={(e) => setCreateStoreCode(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>지점명 *</label>
+                <input className={styles.formInput} placeholder="예: 대성학원 강남점" value={createStoreName} onChange={(e) => setCreateStoreName(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>주소</label>
+                <input className={styles.formInput} value={createAddress} onChange={(e) => setCreateAddress(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>전화번호</label>
+                <input className={styles.formInput} value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>키오스크 PIN</label>
+                <input className={styles.formInput} value={createKioskPin} onChange={(e) => setCreateKioskPin(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>DSA 학원코드</label>
+                <input className={styles.formInput} value={createDsaAcadCd} onChange={(e) => setCreateDsaAcadCd(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>DSA Client ID</label>
+                <input className={styles.formInput} value={createDsaClientId} onChange={(e) => setCreateDsaClientId(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>DSA Secret ID</label>
+                <input className={styles.formInput} value={createDsaSecretId} onChange={(e) => setCreateDsaSecretId(e.target.value)} />
+              </div>
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnPrimary} onClick={handleCreate} disabled={submitting}>
+                {submitting ? '등록 중...' : '등록'}
+              </button>
+              <button type="button" className={styles.btnSecondary} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {StoreConfirmDialog}
     </>
   );
 }

@@ -61,3 +61,27 @@
 .confirmBtn:hover {
   opacity: 0.9;
 }
+
+.confirmBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.promptInput {
+  width: 100%;
+  padding: 0 12px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 20px;
+}
+
+.promptInput:focus {
+  border-color: var(--color-primary);
+}

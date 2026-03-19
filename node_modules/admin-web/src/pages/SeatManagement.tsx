@@ -11,6 +11,8 @@ import {
   LuPlus,
   LuPencil,
   LuMapPin,
+  LuSave,
+  LuGripVertical,
 } from 'react-icons/lu';
 import { getStudents } from '../api/studentApi';
 import {
@@ -24,10 +26,15 @@ import {
   rejectSeatChangeRequest,
 } from '../api/seatApi';
 import type { Seat, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
+import { getSeatLeaves } from '../api/seatLeaveApi';
+import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
 import useConfirm from '../hooks/useConfirm';
 import styles from './SeatManagement.module.css';
 
 /* ── 배치도용 합성 타입 ── */
+
+/** 좌석에 표시할 출결 상태 */
+type SeatAttendanceLabel = '학습중' | '외출' | '조퇴' | '하원' | '좌석이탈' | null;
 
 interface SeatWithStatus extends Seat {
   assignedStudentName: string | null;
@@ -35,6 +42,8 @@ interface SeatWithStatus extends Seat {
   assignedClassName: string | null;
   waitingCount: number;
   waitingList: SeatWaitingEntry[];
+  attendanceLabel: SeatAttendanceLabel;
+  seatLeaveReason: string | null;
 }
 
 /* ── 정렬 ── */
@@ -56,10 +65,18 @@ function compareRows(a: SeatChangeRequest, b: SeatChangeRequest, field: SortFiel
 
 const ITEMS_PER_PAGE = 20;
 
+const ATT_STYLE_MAP: Record<string, string> = {
+  '학습중': 'attPresent',
+  '외출': 'attOuting',
+  '조퇴': 'attEarlyLeave',
+  '하원': 'attCheckedOut',
+  '좌석이탈': 'attSeatLeave',
+};
+
 /* ── 뷰 타입 ── */
 
 type ViewMode = 'layout' | 'waiting';
-type StatusFilter = 'PENDING' | 'APPROVED' | 'REJECTED';
+type StatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 /* ── Page ── */
 
@@ -80,6 +97,35 @@ export default function SeatManagement() {
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const editSeatRef = useRef<SeatWithStatus | null>(null);
+
+  /* ── 좌석 편집 모드 (일괄 저장) ── */
+  const [editingLayout, setEditingLayout] = useState(false);
+  const [savingLayout, setSavingLayout] = useState(false);
+
+  interface PendingAdd {
+    tempId: string;
+    seatLabel: string;
+    seatType: string;
+    xPos: number;
+    yPos: number;
+  }
+  interface PendingMove {
+    seatId: number;
+    xPos: number;
+    yPos: number;
+  }
+  const [pendingAdds, setPendingAdds] = useState<PendingAdd[]>([]);
+  const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
+  const [pendingDeletes, setPendingDeletes] = useState<Set<number>>(new Set());
+
+  /* ── 편집 모드: 좌석 추가 모달 ── */
+  const [editAddPos, setEditAddPos] = useState<{ x: number; y: number } | null>(null);
+  const [editAddLabel, setEditAddLabel] = useState('');
+  const [editAddType, setEditAddType] = useState('INDIVIDUAL');
+
+  /* ── 드래그 상태 ── */
+  const [draggingSeatId, setDraggingSeatId] = useState<number | string | null>(null);
+  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
   /* ── 좌석 추가 폼 ── */
   const [showAddForm, setShowAddForm] = useState(false);
@@ -102,7 +148,7 @@ export default function SeatManagement() {
   /* ── 대기 리스트 상태 ── */
   const [waitingData, setWaitingData] = useState<SeatChangeRequest[]>([]);
   const [waitingTotal, setWaitingTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -114,14 +160,17 @@ export default function SeatManagement() {
   const [wSearchNumber, setWSearchNumber] = useState('');
   const [wAppliedFilters, setWAppliedFilters] = useState({ name: '', number: '' });
 
-  /* ── 배치도 로드: 좌석 + 좌석현황 병합 ── */
+  /* ── 배치도 로드: 좌석 + 좌석현황 + 출결 + 이탈 병합 ── */
   const loadLayout = useCallback(async () => {
     setLayoutLoading(true);
     try {
-      const [seatList, statusList, studentList] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [seatList, statusList, studentList, attendanceList, seatLeaveResult] = await Promise.all([
         getSeats(),
         getSeatStatus(),
         getStudents(),
+        getTodayAttendanceStatus().catch(() => []),
+        getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
       ]);
       const statusByLabel = new Map<string, SeatStatusItem>();
       statusList.forEach((s) => statusByLabel.set(s.seatLabel, s));
@@ -137,9 +186,46 @@ export default function SeatManagement() {
         }
       });
 
+      // 출결 상태: seatLabel → status
+      const attendanceBySeatLabel = new Map<string, string>();
+      attendanceList.forEach((a) => {
+        if (a.seatLabel) attendanceBySeatLabel.set(a.seatLabel, a.status);
+      });
+
+      // 활성 좌석이탈: seatLabel → reasonName (endedAt이 null인 것만)
+      const activeLeaveBySeatLabel = new Map<string, string>();
+      (seatLeaveResult.content ?? []).forEach((r) => {
+        if (!r.endedAt) {
+          activeLeaveBySeatLabel.set(r.seatLabel, r.reasonName);
+        }
+      });
+
       const merged: SeatWithStatus[] = seatList.map((seat) => {
         const st = statusByLabel.get(seat.seatLabel);
         const stu = studentBySeatLabel.get(seat.seatLabel);
+        const hasStudent = !!(stu?.name ?? st?.assignedStudentName);
+
+        // 출결 상태 결정: 좌석이탈 > 출결API 상태 > 기본(학습중)
+        let attendanceLabel: SeatAttendanceLabel = null;
+        let seatLeaveReason: string | null = null;
+
+        if (hasStudent) {
+          const leaveReason = activeLeaveBySeatLabel.get(seat.seatLabel);
+          if (leaveReason) {
+            attendanceLabel = '좌석이탈';
+            seatLeaveReason = leaveReason;
+          } else {
+            const attStatus = attendanceBySeatLabel.get(seat.seatLabel);
+            switch (attStatus) {
+              case 'OUTING': attendanceLabel = '외출'; break;
+              case 'EARLY_LEAVE': attendanceLabel = '조퇴'; break;
+              case 'CHECKED_OUT': attendanceLabel = '하원'; break;
+              case 'PRESENT':
+              default: attendanceLabel = '학습중'; break;
+            }
+          }
+        }
+
         return {
           ...seat,
           assignedStudentName: stu?.name ?? st?.assignedStudentName ?? null,
@@ -147,6 +233,8 @@ export default function SeatManagement() {
           assignedClassName: stu?.className ?? null,
           waitingCount: st?.waitingCount ?? 0,
           waitingList: st?.waitingList ?? [],
+          attendanceLabel,
+          seatLeaveReason,
         };
       });
       setSeats(merged);
@@ -163,7 +251,7 @@ export default function SeatManagement() {
 
   /* ── 대기 리스트 로드 ── */
   const loadWaiting = useCallback(() => {
-    getSeatChangeRequests({ status: statusFilter, page: page - 1, size: ITEMS_PER_PAGE })
+    getSeatChangeRequests({ status: statusFilter === 'ALL' ? undefined : statusFilter, page: page - 1, size: ITEMS_PER_PAGE })
       .then((result: PageResponse<SeatChangeRequest>) => {
         setWaitingData(result.content);
         setWaitingTotal(result.totalElements);
@@ -274,6 +362,213 @@ export default function SeatManagement() {
     setPlacingMode(null);
     setGhostPos(null);
   };
+
+  /* ── 편집 모드 진입/취소/저장 ── */
+  const enterEditMode = () => {
+    closeSeatDetail();
+    setPendingAdds([]);
+    setPendingMoves([]);
+    setPendingDeletes(new Set());
+    setEditingLayout(true);
+  };
+
+  const cancelEditMode = async () => {
+    const hasChanges = pendingAdds.length > 0 || pendingMoves.length > 0 || pendingDeletes.size > 0;
+    if (hasChanges && !await confirm('변경사항을 취소하시겠습니까?')) return;
+    setPendingAdds([]);
+    setPendingMoves([]);
+    setPendingDeletes(new Set());
+    setEditingLayout(false);
+    setDraggingSeatId(null);
+    loadLayout();
+  };
+
+  const saveEditMode = async () => {
+    const totalChanges = pendingAdds.length + pendingMoves.length + pendingDeletes.size;
+    if (totalChanges === 0) {
+      setEditingLayout(false);
+      return;
+    }
+    setSavingLayout(true);
+    try {
+      // 삭제 처리
+      for (const seatId of pendingDeletes) {
+        await deleteSeat(seatId);
+      }
+      // 추가 처리
+      for (const add of pendingAdds) {
+        await createSeat({ seatLabel: add.seatLabel, seatType: add.seatType, xPos: add.xPos, yPos: add.yPos });
+      }
+      // 이동 처리 (삭제 대상은 건너뜀)
+      for (const move of pendingMoves) {
+        if (pendingDeletes.has(move.seatId)) continue;
+        const original = seats.find((s) => s.id === move.seatId);
+        if (!original) continue;
+        await updateSeat(move.seatId, {
+          seatLabel: original.seatLabel,
+          seatType: original.seatType,
+          xPos: move.xPos,
+          yPos: move.yPos,
+          active: original.active,
+        });
+      }
+      setPendingAdds([]);
+      setPendingMoves([]);
+      setPendingDeletes(new Set());
+      setEditingLayout(false);
+      loadLayout();
+    } catch (err) {
+      console.error('좌석 일괄 저장 실패:', err);
+      await alert('저장에 실패했습니다. 일부 변경만 적용되었을 수 있습니다.');
+      loadLayout();
+    } finally {
+      setSavingLayout(false);
+    }
+  };
+
+  /** 편집 모드에서 좌석의 현재 좌표 (이동 반영) */
+  const getEditPos = (seat: SeatWithStatus) => {
+    const move = pendingMoves.find((m) => m.seatId === seat.id);
+    return move ? { x: move.xPos, y: move.yPos } : { x: seat.xPos, y: seat.yPos };
+  };
+
+  /** 편집 모드: 빈 셀 클릭 → 좌석 추가 모달 열기 */
+  const handleEditCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!editingLayout || draggingSeatId) return;
+    const raw = getCanvasPos(e);
+    if (!raw) return;
+    const pos = snapToGrid(raw);
+
+    // 기존 좌석/추가 예정 좌석과 겹치는지 확인
+    const occupied = seats.some((s) => s.active && !pendingDeletes.has(s.id) && getEditPos(s).x === pos.x && getEditPos(s).y === pos.y)
+      || pendingAdds.some((a) => a.xPos === pos.x && a.yPos === pos.y);
+    if (occupied) return;
+
+    setEditAddPos(pos);
+    setEditAddLabel('');
+    setEditAddType('INDIVIDUAL');
+  };
+
+  /** 편집 모드: 좌석 추가 모달 확인 */
+  const handleEditAddConfirm = async () => {
+    if (!editAddPos) return;
+    if (!editAddLabel.trim()) { await alert('좌석 라벨을 입력해주세요.'); return; }
+
+    // 중복 라벨 확인
+    const allLabels = [
+      ...seats.filter((s) => !pendingDeletes.has(s.id)).map((s) => s.seatLabel),
+      ...pendingAdds.map((a) => a.seatLabel),
+    ];
+    if (allLabels.includes(editAddLabel.trim())) {
+      await alert('이미 동일한 좌석 번호가 존재합니다.');
+      return;
+    }
+
+    setPendingAdds((prev) => [...prev, {
+      tempId: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      seatLabel: editAddLabel.trim(),
+      seatType: editAddType,
+      xPos: editAddPos.x,
+      yPos: editAddPos.y,
+    }]);
+    setEditAddPos(null);
+  };
+
+  /** 드래그 시작 (기존 좌석) */
+  const handleDragStart = (e: React.MouseEvent, seatId: number) => {
+    if (!editingLayout) return;
+    e.stopPropagation();
+    const pos = getCanvasPos(e);
+    if (!pos) return;
+    const seat = seats.find((s) => s.id === seatId);
+    if (!seat) return;
+    const editP = getEditPos(seat);
+    dragOffsetRef.current = { dx: pos.x - editP.x, dy: pos.y - editP.y };
+    setDraggingSeatId(seatId);
+  };
+
+  /** 드래그 시작 (추가 예정 좌석) */
+  const handlePendingDragStart = (e: React.MouseEvent, tempId: string, xPos: number, yPos: number) => {
+    if (!editingLayout) return;
+    e.stopPropagation();
+    const pos = getCanvasPos(e);
+    if (!pos) return;
+    dragOffsetRef.current = { dx: pos.x - xPos, dy: pos.y - yPos };
+    setDraggingSeatId(tempId);
+  };
+
+  /** 드래그 중 / 편집 모드 호버 */
+  const handleDragMove = (e: React.MouseEvent) => {
+    if (!draggingSeatId) {
+      if (editingLayout || placingMode) {
+        const raw = getCanvasPos(e);
+        if (raw) setGhostPos(snapToGrid(raw));
+      }
+      return;
+    }
+    const pos = getCanvasPos(e);
+    if (!pos) return;
+    const snapped = snapToGrid({ x: pos.x - dragOffsetRef.current.dx, y: pos.y - dragOffsetRef.current.dy });
+    setGhostPos(snapped);
+  };
+
+  /** 드래그 종료 */
+  const handleDragEnd = () => {
+    if (!draggingSeatId || !ghostPos) {
+      setDraggingSeatId(null);
+      setGhostPos(null);
+      return;
+    }
+
+    // 겹침 확인 (자기 자신 제외)
+    const isOccupied = seats.some((s) => {
+      if (!s.active || pendingDeletes.has(s.id)) return false;
+      if (s.id === draggingSeatId) return false;
+      const p = getEditPos(s);
+      return p.x === ghostPos.x && p.y === ghostPos.y;
+    }) || pendingAdds.some((a) => {
+      if (a.tempId === draggingSeatId) return false;
+      return a.xPos === ghostPos.x && a.yPos === ghostPos.y;
+    });
+
+    if (!isOccupied) {
+      if (typeof draggingSeatId === 'number') {
+        // 기존 좌석 이동
+        setPendingMoves((prev) => {
+          const filtered = prev.filter((m) => m.seatId !== draggingSeatId);
+          const original = seats.find((s) => s.id === draggingSeatId);
+          // 원래 위치로 돌아왔으면 제거
+          if (original && original.xPos === ghostPos.x && original.yPos === ghostPos.y) return filtered;
+          return [...filtered, { seatId: draggingSeatId, xPos: ghostPos.x, yPos: ghostPos.y }];
+        });
+      } else {
+        // 추가 예정 좌석 이동
+        setPendingAdds((prev) => prev.map((a) =>
+          a.tempId === draggingSeatId ? { ...a, xPos: ghostPos.x, yPos: ghostPos.y } : a
+        ));
+      }
+    }
+
+    setDraggingSeatId(null);
+    setGhostPos(null);
+  };
+
+  /** 편집 모드: 추가 예정 좌석 삭제 */
+  const removePendingAdd = (tempId: string) => {
+    setPendingAdds((prev) => prev.filter((a) => a.tempId !== tempId));
+  };
+
+  /** 편집 모드: 기존 좌석 삭제 토글 (이동 기록은 유지하여 위치 보존) */
+  const togglePendingDelete = (seatId: number) => {
+    setPendingDeletes((prev) => {
+      const next = new Set(prev);
+      if (next.has(seatId)) next.delete(seatId);
+      else next.add(seatId);
+      return next;
+    });
+  };
+
+  const pendingChangeCount = pendingAdds.length + pendingMoves.length + pendingDeletes.size;
 
   /* ── 좌석 추가 핸들러 ── */
   const resetAddForm = () => {
@@ -476,6 +771,19 @@ export default function SeatManagement() {
     }
   };
 
+  /** 테이블 처리상태 셀: 배지 + 처리일시 + 승인좌석 */
+  const renderStatusCell = (row: SeatChangeRequest) => (
+    <div className={styles.statusCellWrap}>
+      {getStatusBadge(row.status)}
+      {row.status === 'APPROVED' && row.approvedSeatLabel && (
+        <span className={styles.statusExtra}>{row.approvedSeatLabel}</span>
+      )}
+      {row.status !== 'PENDING' && row.processedAt && (
+        <span className={styles.statusExtra}>{row.processedAt.replace('T', ' ').slice(0, 16)}</span>
+      )}
+    </div>
+  );
+
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     const start = Math.max(1, page - 2);
@@ -501,17 +809,34 @@ export default function SeatManagement() {
             {view === 'layout' ? <LuList /> : <LuLayoutGrid />}
             {view === 'layout' ? '좌석 대기 리스트 보기' : '배치도 보기'}
           </button>
-          {view === 'layout' && (
+          {view === 'layout' && !editingLayout && (
             <button
               type="button"
               className={styles.addSeatBtn}
-              onClick={() => {
-                closeSeatDetail();
-                setPlacingMode('add');
-              }}
+              onClick={enterEditMode}
             >
-              <LuPlus /> 좌석 추가
+              <LuPencil /> 좌석 편집
             </button>
+          )}
+          {view === 'layout' && editingLayout && (
+            <>
+              <button
+                type="button"
+                className={styles.editSaveBtn}
+                onClick={saveEditMode}
+                disabled={savingLayout || pendingChangeCount === 0}
+              >
+                <LuSave /> {savingLayout ? '저장 중...' : `저장 (${pendingChangeCount})`}
+              </button>
+              <button
+                type="button"
+                className={styles.resetButton}
+                onClick={cancelEditMode}
+                disabled={savingLayout}
+              >
+                취소
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -542,7 +867,7 @@ export default function SeatManagement() {
           </div>
 
           {/* 배치 모드 안내 배너 */}
-          {placingMode && (
+          {placingMode && !editingLayout && (
             <div className={styles.placingBanner}>
               <LuMapPin />
               <span>
@@ -553,6 +878,14 @@ export default function SeatManagement() {
               <button type="button" className={styles.placingCancelBtn} onClick={cancelPlacing}>
                 취소
               </button>
+            </div>
+          )}
+
+          {/* 편집 모드 안내 배너 */}
+          {editingLayout && (
+            <div className={styles.placingBanner}>
+              <LuPencil />
+              <span>편집 모드 — 빈 곳을 클릭하면 좌석 추가, 좌석을 드래그하면 이동, 우클릭하면 삭제</span>
             </div>
           )}
 
@@ -570,17 +903,53 @@ export default function SeatManagement() {
             ) : (
               <div
                 ref={canvasRef}
-                className={`${styles.seatCanvas} ${placingMode ? styles.seatCanvasPlacing : ''}`}
+                className={`${styles.seatCanvas} ${placingMode || editingLayout ? styles.seatCanvasPlacing : ''}`}
                 style={{
                   width: canvasSize.width,
                   height: canvasSize.height,
                 }}
-                onClick={handleCanvasClick}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseLeave={handleCanvasMouseLeave}
+                onClick={editingLayout ? handleEditCanvasClick : handleCanvasClick}
+                onMouseMove={editingLayout ? handleDragMove : handleCanvasMouseMove}
+                onMouseUp={editingLayout ? handleDragEnd : undefined}
+                onMouseLeave={() => {
+                  handleCanvasMouseLeave();
+                  if (editingLayout) handleDragEnd();
+                }}
               >
                 {filteredSeats.map((seat) => {
+                  if (editingLayout) {
+                    const isDeleted = pendingDeletes.has(seat.id);
+                    const pos = getEditPos(seat);
+                    const isDragging = draggingSeatId === seat.id;
+                    return (
+                      <div
+                        key={seat.id}
+                        className={`${styles.seatCell} ${isDeleted ? styles.seatDeleted : styles.seatEmpty} ${styles.seatEditable} ${isDragging ? styles.seatDragging : ''}`}
+                        style={{
+                          position: 'absolute',
+                          left: pos.x,
+                          top: pos.y,
+                          opacity: isDragging ? 0.4 : 1,
+                        }}
+                        onMouseDown={(e) => {
+                          if (e.button === 0 && !isDeleted) handleDragStart(e, seat.id);
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          togglePendingDelete(seat.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {!isDeleted && <LuGripVertical className={styles.dragHandle} />}
+                        <span className={styles.seatLabel}>{seat.seatLabel}</span>
+                        {isDeleted && <span className={styles.deletedLabel}>삭제</span>}
+                      </div>
+                    );
+                  }
+
                   const occupied = !!seat.assignedStudentName;
+                  const attClass = seat.attendanceLabel ? (styles[ATT_STYLE_MAP[seat.attendanceLabel]] ?? '') : '';
                   return (
                     <div
                       key={seat.id}
@@ -600,23 +969,72 @@ export default function SeatManagement() {
                       {seat.assignedStudentName && (
                         <span className={styles.seatStudentName}>{seat.assignedStudentName}</span>
                       )}
+                      {seat.attendanceLabel && (
+                        <span
+                          className={`${styles.seatAttStatus} ${attClass}`}
+                          title={seat.seatLeaveReason ? `${seat.attendanceLabel}: ${seat.seatLeaveReason}` : seat.attendanceLabel}
+                        >
+                          {seat.attendanceLabel === '좌석이탈' ? seat.seatLeaveReason ?? '이탈' : seat.attendanceLabel}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
 
-                {/* 고스트 프리뷰 (스냅된 그리드 위치) */}
-                {ghostPos && (() => {
-                  const blocked = isOccupiedCell(ghostPos.x, ghostPos.y);
+                {/* 편집 모드: 추가 예정 좌석 */}
+                {editingLayout && pendingAdds.map((add) => {
+                  const isDragging = draggingSeatId === add.tempId;
                   return (
                     <div
-                      className={`${styles.seatGhost} ${blocked ? styles.seatGhostBlocked : ''}`}
+                      key={add.tempId}
+                      className={`${styles.seatCell} ${styles.seatPendingAdd} ${styles.seatEditable} ${isDragging ? styles.seatDragging : ''}`}
                       style={{
                         position: 'absolute',
-                        left: ghostPos.x,
-                        top: ghostPos.y,
+                        left: add.xPos,
+                        top: add.yPos,
+                        opacity: isDragging ? 0.4 : 1,
                       }}
+                      onMouseDown={(e) => {
+                        if (e.button === 0) handlePendingDragStart(e, add.tempId, add.xPos, add.yPos);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removePendingAdd(add.tempId);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {blocked ? <LuX /> : <LuPlus />}
+                      <LuGripVertical className={styles.dragHandle} />
+                      <span className={styles.seatLabel}>{add.seatLabel}</span>
+                      <span className={styles.newLabel}>추가</span>
+                    </div>
+                  );
+                })}
+
+                {/* 고스트 프리뷰 */}
+                {ghostPos && (() => {
+                  if (editingLayout && draggingSeatId) {
+                    // 드래그 중 고스트
+                    return (
+                      <div
+                        className={styles.seatGhost}
+                        style={{ position: 'absolute', left: ghostPos.x, top: ghostPos.y }}
+                      >
+                        <LuGripVertical />
+                      </div>
+                    );
+                  }
+                  // 편집 모드 호버 또는 배치 모드 호버
+                  const isEditOccupied = editingLayout
+                    ? (seats.some((s) => s.active && !pendingDeletes.has(s.id) && getEditPos(s).x === ghostPos.x && getEditPos(s).y === ghostPos.y)
+                      || pendingAdds.some((a) => a.xPos === ghostPos.x && a.yPos === ghostPos.y))
+                    : isOccupiedCell(ghostPos.x, ghostPos.y);
+                  return (
+                    <div
+                      className={`${styles.seatGhost} ${isEditOccupied ? styles.seatGhostBlocked : ''}`}
+                      style={{ position: 'absolute', left: ghostPos.x, top: ghostPos.y }}
+                    >
+                      {isEditOccupied ? <LuX /> : <LuPlus />}
                     </div>
                   );
                 })()}
@@ -659,6 +1077,7 @@ export default function SeatManagement() {
                 value={statusFilter}
                 onChange={(e) => handleStatusFilter(e.target.value as StatusFilter)}
               >
+                <option value="ALL">전체</option>
                 <option value="PENDING">대기중</option>
                 <option value="APPROVED">승인</option>
                 <option value="REJECTED">거절</option>
@@ -721,7 +1140,7 @@ export default function SeatManagement() {
                       <td>{row.desiredSeat2Label}</td>
                       <td>{row.desiredSeat3Label}</td>
                       <td>{row.createdAt.slice(0, 10)}</td>
-                      <td>{getStatusBadge(row.status)}</td>
+                      <td>{renderStatusCell(row)}</td>
                     </tr>
                   ))
                 )}
@@ -925,6 +1344,15 @@ export default function SeatManagement() {
                         <span className={styles.modalLabel}>반</span>
                         <span className={styles.modalValue}>{selectedSeat.assignedClassName ?? '-'}</span>
                       </div>
+                      {selectedSeat.attendanceLabel && (
+                        <div className={styles.modalRow}>
+                          <span className={styles.modalLabel}>출결현황</span>
+                          <span className={styles.modalValue}>
+                            {selectedSeat.attendanceLabel}
+                            {selectedSeat.seatLeaveReason && ` (${selectedSeat.seatLeaveReason})`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className={styles.emptyText}>착석자 없음</p>
@@ -1100,6 +1528,56 @@ export default function SeatManagement() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {/* ── 편집 모드: 좌석 추가 모달 ── */}
+      {editAddPos && (
+        <div className={styles.modalOverlay} onClick={() => setEditAddPos(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>좌석 추가</h3>
+              <button type="button" className={styles.modalCloseBtn} onClick={() => setEditAddPos(null)}>
+                <LuX />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>좌석 라벨</label>
+                <input
+                  className={styles.formInput}
+                  value={editAddLabel}
+                  onChange={(e) => setEditAddLabel(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleEditAddConfirm(); }}
+                  placeholder="예: A-1"
+                  autoFocus
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>좌석 유형</label>
+                <select
+                  className={styles.formSelect}
+                  value={editAddType}
+                  onChange={(e) => setEditAddType(e.target.value)}
+                >
+                  <option value="INDIVIDUAL">개인석</option>
+                  <option value="GROUP">그룹석</option>
+                </select>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.resetButton} onClick={() => setEditAddPos(null)}>
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.searchButton}
+                onClick={handleEditAddConfirm}
+                disabled={!editAddLabel.trim()}
+              >
+                추가
+              </button>
+            </div>
           </div>
         </div>
       )}

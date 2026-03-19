@@ -36,12 +36,17 @@ export default function NoticeManagement() {
     fetchNotices();
   }, [fetchNotices]);
 
-  const filteredNotices = notices.filter((n) => {
-    if (appliedSearch.trim()) {
-      if (!n.title.toLowerCase().includes(appliedSearch.toLowerCase())) return false;
-    }
-    return true;
-  });
+  const filteredNotices = notices
+    .filter((n) => {
+      if (appliedSearch.trim()) {
+        if (!n.title.toLowerCase().includes(appliedSearch.toLowerCase())) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return 0;
+    });
 
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / ITEMS_PER_PAGE));
   const pageNotices = filteredNotices.slice(
@@ -144,7 +149,7 @@ export default function NoticeManagement() {
                 </tr>
               ) : (
                 pageNotices.map((notice, idx) => (
-                  <tr key={notice.id}>
+                  <tr key={notice.id} className={notice.pinned ? styles.pinnedRow : ''}>
                     <td className={styles.checkboxCol}>
                       <input type="checkbox" />
                     </td>
@@ -153,6 +158,7 @@ export default function NoticeManagement() {
                       className={styles.titleCell}
                       onClick={() => navigate(`/notices/${notice.id}`)}
                     >
+                      {notice.pinned && <span className={styles.pinIcon}>📌</span>}
                       {notice.title}
                     </td>
                     <td>{formatDate(notice.createdAt)}</td>

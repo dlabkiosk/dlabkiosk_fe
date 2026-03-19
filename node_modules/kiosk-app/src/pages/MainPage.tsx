@@ -12,6 +12,7 @@ import SeatLeaveReasonModal from '../components/SeatLeaveReasonModal';
 import WeeklyMealModal from '../components/WeeklyMealModal';
 import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
 import SeatChangeModal from '../components/SeatChangeModal';
+import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
 import { tag, tagConfirm } from '../api/tagApi';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
@@ -33,6 +34,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showRemoteApply, setShowRemoteApply] = useState(false);
   const [showSeatLeaveReason, setShowSeatLeaveReason] = useState(false);
   const [showMealPlan, setShowMealPlan] = useState(false);
+  const [showSeatMap, setShowSeatMap] = useState(false);
   const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string } | null>(null);
   const [seatChangeStudent, setSeatChangeStudent] = useState<Student | null>(null);
   const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number } | null>(null);
@@ -54,7 +56,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   useQrScanner(handleQrScan);
 
   // 모달이 하나라도 열려 있는지 확인 (auto-tag 판별용)
-  const isAnyModalOpen = !!(scanTarget || showAdmin || showRemoteApply || showSeatLeaveReason || showMealPlan || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
+  const isAnyModalOpen = !!(scanTarget || showAdmin || showRemoteApply || showSeatLeaveReason || showMealPlan || showSeatMap || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
   const isAnyModalOpenRef = useRef(isAnyModalOpen);
   isAnyModalOpenRef.current = isAnyModalOpen;
 
@@ -92,6 +94,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId: 'student-info', label: '학적 조회' });
+    } else if (menuId === 'seat-map') {
+      setShowSeatMap(true);
     }
   };
 
@@ -143,6 +147,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
 
   const handleTagAction = useCallback(async (params: ScanActionParams) => {
     const identifier = await resolveIdentifier(params);
+    console.log('[handleTagAction] params:', params, '→ identifier:', JSON.stringify(identifier));
 
     // 좌석 이탈 중이면 먼저 복귀 처리
     try {
@@ -295,6 +300,10 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           student={studentInfoTarget}
           onClose={() => setStudentInfoTarget(null)}
         />
+      )}
+
+      {showSeatMap && (
+        <SeatMapModal onClose={() => setShowSeatMap(false)} />
       )}
 
       {showAdmin && (
