@@ -39,7 +39,7 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-md);
-  height: 30px;
+  height: var(--size-icon-btn);
   background-color: var(--color-bg-card);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -71,7 +71,7 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-md);
-  height: 30px;
+  height: var(--size-icon-btn);
   background-color: var(--color-text-primary);
   color: var(--color-bg-card);
   border: none;
@@ -88,7 +88,7 @@
 
 .refreshBtn {
   padding: 0 var(--spacing-md);
-  height: 30px;
+  height: var(--size-icon-btn);
   background-color: var(--color-bg-card);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -149,7 +149,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   cursor: pointer;
-  min-width: 120px;
+  min-width: var(--size-detail-label);
 }
 
 .filterInput {
@@ -163,7 +163,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 140px;
+  width: var(--size-select-width);
 }
 
 .filterInput:focus {
@@ -247,7 +247,7 @@
 
 .placingCancelBtn {
   margin-left: auto;
-  padding: 4px 12px;
+  padding: var(--spacing-xs) var(--size-badge-padding-h);
   border: 1px solid #90caf9;
   border-radius: var(--radius-sm);
   background-color: #ffffff;
@@ -273,7 +273,7 @@
   background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
-  background-size: 80px 60px;
+  background-size: var(--size-seat-width) var(--size-seat-height);
 }
 
 .seatCell {
@@ -282,9 +282,9 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  padding: 4px 4px;
-  width: 80px;
-  height: 60px;
+  padding: var(--spacing-xs) var(--spacing-xs);
+  width: var(--size-seat-width);
+  height: var(--size-seat-height);
   gap: 1px;
   border: 1px solid var(--color-border);
   cursor: default;
@@ -306,13 +306,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 60px;
+  width: var(--size-seat-width);
+  height: var(--size-seat-height);
   border: 2px dashed var(--color-primary);
   border-radius: var(--radius-sm);
   background-color: rgba(59, 130, 246, 0.08);
   color: var(--color-primary);
-  font-size: 20px;
+  font-size: var(--font-size-2xl);
   pointer-events: none;
   box-sizing: border-box;
 }
@@ -326,7 +326,7 @@
 
 /* ── Position Preview ── */
 .positionPreview {
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--size-badge-padding-h);
   background-color: var(--color-gray-50, #f9fafb);
   border: 1px solid var(--color-gray-200, #e5e7eb);
   border-radius: var(--radius-md);
@@ -342,7 +342,7 @@
   justify-content: center;
   gap: var(--spacing-xs);
   width: 100%;
-  padding: 8px;
+  padding: var(--spacing-sm);
   border: 1px dashed var(--color-primary);
   border-radius: var(--radius-md);
   background-color: var(--color-primary-light);
@@ -368,32 +368,32 @@
 }
 
 .seatLabel {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .seatStudentName {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 72px;
+  max-width: var(--size-seat-text-max);
   text-align: center;
 }
 
 /* ── Seat Attendance Status ── */
 .seatAttStatus {
-  font-size: 9px;
+  font-size: var(--font-size-3xs);
   font-weight: 600;
   line-height: 1;
-  padding: 1px 4px;
+  padding: 1px var(--spacing-xs);
   border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 72px;
+  max-width: var(--size-seat-text-max);
   text-align: center;
 }
 
@@ -445,7 +445,7 @@
   padding: var(--spacing-sm);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 /* ── Empty Text ── */
@@ -464,7 +464,7 @@
 
 /* ── Waiting List Button (Small, in modal) ── */
 .waitingListBtnSm {
-  padding: 4px 12px;
+  padding: var(--spacing-xs) var(--size-badge-padding-h);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-primary);
@@ -484,7 +484,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 4px 12px;
+  padding: var(--spacing-xs) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -505,7 +505,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 4px 12px;
+  padding: var(--spacing-xs) var(--size-badge-padding-h);
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -585,7 +585,7 @@
 
 /* ── Delete Button ── */
 .deleteBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -640,7 +640,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 
@@ -739,7 +739,7 @@
   background-color: var(--color-bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  width: 420px;
+  width: var(--size-modal-sm);
   max-width: 90vw;
   overflow: hidden;
 }
@@ -762,8 +762,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: var(--size-close-btn);
+  height: var(--size-close-btn);
   border: none;
   border-radius: var(--radius-sm);
   background: none;
@@ -791,7 +791,7 @@
 }
 
 .modalLabel {
-  width: 100px;
+  width: var(--size-modal-label);
   flex-shrink: 0;
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -812,7 +812,7 @@
 }
 
 .approveBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid #81c784;
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -828,7 +828,7 @@
 }
 
 .rejectBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -855,8 +855,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 8px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm-md) var(--spacing-sm);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-card);
@@ -944,7 +944,7 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-md);
-  height: 30px;
+  height: var(--size-icon-btn);
   background-color: #2e7d32;
   color: #ffffff;
   border: none;
@@ -1001,13 +1001,13 @@
 }
 
 .deletedLabel {
-  font-size: 9px;
+  font-size: var(--font-size-3xs);
   font-weight: 600;
   color: #dc2626;
 }
 
 .newLabel {
-  font-size: 9px;
+  font-size: var(--font-size-3xs);
   font-weight: 600;
   color: #1565c0;
 }

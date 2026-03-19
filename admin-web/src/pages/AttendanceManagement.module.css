@@ -75,7 +75,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 100px;
+  width: var(--size-filter-input);
 }
 
 .filterInput:focus {
@@ -93,7 +93,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   cursor: pointer;
-  min-width: 80px;
+  min-width: var(--size-filter-select-min);
 }
 
 .searchButton {
@@ -176,7 +176,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 

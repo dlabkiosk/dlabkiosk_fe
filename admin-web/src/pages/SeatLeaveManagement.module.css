@@ -75,7 +75,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 100px;
+  width: var(--size-filter-input);
 }
 
 .filterInput:focus {
@@ -226,7 +226,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 

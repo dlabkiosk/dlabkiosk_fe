@@ -75,7 +75,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 100px;
+  width: var(--size-filter-input);
 }
 
 .filterInput:focus {
@@ -206,7 +206,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 
@@ -256,7 +256,7 @@
 .memoCell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs-sm);
 }
 
 .memoText {
@@ -268,7 +268,7 @@
 
 .memoInput {
   flex: 1;
-  padding: 4px 8px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-md);
@@ -280,8 +280,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--size-icon-btn-sm);
+  height: var(--size-icon-btn-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -309,7 +309,7 @@
 
 /* ── Memo td ── */
 .memoTd {
-  max-width: 180px;
+  max-width: var(--size-memo-max-width);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -324,21 +324,21 @@
 .actionGroup {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .iconBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--size-icon-btn);
+  height: var(--size-icon-btn);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #ffffff;
   color: var(--color-text-secondary);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   transition: background-color 0.15s, color 0.15s;
 }
 
@@ -358,7 +358,7 @@
 }
 
 .bulkDeleteButton {
-  padding: 5px 14px;
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -388,8 +388,8 @@
   position: relative;
   background: #fff;
   border-radius: var(--radius-md);
-  padding: 32px;
-  width: 480px;
+  padding: var(--spacing-xl);
+  width: var(--size-modal);
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
@@ -397,13 +397,13 @@
 
 .modalClose {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: var(--spacing-xl);
+  height: var(--spacing-xl);
   border: none;
   background: none;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -420,28 +420,28 @@
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-text-primary);
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md-lg);
 }
 
 .detailTable {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md-lg);
 }
 
 .detailTable th {
   text-align: right;
-  padding: 8px 16px 8px 0;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 0;
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text-secondary);
   white-space: nowrap;
-  width: 120px;
+  width: var(--size-detail-label);
   border-bottom: 1px solid var(--color-border-light);
 }
 
 .detailTable td {
-  padding: 8px 0;
+  padding: var(--spacing-sm) 0;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
@@ -457,11 +457,11 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  margin-top: 12px;
+  margin-top: var(--size-badge-padding-h);
 }
 
 .modalBtnPrimary {
-  padding: 8px 24px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background-color: var(--color-text-primary);
   color: #fff;
   border: none;
@@ -476,7 +476,7 @@
 }
 
 .modalBtnSecondary {
-  padding: 8px 24px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background-color: #fff;
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -491,7 +491,7 @@
 }
 
 .modalBtnDanger {
-  padding: 8px 24px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background-color: #fff;
   color: #dc2626;
   border: 1px solid #fca5a5;
@@ -508,7 +508,7 @@
 /* ── Edit inputs ── */
 .editInput {
   width: 100%;
-  padding: 6px 10px;
+  padding: var(--spacing-xs-sm) var(--spacing-sm-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-md);
@@ -524,7 +524,7 @@
 
 .editTextarea {
   width: 100%;
-  padding: 6px 10px;
+  padding: var(--spacing-xs-sm) var(--spacing-sm-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-md);

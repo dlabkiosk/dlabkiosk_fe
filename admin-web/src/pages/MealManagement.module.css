@@ -75,7 +75,7 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 100px;
+  width: var(--size-filter-input);
 }
 
 .filterInput:focus {
@@ -204,7 +204,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 
@@ -245,7 +245,7 @@
 }
 
 .tagMark {
-  margin-right: 6px;
+  margin-right: var(--spacing-xs-sm);
 }
 
 .tagTime {
@@ -257,7 +257,7 @@
   color: #dc2626;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  margin-left: 6px;
+  margin-left: var(--spacing-xs-sm);
 }
 
 /* ── Pagination ── */

@@ -34,7 +34,7 @@
 }
 
 .tabBtn {
-  padding: 12px 24px;
+  padding: var(--size-badge-padding-h) var(--spacing-lg);
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 500;
@@ -95,7 +95,7 @@
 
 /* ── View Toggle ── */
 .viewToggle {
-  padding: 5px 14px;
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #fff;
@@ -111,7 +111,7 @@
 
 /* ── Form ── */
 .formGroup {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md-lg);
 }
 
 .formLabel {
@@ -119,12 +119,12 @@
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .formInput {
   width: 100%;
-  padding: 9px 12px;
+  padding: var(--size-input-padding-v-sm) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -143,13 +143,13 @@
 
 .formValue {
   margin: 0;
-  padding: 9px 0;
+  padding: var(--size-input-padding-v-sm) 0;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 
 .formInputSm {
-  padding: 7px 10px;
+  padding: var(--size-btn-padding-v-md) var(--spacing-sm-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -166,13 +166,13 @@
 .radioGroup {
   display: flex;
   gap: var(--spacing-md);
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm-md);
 }
 
 .radioLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs-sm);
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -182,12 +182,12 @@
 .uploadArea {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-md);
-  padding: 32px;
+  padding: var(--spacing-xl);
   text-align: center;
 }
 
 .uploadBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #fff;
@@ -202,7 +202,7 @@
 }
 
 .uploadHint {
-  margin-top: 10px;
+  margin-top: var(--spacing-sm-md);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
@@ -210,7 +210,7 @@
 /* ── 미리보기 (4:3) ── */
 .previewBox {
   position: relative;
-  width: 320px;
+  width: var(--size-preview-width);
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -246,7 +246,7 @@
 .dragHandle {
   cursor: grab;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-md);
   text-align: center;
   user-select: none;
 }
@@ -267,7 +267,7 @@
 }
 
 .positionBtn {
-  padding: 7px 16px;
+  padding: var(--size-btn-padding-v-md) var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #fff;
@@ -306,11 +306,11 @@
   display: flex;
   justify-content: center;
   gap: var(--spacing-sm);
-  margin-top: 24px;
+  margin-top: var(--spacing-lg);
 }
 
 .btnPrimary {
-  padding: 9px 28px;
+  padding: var(--size-input-padding-v-sm) var(--size-btn-padding-h-lg);
   background-color: var(--color-text-primary);
   color: #fff;
   border: none;
@@ -326,7 +326,7 @@
 }
 
 .btnSecondary {
-  padding: 9px 28px;
+  padding: var(--size-input-padding-v-sm) var(--size-btn-padding-h-lg);
   background-color: #fff;
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -349,7 +349,7 @@
 
 .dataTable th {
   text-align: center;
-  padding: 10px 8px;
+  padding: var(--spacing-sm-md) var(--spacing-sm);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -360,7 +360,7 @@
 
 .dataTable td {
   text-align: center;
-  padding: 12px 8px;
+  padding: var(--size-badge-padding-h) var(--spacing-sm);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
@@ -371,8 +371,8 @@
 }
 
 .dataTable input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   cursor: pointer;
   accent-color: var(--color-primary);
 }
@@ -385,7 +385,7 @@
 }
 
 .bannerThumb {
-  width: 80px;
+  width: var(--size-seat-width);
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-sm);
   background: #1a1a2e;
@@ -396,8 +396,8 @@
 /* ── Status Badge ── */
 .statusBadge {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 4px;
+  padding: var(--size-badge-padding-v) var(--spacing-sm-md);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
   background-color: #dbeafe;
@@ -407,7 +407,7 @@
 .editBtn {
   border: none;
   background: none;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   color: var(--color-text-muted);
   cursor: pointer;
 }
@@ -421,11 +421,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md-lg);
 }
 
 .calTitle {
-  font-size: 24px;
+  font-size: var(--font-size-3xl);
   font-weight: 300;
   color: var(--color-text-primary);
 }
@@ -441,12 +441,12 @@
 
 .calNav {
   display: flex;
-  gap: 6px;
+  gap: var(--spacing-xs-sm);
 }
 
 .calNavBtn {
-  width: 30px;
-  height: 30px;
+  width: var(--size-icon-btn);
+  height: var(--size-icon-btn);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #fff;
@@ -469,7 +469,7 @@
 }
 
 .examCalendar th {
-  padding: 8px;
+  padding: var(--spacing-sm);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -479,8 +479,8 @@
 
 .examCalCell {
   vertical-align: top;
-  padding: 8px;
-  height: 100px;
+  padding: var(--spacing-sm);
+  height: var(--size-cal-cell-height);
   border-bottom: 1px solid var(--color-border-light);
   border-right: 1px solid var(--color-border-light);
 }
@@ -493,11 +493,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  font-size: 13px;
+  width: var(--size-icon-btn-sm);
+  height: var(--size-icon-btn-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: var(--spacing-xs);
 }
 
 .examCalToday {
@@ -510,13 +510,13 @@
 .examCalEvents {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--size-badge-padding-v);
 }
 
 .examEvent {
-  padding: 2px 6px;
+  padding: 2px var(--spacing-xs-sm);
   border-radius: 3px;
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -541,8 +541,8 @@
 
 .examStatusBadge {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 4px;
+  padding: var(--size-badge-padding-v) var(--spacing-sm-md);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
@@ -564,7 +564,7 @@
 }
 
 .addBtn {
-  padding: 8px 18px;
+  padding: var(--spacing-sm) var(--size-btn-padding-h-md);
   background-color: var(--color-text-primary);
   color: #fff;
   border: none;
@@ -600,8 +600,8 @@
   position: relative;
   background: #fff;
   border-radius: var(--radius-md);
-  padding: 32px;
-  width: 480px;
+  padding: var(--spacing-xl);
+  width: var(--size-modal);
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
@@ -609,13 +609,13 @@
 
 .modalClose {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: var(--size-page-btn);
+  height: var(--size-page-btn);
   border: none;
   background: none;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -632,20 +632,20 @@
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-text-primary);
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .modalForm {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .modalActions {
   display: flex;
   justify-content: center;
   gap: var(--spacing-sm);
-  margin-top: 24px;
+  margin-top: var(--spacing-lg);
 }
 
 /* ── Time Row ── */
@@ -662,7 +662,7 @@
 
 /* ── Toggle Button (키오스크 활성화) ── */
 .toggleBtn {
-  padding: 4px 14px;
+  padding: var(--spacing-xs) var(--size-btn-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #fff;

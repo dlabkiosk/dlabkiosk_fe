@@ -62,7 +62,7 @@
 /* ── Calendar Dropdown ── */
 .calendarDropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + var(--spacing-xs-sm));
   left: 0;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -70,19 +70,19 @@
   box-shadow: var(--shadow-lg);
   padding: var(--size-badge-padding-h);
   z-index: 100;
-  min-width: 300px;
+  min-width: var(--size-calendar-width);
 }
 
 .calendarHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm-md);
 }
 
 .calNavBtn {
-  width: 28px;
-  height: 28px;
+  width: var(--size-close-btn);
+  height: var(--size-close-btn);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #fff;
@@ -110,7 +110,7 @@
 }
 
 .calendarTable th {
-  padding: 6px 0;
+  padding: var(--spacing-xs-sm) 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-muted);
@@ -125,7 +125,7 @@
 /* ── Calendar Day Cells ── */
 .calDay {
   padding: 7px 4px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   cursor: pointer;
   transition: background 0.1s;
@@ -216,12 +216,12 @@
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  width: 100px;
+  width: var(--size-filter-input);
 }
 
 .filterInputShort {
   composes: filterInput;
-  width: 70px;
+  width: var(--size-filter-input-sm);
 }
 
 .filterInput:focus,
@@ -331,7 +331,7 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 

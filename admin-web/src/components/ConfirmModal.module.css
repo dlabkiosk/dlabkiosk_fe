@@ -11,16 +11,16 @@
 .modal {
   background: #fff;
   border-radius: var(--radius-lg);
-  padding: 32px;
-  width: 400px;
+  padding: var(--spacing-xl);
+  width: var(--size-modal-xs);
   max-width: 90vw;
 }
 
 .message {
-  font-size: 15px;
+  font-size: var(--font-size-md-lg);
   color: var(--color-text-primary);
   line-height: 1.6;
-  margin: 0 0 24px 0;
+  margin: 0 0 var(--spacing-lg) 0;
   white-space: pre-line;
 }
 
@@ -28,15 +28,15 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .cancelBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #fff;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: background 0.15s;
@@ -47,11 +47,11 @@
 }
 
 .confirmBtn {
-  padding: 8px 20px;
+  padding: var(--spacing-sm) var(--spacing-md-lg);
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-text-primary);
-  font-size: 14px;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: #fff;
   cursor: pointer;
@@ -69,17 +69,17 @@
 
 .promptInput {
   width: 100%;
-  padding: 0 12px;
-  height: 36px;
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
   box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
   background-color: var(--color-bg-card);
   outline: none;
   transition: border-color 0.15s;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md-lg);
 }
 
 .promptInput:focus {

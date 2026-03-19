@@ -49,8 +49,8 @@
 .newButton {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
+  gap: var(--spacing-xs-sm);
+  padding: var(--size-btn-padding-v-md) var(--spacing-md);
   background-color: #ffffff;
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -67,7 +67,7 @@
 }
 
 .categorySelect {
-  padding: 7px 12px;
+  padding: var(--size-btn-padding-v-md) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -92,12 +92,12 @@
 }
 
 .searchInput {
-  padding: 7px 12px;
+  padding: var(--size-btn-padding-v-md) var(--size-badge-padding-h);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border: none;
   outline: none;
-  width: 200px;
+  width: var(--size-search-input);
 }
 
 .searchInput::placeholder {
@@ -108,7 +108,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  padding: var(--size-btn-padding-v-md) var(--size-badge-padding-h);
   color: var(--color-text-secondary);
   transition: color 0.15s;
 }
@@ -126,7 +126,7 @@
 
 .table th {
   text-align: center;
-  padding: 12px var(--spacing-md);
+  padding: var(--size-th-padding-v) var(--spacing-md);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -137,7 +137,7 @@
 .table td {
   text-align: center;
   vertical-align: middle;
-  padding: 11px var(--spacing-md);
+  padding: var(--size-cell-padding-v) var(--spacing-md);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
@@ -152,13 +152,13 @@
 }
 
 .checkboxCol {
-  width: 40px;
+  width: var(--size-checkbox-col);
   text-align: center !important;
 }
 
 .checkboxCol input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   cursor: pointer;
   accent-color: var(--color-primary);
 }
@@ -186,7 +186,7 @@
 }
 
 .pinIcon {
-  margin-right: 6px;
+  margin-right: var(--spacing-xs-sm);
   font-size: var(--font-size-sm);
 }
 
@@ -218,8 +218,8 @@
 }
 
 .pageButton {
-  min-width: 32px;
-  height: 32px;
+  min-width: var(--size-page-btn);
+  height: var(--size-page-btn);
   display: flex;
   align-items: center;
   justify-content: center;

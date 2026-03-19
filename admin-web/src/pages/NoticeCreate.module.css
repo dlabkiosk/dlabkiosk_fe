@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--size-input-height);
+  height: var(--size-input-height);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-lg);
@@ -69,7 +69,7 @@
 }
 
 .select {
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -78,7 +78,7 @@
   background-color: #ffffff;
   cursor: pointer;
   outline: none;
-  width: 140px;
+  width: var(--size-select-width);
 }
 
 .select:focus {
@@ -100,14 +100,14 @@
 }
 
 .pinnedCheckbox {
-  width: 16px;
-  height: 16px;
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   cursor: pointer;
   accent-color: var(--color-primary);
 }
 
 .input {
-  padding: 10px 12px;
+  padding: var(--spacing-sm-md) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
@@ -125,14 +125,14 @@
 }
 
 .textarea {
-  padding: 12px;
+  padding: var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   outline: none;
   resize: vertical;
-  min-height: 200px;
+  min-height: var(--size-textarea-min-height);
   font-family: inherit;
   line-height: 1.6;
   transition: border-color 0.15s;
@@ -161,7 +161,7 @@
 }
 
 .submitButton {
-  padding: 10px 36px;
+  padding: var(--spacing-sm-md) var(--size-btn-padding-h-xl);
   background-color: var(--color-text-primary);
   color: #ffffff;
   border-radius: var(--radius-md);
@@ -180,7 +180,7 @@
 }
 
 .cancelButton {
-  padding: 10px 36px;
+  padding: var(--spacing-sm-md) var(--size-btn-padding-h-xl);
   background-color: #ffffff;
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
