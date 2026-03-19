@@ -44,10 +44,7 @@ async function request<T>(
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  // 401 → 세션 만료 → 로그인 페이지로 이동
   if (res.status === 401) {
-    sessionStorage.removeItem('kioskSession');
-    window.location.reload();
     throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.');
   }
 
