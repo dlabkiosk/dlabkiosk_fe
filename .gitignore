@@ -1,0 +1,7 @@
+node_modules
+admin-web/node_modules
+kiosk-app/node_modules
+dist
+admin-web/dist
+kiosk-app/dist
+.vercel
