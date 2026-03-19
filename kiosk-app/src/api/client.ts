@@ -94,14 +94,14 @@ export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'GET' });
 }
 
-export function apiPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+export function apiPost<T>(path: string, body?: object): Promise<T> {
   return request<T>(path, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
   });
 }
 
-export function apiDelete<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+export function apiDelete<T>(path: string, body?: object): Promise<T> {
   return request<T>(path, {
     method: 'DELETE',
     body: body ? JSON.stringify(body) : undefined,
