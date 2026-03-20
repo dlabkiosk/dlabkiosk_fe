@@ -65,9 +65,12 @@ export default function Header({ onAdminAccess }: HeaderProps) {
         onClick={handleLogoTap}
       />
       <div className={styles.ddayList}>
-        {ddays.map((item) => (
-          <span key={item.label} className={styles.ddayTag}>
-            {item.label} {item.dday}
+        {ddays.map((item, idx) => (
+          <span
+            key={item.label}
+            className={`${styles.ddayTag} ${idx === ddays.length - 1 ? styles.ddayTagPrimary : ''}`}
+          >
+            {item.label} <span className={idx === ddays.length - 1 ? styles.ddayValuePrimary : styles.ddayValue}>{item.dday}</span>
           </span>
         ))}
       </div>

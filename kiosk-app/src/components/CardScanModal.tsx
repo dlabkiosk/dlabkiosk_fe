@@ -15,7 +15,7 @@ const PHONE_DIGITS_LENGTH = 4;
 const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 5000;
 const ERROR_DISPLAY_MS = 2000;
-const SEAT_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', 'A', '-', '0', 'backspace'] as const;
+const SEAT_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'] as const;
 const PHONE_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'] as const;
 
 type KeypadMode = 'seatLabel' | 'phoneLast4';
@@ -47,16 +47,18 @@ interface CardScanModalProps {
   secureClose?: boolean;
   /** true이면 카드/QR 스캔 화면 없이 좌석번호/전번 선택지로 바로 진입 */
   keypadOnly?: boolean;
+  /** keypadOnly 시 초기 키패드 모드 지정 */
+  defaultKeypadMode?: KeypadMode;
   onClose: () => void;
   onStudentFound?: (student: Student) => void;
   onAction?: (params: ScanActionParams) => Promise<ScanActionResult>;
   onPendingConfirm?: (identifier: string, action: string) => Promise<ScanActionResult>;
 }
 
-export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, onClose, onStudentFound, onAction, onPendingConfirm }: CardScanModalProps) {
+export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onPendingConfirm }: CardScanModalProps) {
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(null);
+  const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(defaultKeypadMode ?? null);
   const [inputValue, setInputValue] = useState('');
   const [successInfo, setSuccessInfo] = useState<{ name: string; action: string } | null>(null);
   const [studentMessages, setStudentMessages] = useState<StudentMessage[]>([]);
@@ -89,7 +91,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
   const showSuccess = useCallback((name: string, message?: string, studentId?: number, resultPendingActions?: PendingActionItem[], identifier?: string) => {
     setSearching(false);
-    setSuccessInfo({ name, action: message || `${title} 처리 되었습니다.` });
+    setSuccessInfo({ name, action: message || '출결 처리 되었습니다.' });
     setStudentMessages([]);
 
     // pendingActions가 있으면 자동 닫기 안 함 (사용자 확인 필요)
@@ -116,7 +118,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         })
         .catch(() => { /* 메시지 조회 실패는 무시 */ });
     }
-  }, [title, startSuccessTimer]);
+  }, [startSuccessTimer]);
 
   const handleStudentFound = useCallback((student: Student) => {
     setSearching(false);
@@ -256,7 +258,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         setPendingActions([]);
         setPendingIdentifier(null);
         setConfirmingAction(false);
-        setSuccessInfo({ name: result.name, action: result.message || `${title} 처리 되었습니다.` });
+        setSuccessInfo({ name: result.name, action: result.message || '출결 처리 되었습니다.' });
         startSuccessTimer(SUCCESS_DISPLAY_MS);
       })
       .catch((err) => {
@@ -266,7 +268,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         setPendingActions([]);
         startSuccessTimer(ERROR_DISPLAY_MS);
       });
-  }, [pendingIdentifier, onPendingConfirm, confirmingAction, title, startSuccessTimer, showError]);
+  }, [pendingIdentifier, onPendingConfirm, confirmingAction, startSuccessTimer, showError]);
 
   const handleDismissPending = useCallback(() => {
     setPendingActions([]);
@@ -294,14 +296,15 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
             </p>
             {studentMessages.length > 0 && (
               <div className={styles.studentMessages}>
+                <span className={styles.studentMessagesLabel}>전달된 메시지</span>
                 {studentMessages.map((msg) => (
-                  <p key={msg.id} className={styles.studentMessageItem}>
-                    {msg.content}
-                  </p>
+                  <div key={msg.id} className={styles.studentMessageBubble}>
+                    <p className={styles.studentMessageText}>{msg.content}</p>
+                  </div>
                 ))}
               </div>
             )}
-            {pendingActions.length > 0 && (
+            {pendingActions.length > 0 ? (
               <div className={styles.pendingSection}>
                 {pendingActions.map((pa) => (
                   <button
@@ -323,6 +326,14 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
                   확인 안함
                 </button>
               </div>
+            ) : (
+              <button
+                type="button"
+                className={styles.closeSuccessButton}
+                onClick={onClose}
+              >
+                닫기
+              </button>
             )}
           </div>
         </div>
@@ -401,7 +412,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
           <div className={styles.keypadSection}>
             <div className={styles.studentIdDisplay}>
               <span className={inputValue ? styles.studentIdValue : styles.studentIdPlaceholder}>
-                {inputValue || (keypadMode === 'seatLabel' ? '예: A-1' : '휴대폰 뒷자리')}
+                {inputValue || (keypadMode === 'seatLabel' ? '좌석 번호' : '휴대폰 뒷자리')}
               </span>
             </div>
 

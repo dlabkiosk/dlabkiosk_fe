@@ -9,40 +9,147 @@
 }
 
 .panel {
+  position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-6);
-  width: 380px;
+  border-radius: var(--radius-md);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  width: calc(var(--space-5) * 15);
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-6);
-}
-
-.title {
-  font-size: var(--font-3xl);
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-}
-
+/* ── 닫기 버튼 ── */
 .closeButton {
-  width: var(--icon-lg);
-  height: var(--icon-lg);
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: var(--space-7);
+  height: var(--space-7);
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-medium);
-  background: var(--color-bg-white);
+  border: none;
+  background: transparent;
   font-size: var(--font-base);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ── 인증 화면 ── */
+.authTitle {
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.passwordGuide {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+  text-align: center;
+  margin-bottom: var(--space-10);
+}
+
+.passwordDots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.dot {
+  width: var(--space-6);
+  height: 0.125rem;
+  border-radius: 0;
+  background: var(--color-border-medium);
+  transition: background 0.15s;
+}
+
+.dotFilled {
+  background: var(--color-text);
+}
+
+.passwordError {
+  font-size: var(--font-sm);
+  color: var(--color-error);
+  text-align: center;
+  margin-top: calc(-1 * var(--space-4));
+  margin-bottom: var(--space-4);
+}
+
+/* ── 키패드 ── */
+.keypad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.keypadRow {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.keypadButton {
+  flex: 1;
+  height: calc(var(--space-7) * 2);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.keypadButton:active {
+  background-color: var(--color-bg-gray);
+}
+
+.keypadSpecial {
+  font-size: var(--font-xl);
+  color: var(--color-text-muted);
+}
+
+/* ── 입력 완료 버튼 ── */
+.submitButton {
+  width: 100%;
+  height: calc(var(--space-5) * 1.8);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-2xs);
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.submitButton:active {
+  background: var(--color-primary-active);
+}
+
+.submitButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── 관리자 패널 (인증 후) ── */
+.title {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-6);
 }
 
 .section {
@@ -54,7 +161,7 @@
 }
 
 .sectionTitle {
-  font-size: var(--font-md);
+  font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   margin-bottom: var(--space-3);
@@ -70,12 +177,12 @@
 }
 
 .infoLabel {
-  font-size: var(--font-base);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
 }
 
 .infoValue {
-  font-size: var(--font-base);
+  font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
@@ -91,32 +198,32 @@
 
 .infoBadgeActive {
   font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xs);
   color: var(--color-success);
   background: var(--color-success-bg);
 }
 
 .infoBadgeButton {
   font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  background: #e8f0fb;
+  border-radius: var(--radius-2xs);
+  color: var(--color-badge-new);
+  background: var(--color-badge-upcoming);
   border: none;
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .infoBadgeButton:active {
-  background: #d4e4f7;
+  background: #c5efe8;
 }
 
-.infoBadgeDisabled {
+/* .infoBadgeDisabled {
   font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   color: var(--color-text-placeholder);
@@ -134,97 +241,35 @@
   background: #fde8ea;
   border: none;
   cursor: default;
-}
-
-.passwordGuide {
-  font-size: var(--font-md);
-  color: var(--color-text-hint);
-  text-align: center;
-  margin-bottom: var(--space-5);
-}
-
-.passwordDots {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-
-.dot {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-full);
-  border: 2px solid var(--color-border-medium);
-  background: transparent;
-}
-
-.dotFilled {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-full);
-  border: 2px solid var(--color-primary);
-  background: var(--color-primary);
-}
-
-.passwordError {
-  font-size: var(--font-sm);
-  color: var(--color-error);
-  text-align: center;
-  margin-bottom: var(--space-3);
-}
-
-.keypad {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.keypadRow {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.keypadButton {
-  flex: 1;
-  height: 56px;
-  font-size: var(--font-2xl);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-  background: var(--color-bg-gray);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.1s;
-}
-
-.keypadButton:active {
-  background-color: var(--color-border-dark);
-}
+} */
 
 .errorText {
-  font-size: var(--font-xs);
+  font-size: 0.6875rem;
   color: var(--color-error);
   margin-top: var(--space-1);
 }
 
+.refreshWarning {
+  font-size: var(--font-xs);
+  color: var(--color-error);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
 .buttonGroup {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .actionButton {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-base);
-  font-weight: var(--weight-semibold);
+  flex: 1;
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
   color: var(--color-text);
   background: var(--color-bg-gray);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -233,27 +278,19 @@
   background-color: var(--color-border-dark);
 }
 
-.refreshWarning {
-  font-size: var(--font-xs);
-  color: var(--color-error);
-  margin-top: var(--space-2);
-  text-align: center;
-}
-
 .logoutButton {
-  width: 100%;
-  margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-base);
-  font-weight: var(--weight-semibold);
-  color: var(--color-error);
-  background: var(--color-bg-white);
-  border: 1px solid var(--color-error);
-  border-radius: var(--radius-md);
+  flex: 1;
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .logoutButton:active {
-  background: #fde8ea;
+  background: var(--color-primary-active);
 }

@@ -17,6 +17,8 @@ import {
 import { getStudents } from '../api/studentApi';
 import {
   getSeats,
+  getSeatAreas,
+  getSeatStatusByArea,
   getSeatStatus,
   createSeat,
   updateSeat,
@@ -25,7 +27,7 @@ import {
   approveSeatChangeRequest,
   rejectSeatChangeRequest,
 } from '../api/seatApi';
-import type { Seat, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
+import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
 import useConfirm from '../hooks/useConfirm';
@@ -85,6 +87,10 @@ export default function SeatManagement() {
   const initialView = searchParams.get('view') === 'waiting' ? 'waiting' : 'layout';
   const { confirm, alert, ConfirmDialog } = useConfirm();
   const [view, setView] = useState<ViewMode>(initialView);
+
+  /* ── 구역 상태 ── */
+  const [areas, setAreas] = useState<SeatArea[]>([]);
+  const [selectedAreaCd, setSelectedAreaCd] = useState<string>('');
 
   /* ── 배치도 상태 ── */
   const [seats, setSeats] = useState<SeatWithStatus[]>([]);
@@ -160,18 +166,46 @@ export default function SeatManagement() {
   const [wSearchNumber, setWSearchNumber] = useState('');
   const [wAppliedFilters, setWAppliedFilters] = useState({ name: '', number: '' });
 
+  /* ── 구역 목록 로드 ── */
+  useEffect(() => {
+    getSeatAreas()
+      .then((list) => {
+        setAreas(list);
+        if (list.length > 0 && !selectedAreaCd) {
+          setSelectedAreaCd(list[0].areaCd);
+        }
+      })
+      .catch(() => setAreas([]));
+  }, []);
+
   /* ── 배치도 로드: 좌석 + 좌석현황 + 출결 + 이탈 병합 ── */
   const loadLayout = useCallback(async () => {
     setLayoutLoading(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const [seatList, statusList, studentList, attendanceList, seatLeaveResult] = await Promise.all([
-        getSeats(),
+
+      // DSA 좌석 현황: 구역이 선택되었을 때만 조회
+      const dsaStatusPromise = selectedAreaCd
+        ? getSeatStatusByArea(selectedAreaCd).catch(() => [] as SeatStatusByArea[])
+        : Promise.resolve([] as SeatStatusByArea[]);
+
+      let [seatList, statusList, studentList, seatLeaveResult, dsaStatusList, attendanceList] = await Promise.all([
+        getSeats(selectedAreaCd || undefined),
         getSeatStatus(),
         getStudents(),
-        getTodayAttendanceStatus().catch(() => []),
         getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
+        dsaStatusPromise,
+        getTodayAttendanceStatus().catch(() => []),
       ]);
+
+      // 출결 상태: seatLabel → 출결 상태 + studentName → 출결 상태
+      const attendanceBySeatLabel = new Map<string, string>();
+      const attendanceByStudentName = new Map<string, string>();
+      attendanceList.forEach((a) => {
+        if (a.seatLabel) attendanceBySeatLabel.set(a.seatLabel, a.status);
+        if (a.studentName) attendanceByStudentName.set(a.studentName, a.status);
+      });
+
       const statusByLabel = new Map<string, SeatStatusItem>();
       statusList.forEach((s) => statusByLabel.set(s.seatLabel, s));
 
@@ -186,11 +220,65 @@ export default function SeatManagement() {
         }
       });
 
-      // 출결 상태: seatLabel → status
-      const attendanceBySeatLabel = new Map<string, string>();
-      attendanceList.forEach((a) => {
-        if (a.seatLabel) attendanceBySeatLabel.set(a.seatLabel, a.status);
-      });
+      // DSA 좌석 상태: seatNm → DSA state
+      const dsaStateBySeatNm = new Map<string, SeatStatusByArea>();
+      dsaStatusList.forEach((d) => dsaStateBySeatNm.set(d.seatNm, d));
+
+      // DSA 동기화: DSA 데이터가 실제로 있을 때만 수행
+      const DSA_CELL_W = 80;
+      const DSA_CELL_H = 60;
+      if (selectedAreaCd && dsaStatusList.length > 0) {
+        const syncPromises: Promise<unknown>[] = [];
+        const dbSeatLabelSet = new Set(seatList.map((s) => s.seatLabel));
+
+        // 1) DSA에 있지만 자체 DB에 없는 좌석: 새로 생성
+        dsaStatusList.forEach((dsa) => {
+          if (dsa.seatGn !== 'Y') return;
+          if (dbSeatLabelSet.has(dsa.seatNm)) return;
+          const body = {
+            seatLabel: dsa.seatNm,
+            seatType: 'INDIVIDUAL',
+            xPos: dsa.xPos * DSA_CELL_W,
+            yPos: dsa.yPos * DSA_CELL_H,
+            active: true,
+            areaCd: selectedAreaCd,
+          };
+          console.log(`[DSA동기화] 좌석 생성 시도: ${dsa.seatNm}`, body);
+          syncPromises.push(
+            createSeat(body).catch((err) => {
+              console.error(`[DSA동기화] 좌석 생성 실패 (${dsa.seatNm}):`, err);
+            })
+          );
+        });
+
+        // 2) DSA에 있고 자체 DB에도 있는 좌석: 좌표 + 구역 동기화
+        seatList.forEach((seat) => {
+          const dsa = dsaStateBySeatNm.get(seat.seatLabel);
+          if (!dsa || dsa.seatGn !== 'Y') return;
+          const dsaPixelX = dsa.xPos * DSA_CELL_W;
+          const dsaPixelY = dsa.yPos * DSA_CELL_H;
+          const needPosSync = seat.xPos !== dsaPixelX || seat.yPos !== dsaPixelY;
+          const needAreaSync = seat.areaCd !== selectedAreaCd;
+          if (!needPosSync && !needAreaSync) return;
+          syncPromises.push(
+            updateSeat(seat.id, {
+              seatLabel: seat.seatLabel,
+              seatType: seat.seatType,
+              xPos: dsaPixelX,
+              yPos: dsaPixelY,
+              active: seat.active,
+              areaCd: selectedAreaCd,
+            }).catch((err) => console.warn(`좌석 동기화 실패 (${seat.seatLabel}):`, err))
+          );
+        });
+
+        if (syncPromises.length > 0) {
+          await Promise.all(syncPromises);
+          // 동기화 후 좌석 목록 다시 조회
+          const updatedSeatList = await getSeats(selectedAreaCd || undefined);
+          seatList = updatedSeatList;
+        }
+      }
 
       // 활성 좌석이탈: seatLabel → reasonName (endedAt이 null인 것만)
       const activeLeaveBySeatLabel = new Map<string, string>();
@@ -203,27 +291,64 @@ export default function SeatManagement() {
       const merged: SeatWithStatus[] = seatList.map((seat) => {
         const st = statusByLabel.get(seat.seatLabel);
         const stu = studentBySeatLabel.get(seat.seatLabel);
-        const hasStudent = !!(stu?.name ?? st?.assignedStudentName);
+        const dsa = dsaStateBySeatNm.get(seat.seatLabel);
 
-        // 출결 상태 결정: 좌석이탈 > 출결API 상태 > 기본(학습중)
+        // 출결 상태 결정: DSA 상태 우선 → 자체 DB 폴백
         let attendanceLabel: SeatAttendanceLabel = null;
         let seatLeaveReason: string | null = null;
 
-        if (hasStudent) {
-          const leaveReason = activeLeaveBySeatLabel.get(seat.seatLabel);
-          if (leaveReason) {
+        // 자체 백엔드 출결 상태 (조퇴/하원 판별용)
+        // seatLabel 매칭 시도 → 실패 시 학생이름으로 매칭 (DB seatLabel ≠ assignedSeatLabel 대응)
+        const studentName = stu?.name ?? st?.assignedStudentName ?? null;
+        const attStatus = attendanceBySeatLabel.get(seat.seatLabel)
+          || (studentName ? attendanceByStudentName.get(studentName) : undefined);
+
+        if (dsa && dsa.seatGn === 'Y') {
+          // DSA 실시간 상태 사용
+          switch (dsa.state) {
+            case 'S': attendanceLabel = '학습중'; break;
+            case 'D': attendanceLabel = '외출'; break;
+            case 'A': attendanceLabel = '좌석이탈'; break;
+            case 'N': // 미출석 → 표시 안함
+            case 'B': // 공석 → 표시 안함
+            default: break;
+          }
+          if (dsa.away) {
             attendanceLabel = '좌석이탈';
-            seatLeaveReason = leaveReason;
-          } else {
-            const attStatus = attendanceBySeatLabel.get(seat.seatLabel);
-            switch (attStatus) {
-              case 'OUTING': attendanceLabel = '외출'; break;
-              case 'EARLY_LEAVE': attendanceLabel = '조퇴'; break;
-              case 'CHECKED_OUT': attendanceLabel = '하원'; break;
-              case 'PRESENT':
-              default: attendanceLabel = '학습중'; break;
+          }
+        }
+
+        // 자체 백엔드 출결로 조퇴/하원 덮어쓰기 (DSA에는 해당 상태 없음)
+        if (attStatus === 'EARLY_LEAVE') {
+          attendanceLabel = '조퇴';
+        } else if (attStatus === 'CHECKED_OUT') {
+          attendanceLabel = '하원';
+        } else if (attStatus === 'OUTING' && attendanceLabel !== '좌석이탈') {
+          attendanceLabel = '외출';
+        }
+
+        // DSA도 없고 출결 데이터도 없을 때: 자체 DB 폴백
+        if (!dsa && !attStatus) {
+          const hasStudent = !!(stu?.name ?? st?.assignedStudentName);
+          if (hasStudent) {
+            const leaveReason = activeLeaveBySeatLabel.get(seat.seatLabel);
+            if (leaveReason) {
+              attendanceLabel = '좌석이탈';
+              seatLeaveReason = leaveReason;
+            } else {
+              attendanceLabel = '학습중';
             }
           }
+        }
+
+        // 출결 상태가 PRESENT이고 DSA/이탈 정보 없으면 학습중
+        if (attStatus === 'PRESENT' && !attendanceLabel) {
+          attendanceLabel = '학습중';
+        }
+
+        // 좌석이탈 사유 보강
+        if (attendanceLabel === '좌석이탈' && !seatLeaveReason) {
+          seatLeaveReason = activeLeaveBySeatLabel.get(seat.seatLabel) ?? null;
         }
 
         return {
@@ -243,7 +368,7 @@ export default function SeatManagement() {
     } finally {
       setLayoutLoading(false);
     }
-  }, []);
+  }, [selectedAreaCd]);
 
   useEffect(() => {
     if (view === 'layout') loadLayout();
@@ -854,13 +979,26 @@ export default function SeatManagement() {
           {/* 필터 */}
           <div className={styles.filterCard}>
             <div className={styles.filterRow}>
+              {areas.length > 0 && (
+                <div className={styles.areaTabs}>
+                  {areas.map((a) => (
+                    <button
+                      key={a.areaCd}
+                      type="button"
+                      className={`${styles.areaTab} ${selectedAreaCd === a.areaCd ? styles.areaTabActive : ''}`}
+                      onClick={() => setSelectedAreaCd(a.areaCd)}
+                    >
+                      {a.areaNm}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>좌석 또는 학생명</label>
                 <input
                   className={styles.filterInput}
                   value={searchSeat}
                   onChange={(e) => setSearchSeat(e.target.value)}
-                  placeholder="검색"
+                  placeholder="좌석 또는 학생명 검색"
                 />
               </div>
             </div>
@@ -1326,6 +1464,12 @@ export default function SeatManagement() {
                       {selectedSeat.seatType === 'INDIVIDUAL' ? '개인석' : '그룹석'}
                     </span>
                   </div>
+                  {selectedSeat.areaNm && (
+                    <div className={styles.modalRow}>
+                      <span className={styles.modalLabel}>구역</span>
+                      <span className={styles.modalValue}>{selectedSeat.areaNm}</span>
+                    </div>
+                  )}
 
                   <div className={styles.sectionDivider} />
 
