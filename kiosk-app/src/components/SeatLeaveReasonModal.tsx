@@ -1,7 +1,28 @@
 import { useEffect, useState } from 'react';
 import { getSeatLeaveReasons } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
+import toiletIcon from '../assets/seatleave_toilet.png';
+import consultIcon from '../assets/seatleave_consult.png';
+import questionIcon from '../assets/seatleave_question.png';
+import publicIcon from '../assets/seatleave_public.png';
+import lectureIcon from '../assets/seatleave_lectureroom.png';
+import seatleaveIcon from '../assets/seatleave.png';
 import styles from './SeatLeaveReasonModal.module.css';
+
+const REASON_ICON_MAP: Record<string, string> = {
+  화장실: toiletIcon,
+  상담: consultIcon,
+  질문: questionIcon,
+  공용공간: publicIcon,
+  강의실: lectureIcon,
+};
+
+function getReasonIcon(reasonName: string): string {
+  for (const [keyword, icon] of Object.entries(REASON_ICON_MAP)) {
+    if (reasonName.includes(keyword)) return icon;
+  }
+  return seatleaveIcon;
+}
 
 interface SeatLeaveReasonModalProps {
   onClose: () => void;
@@ -42,6 +63,7 @@ export default function SeatLeaveReasonModal({ onClose, onSelect }: SeatLeaveRea
                 className={styles.reasonButton}
                 onClick={() => onSelect(reason.id, reason.reasonName)}
               >
+                <img src={getReasonIcon(reason.reasonName)} alt={reason.reasonName} className={styles.reasonIcon} />
                 <span className={styles.reasonLabel}>{reason.reasonName}</span>
               </button>
             ))}

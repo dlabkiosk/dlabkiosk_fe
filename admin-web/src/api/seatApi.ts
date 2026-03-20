@@ -13,6 +13,27 @@ export interface Seat {
   /** 캔버스 Y 좌표 (픽셀) */
   yPos: number;
   active: boolean;
+  areaCd: string;
+  areaNm: string;
+}
+
+/** 구역 */
+export interface SeatArea {
+  areaCd: string;
+  areaNm: string;
+}
+
+/** 구역별 좌석 현황 항목 */
+export interface SeatStatusByArea {
+  seatCd: string;
+  seatNm: string;
+  xPos: number;
+  yPos: number;
+  /** Y(사용), N(미사용), E(통로) */
+  seatGn: 'Y' | 'N' | 'E';
+  /** S(등원), D(외출), N(미출석), B(공석), A(좌석이탈) */
+  state: 'S' | 'D' | 'N' | 'B' | 'A';
+  away: boolean;
 }
 
 /** 좌석 생성/수정 요청 바디 */
@@ -22,6 +43,7 @@ export interface SeatBody {
   xPos: number;
   yPos: number;
   active?: boolean;
+  areaCd?: string;
 }
 
 /** 좌석 변경 신청 항목 */
@@ -77,9 +99,20 @@ export interface PageResponse<T> {
 
 /* ── 좌석 CRUD API ── */
 
-/** 좌석 전체 조회 (MANAGER: 자기 지점, ADMIN: 전체) */
-export function getSeats(): Promise<Seat[]> {
-  return apiGet<Seat[]>('/api/v1/admin/seats');
+/** 구역 목록 조회 */
+export function getSeatAreas(): Promise<SeatArea[]> {
+  return apiGet<SeatArea[]>('/api/v1/admin/seats/areas');
+}
+
+/** 구역별 좌석 현황 조회 (areaCd 필수) */
+export function getSeatStatusByArea(areaCd: string): Promise<SeatStatusByArea[]> {
+  return apiGet<SeatStatusByArea[]>(`/api/v1/admin/seats/status?areaCd=${encodeURIComponent(areaCd)}`);
+}
+
+/** 좌석 전체 조회 (MANAGER: 자기 지점, ADMIN: 전체, areaCd로 구역 필터 가능) */
+export function getSeats(areaCd?: string): Promise<Seat[]> {
+  const query = areaCd ? `?areaCd=${encodeURIComponent(areaCd)}` : '';
+  return apiGet<Seat[]>(`/api/v1/admin/seats${query}`);
 }
 
 /** 좌석 상세 (단건 조회 응답) */

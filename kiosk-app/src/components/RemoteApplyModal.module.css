@@ -13,7 +13,7 @@
   background: var(--color-bg-white);
   border-radius: var(--radius-2xl);
   padding: var(--space-8) var(--space-6) var(--space-7);
-  width: 360px;
+  width: 22.5rem;
   max-width: 90vw;
 }
 
@@ -74,8 +74,9 @@
 }
 
 .actionIcon {
-  font-size: var(--icon-md);
-  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
 }
 
 .actionLabel {

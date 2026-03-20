@@ -31,6 +31,21 @@ export interface TagResult {
   mealInfo: MealInfo | null;
 }
 
+/** action 코드 → 한글 라벨 매핑 (백엔드 actionLabel이 null일 때 fallback) */
+const ACTION_LABEL_MAP: Record<string, string> = {
+  S: '등원',
+  O: '하원',
+  D: '외출',
+  R: '복귀',
+  C: '조퇴',
+  M: '급식',
+};
+
+/** actionLabel이 null/undefined면 action 코드로 라벨 생성 */
+export function resolveActionLabel(result: TagResult): string {
+  return result.actionLabel || ACTION_LABEL_MAP[result.action] || result.action || '출결';
+}
+
 const ERROR_MESSAGES: Record<string, string> = {
   STUDENT_NOT_FOUND: '등록되지 않은 학생입니다.',
   STORE_MISMATCH: '해당 지점 소속 학생이 아닙니다.',

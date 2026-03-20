@@ -1,6 +1,6 @@
 .container {
   background: var(--color-bg-white);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs);
   padding: var(--space-3) var(--space-4);
   flex: 1;
   min-width: 0;
@@ -11,23 +11,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .title {
-  font-size: var(--font-md);
-  font-weight: var(--weight-bold);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 
 .moreButton {
-  width: var(--icon-md);
-  height: var(--icon-md);
+  width: 1.125rem;
+  height: 1.125rem;
   border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-medium);
-  background: var(--color-bg-white);
-  font-size: var(--font-xl);
-  color: var(--color-text-hint);
+  border: none;
+  background: var(--color-text);
+  font-size: 0.75rem;
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -35,32 +37,11 @@
   line-height: 1;
 }
 
-.subtitle {
-  font-size: var(--font-xs);
-  color: var(--color-text-hint);
-  margin-bottom: var(--space-3);
-}
-
-.summaryRow {
-  display: flex;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.summaryItem {
-  font-size: var(--font-xs);
-  color: var(--color-text-muted);
-  font-weight: var(--weight-semibold);
-}
-
 .rankList {
   list-style: none;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1h);
+  gap: var(--space-2);
 }
 
 .rankItem {
@@ -72,21 +53,24 @@
   line-height: 1.6;
 }
 
-.rankBadge {
-  width: var(--icon-sm);
-  text-align: center;
-  font-size: var(--font-base);
+.rankIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .rankName {
-  font-size: var(--font-sm);
+  font-size: var(--font-xs);
   color: var(--color-text-secondary);
   flex: 1;
 }
 
 .rankTime {
-  font-size: var(--font-xs);
+  font-size: var(--font-2xs);
   color: var(--color-text-hint);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
 
 .loading {

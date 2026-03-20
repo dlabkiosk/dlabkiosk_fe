@@ -27,18 +27,19 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
       setPassword('');
       setPasswordError(false);
     } else {
-      const next = password + key;
+      if (password.length >= ADMIN_PASSWORD.length) return;
+      setPassword((prev) => prev + key);
       setPasswordError(false);
-      if (next.length >= ADMIN_PASSWORD.length) {
-        if (next === ADMIN_PASSWORD) {
-          setAuthenticated(true);
-        } else {
-          setPasswordError(true);
-          setPassword('');
-        }
-      } else {
-        setPassword(next);
-      }
+    }
+  };
+
+  const handleSubmit = () => {
+    if (password.length < ADMIN_PASSWORD.length) return;
+    if (password === ADMIN_PASSWORD) {
+      setAuthenticated(true);
+    } else {
+      setPasswordError(true);
+      setPassword('');
     }
   };
 
@@ -53,20 +54,18 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
     return (
       <div className={styles.overlay}>
         <div className={styles.panel}>
-          <div className={styles.header}>
-            <h2 className={styles.title}>관리자 인증</h2>
-            <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
-              ✕
-            </button>
-          </div>
+          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
+            ✕
+          </button>
 
+          <h2 className={styles.authTitle}>관리자 인증</h2>
           <p className={styles.passwordGuide}>비밀번호를 입력해주세요</p>
 
           <div className={styles.passwordDots}>
             {Array.from({ length: ADMIN_PASSWORD.length }).map((_, i) => (
               <span
                 key={i}
-                className={password.length > i ? styles.dotFilled : styles.dot}
+                className={`${styles.dot} ${password.length > i ? styles.dotFilled : ''}`}
               />
             ))}
           </div>
@@ -82,15 +81,24 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
                   <button
                     key={key}
                     type="button"
-                    className={styles.keypadButton}
+                    className={`${styles.keypadButton} ${key === 'clear' || key === 'backspace' ? styles.keypadSpecial : ''}`}
                     onClick={() => handleKeyPress(key)}
                   >
-                    {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+                    {key === 'backspace' ? '⌫' : key === 'clear' ? '−' : key}
                   </button>
                 ))}
               </div>
             ))}
           </div>
+
+          <button
+            type="button"
+            className={styles.submitButton}
+            onClick={handleSubmit}
+            disabled={password.length < ADMIN_PASSWORD.length}
+          >
+            입력 완료
+          </button>
         </div>
       </div>
     );
@@ -99,12 +107,10 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
   return (
     <div className={styles.overlay}>
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>키오스크 관리자</h2>
-          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
-            ✕
-          </button>
-        </div>
+        <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
+          ✕
+        </button>
+        <h2 className={styles.title}>키오스크 관리자</h2>
 
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>장치 관리</h3>
@@ -137,27 +143,26 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           </div>
         </div>
 
-        <div className={styles.section}>
-          <div className={styles.buttonGroup}>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={() => window.location.reload()}
-            >
-              화면 새로고침
-            </button>
-            <p className={styles.refreshWarning}>화면 새로고침시 카드 리더기를 재연결해야 합니다.</p>
-            <button
-              type="button"
-              className={styles.logoutButton}
-              onClick={() => {
-                kioskLogout().catch(() => {});
-                onLogout();
-              }}
-            >
-              키오스크 로그아웃
-            </button>
-          </div>
+        <p className={styles.refreshWarning}>*화면 새로고침 시 카드 리더기를 재연결해야 합니다.</p>
+
+        <div className={styles.buttonGroup}>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={() => window.location.reload()}
+          >
+            화면 새로고침
+          </button>
+          <button
+            type="button"
+            className={styles.logoutButton}
+            onClick={() => {
+              kioskLogout().catch(() => {});
+              onLogout();
+            }}
+          >
+            키오스크 로그아웃
+          </button>
         </div>
       </div>
     </div>

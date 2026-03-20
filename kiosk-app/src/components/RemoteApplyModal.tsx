@@ -1,3 +1,5 @@
+import phoneIcon from '../assets/phone.png';
+import seatchangeIcon from '../assets/seatchange.png';
 import styles from './RemoteApplyModal.module.css';
 
 interface RemoteAction {
@@ -7,8 +9,8 @@ interface RemoteAction {
 }
 
 const REMOTE_ACTIONS: RemoteAction[] = [
-  { id: 'no-phone', label: '휴대폰 미소지', icon: '📵' },
-  { id: 'seat-change', label: '좌석 변경', icon: '💺' },
+  { id: 'no-phone', label: '휴대폰 미소지', icon: phoneIcon },
+  { id: 'seat-change', label: '좌석 변경', icon: seatchangeIcon },
 ];
 
 interface RemoteApplyModalProps {
@@ -33,7 +35,7 @@ export default function RemoteApplyModal({ onClose, onSelect }: RemoteApplyModal
               className={styles.actionButton}
               onClick={() => onSelect(action.id, action.label)}
             >
-              <span className={styles.actionIcon}>{action.icon}</span>
+              <img src={action.icon} alt={action.label} className={styles.actionIcon} />
               <span className={styles.actionLabel}>{action.label}</span>
             </button>
           ))}

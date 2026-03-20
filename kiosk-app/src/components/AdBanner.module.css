@@ -1,9 +1,9 @@
 .container {
   margin: 0 var(--space-6);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xs);
   overflow: hidden;
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   background: #000;
 }
 
@@ -16,16 +16,16 @@
 
 .indicators {
   position: absolute;
-  bottom: 12px;
+  bottom: 0.75rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
   transition: background 0.3s;

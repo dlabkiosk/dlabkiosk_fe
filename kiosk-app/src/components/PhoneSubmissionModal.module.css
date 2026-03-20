@@ -13,7 +13,7 @@
   background: var(--color-bg-white);
   border-radius: var(--radius-2xl);
   padding: var(--space-7) var(--space-6) var(--space-6);
-  width: 380px;
+  width: 23.75rem;
   max-width: 90vw;
   text-align: center;
 }
@@ -39,7 +39,7 @@
   font-size: var(--font-3xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
-  margin: 0 0 4px 0;
+  margin: 0 0 0.25rem 0;
 }
 
 .subtitle {
@@ -58,11 +58,11 @@
 }
 
 .navBtn {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border: none;
   background: none;
-  font-size: 24px;
+  font-size: 1.5rem;
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -85,14 +85,14 @@
   font-size: var(--font-lg);
   font-weight: var(--weight-bold);
   color: var(--color-text);
-  min-width: 140px;
+  min-width: 8.75rem;
 }
 
 /* ── Calendar Grid ── */
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 0.125rem;
   margin-bottom: var(--space-4);
 }
 
@@ -147,7 +147,7 @@
 
 .dayCellInRange {
   background: rgba(59, 130, 246, 0.15);
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 .dayCellEndpoint {
@@ -257,12 +257,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 4rem;
+  height: 4rem;
   border-radius: var(--radius-full);
   background: var(--color-success-bg);
   color: var(--color-success);
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: var(--weight-bold);
 }
 
@@ -289,7 +289,7 @@
 }
 
 .noPhoneNoticeIcon {
-  font-size: 48px;
+  font-size: 3rem;
 }
 
 .noPhoneNoticeText {
@@ -315,14 +315,14 @@
   padding: var(--space-4) var(--space-5);
   background: var(--color-bg-light);
   border-radius: var(--radius-md);
-  min-height: 64px;
+  min-height: 4rem;
 }
 
 .seatValue {
   font-size: var(--font-3xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
-  letter-spacing: 3px;
+  letter-spacing: 0.1875rem;
 }
 
 .seatPlaceholder {
@@ -338,7 +338,7 @@
 }
 
 .keypadKey {
-  height: 52px;
+  height: 3.25rem;
   border: 1px solid var(--color-border-medium);
   border-radius: var(--radius-md);
   background: var(--color-bg-white);

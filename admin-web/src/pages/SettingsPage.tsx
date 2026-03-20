@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LuSettings, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import styles from './SettingsPage.module.css';
@@ -29,6 +29,15 @@ import useConfirm from '../hooks/useConfirm';
 import { getStores, getStore, createStore, updateStore, deleteStore } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { getMe } from '../api/authApi';
+import { getStudents } from '../api/studentApi';
+import type { Student } from '../api/studentApi';
+import {
+  getStudentMessages,
+  createStudentMessage,
+  updateStudentMessage,
+  deleteStudentMessage,
+} from '../api/studentMessageApi';
+import type { StudentMessage } from '../api/studentMessageApi';
 
 /* ── 탭 목록 ── */
 const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리','지점 정보'] as const;
@@ -103,7 +112,7 @@ export default function SettingsPage() {
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
       {activeTab === '이탈사유 관리' && <SeatLeaveReasonSettings />}
-      {activeTab === '메시지 관리' && <PlaceholderTab label="메시지 관리" />}
+      {activeTab === '메시지 관리' && <StudentMessageSettings />}
       {activeTab === '지점 정보' && <BranchInfo />}
     </div>
   );
@@ -1550,6 +1559,280 @@ function BranchInfo() {
       )}
 
       {StoreConfirmDialog}
+    </>
+  );
+}
+
+/* ── 메시지 관리 탭 ── */
+function StudentMessageSettings() {
+  const { confirm, alert, ConfirmDialog: MsgConfirmDialog } = useConfirm();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [messages, setMessages] = useState<StudentMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [msgLoading, setMsgLoading] = useState(false);
+
+  // 모달
+  const [showModal, setShowModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<StudentMessage | null>(null);
+  const [formContent, setFormContent] = useState('');
+  const [formActive, setFormActive] = useState(true);
+
+  // 학생 목록 로드
+  useEffect(() => {
+    setLoading(true);
+    getStudents()
+      .then(setStudents)
+      .catch(() => setStudents([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // 학생 검색 필터
+  const filteredStudents = useMemo(() => {
+    if (!studentSearch.trim()) return students;
+    const q = studentSearch.trim().toLowerCase();
+    return students.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.studentNumber.toLowerCase().includes(q)
+    );
+  }, [students, studentSearch]);
+
+  // 선택된 학생의 메시지 로드
+  const fetchMessages = useCallback(async (studentId: number) => {
+    setMsgLoading(true);
+    try {
+      const data = await getStudentMessages(studentId);
+      setMessages(data);
+    } catch {
+      setMessages([]);
+    } finally {
+      setMsgLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedStudentId) fetchMessages(selectedStudentId);
+    else setMessages([]);
+  }, [selectedStudentId, fetchMessages]);
+
+  const selectedStudent = students.find((s) => s.id === selectedStudentId);
+
+  const resetForm = () => {
+    setFormContent('');
+    setFormActive(true);
+    setEditTarget(null);
+  };
+
+  const openAdd = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEdit = (msg: StudentMessage) => {
+    setEditTarget(msg);
+    setFormContent(msg.content);
+    setFormActive(msg.active);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  const handleSubmit = async () => {
+    if (!formContent.trim() || !selectedStudentId) return;
+    try {
+      if (editTarget) {
+        await updateStudentMessage(editTarget.id, {
+          content: formContent.trim(),
+          active: formActive,
+        });
+      } else {
+        await createStudentMessage({
+          studentId: selectedStudentId,
+          content: formContent.trim(),
+        });
+      }
+      closeModal();
+      await fetchMessages(selectedStudentId);
+    } catch {
+      await alert('저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!(await confirm('이 메시지를 삭제하시겠습니까?'))) return;
+    try {
+      await deleteStudentMessage(id);
+      if (selectedStudentId) await fetchMessages(selectedStudentId);
+    } catch {
+      await alert('삭제에 실패했습니다.');
+    }
+  };
+
+  const handleToggleActive = async (msg: StudentMessage) => {
+    try {
+      await updateStudentMessage(msg.id, {
+        content: msg.content,
+        active: !msg.active,
+      });
+      if (selectedStudentId) await fetchMessages(selectedStudentId);
+    } catch {
+      await alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>학생 메시지 관리</h3>
+        </div>
+        <div className={styles.sectionBody}>
+          {/* 학생 선택 영역 */}
+          <div className={styles.msgLayout}>
+            <div className={styles.msgStudentList}>
+              <input
+                className={styles.formInput}
+                placeholder="학생 이름 또는 학번 검색"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+              />
+              <div className={styles.msgStudentScroll}>
+                {loading ? (
+                  <p className={styles.placeholderText}>로딩 중...</p>
+                ) : filteredStudents.length === 0 ? (
+                  <p className={styles.placeholderText}>학생이 없습니다.</p>
+                ) : (
+                  filteredStudents.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${styles.msgStudentItem} ${selectedStudentId === s.id ? styles.msgStudentItemActive : ''}`}
+                      onClick={() => setSelectedStudentId(s.id)}
+                    >
+                      <span className={styles.msgStudentName}>{s.name}</span>
+                      <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 메시지 목록 영역 */}
+            <div className={styles.msgContent}>
+              {!selectedStudentId ? (
+                <p className={styles.placeholderText}>왼쪽에서 학생을 선택하세요.</p>
+              ) : (
+                <>
+                  <div className={styles.msgContentHeader}>
+                    <span className={styles.msgContentTitle}>
+                      {selectedStudent?.name} ({selectedStudent?.studentNumber})
+                    </span>
+                    <button type="button" className={styles.addBtn} onClick={openAdd}>+ 메시지 추가</button>
+                  </div>
+
+                  {msgLoading ? (
+                    <p className={styles.placeholderText}>로딩 중...</p>
+                  ) : messages.length === 0 ? (
+                    <p className={styles.placeholderText}>등록된 메시지가 없습니다.</p>
+                  ) : (
+                    <table className={styles.dataTable}>
+                      <thead>
+                        <tr>
+                          <th>내용</th>
+                          <th style={{ width: 80 }}>상태</th>
+                          <th style={{ width: 150 }}>등록일</th>
+                          <th style={{ width: 100 }}>관리</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {messages.map((msg) => (
+                          <tr key={msg.id}>
+                            <td style={{ textAlign: 'left' }}>{msg.content}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className={`${styles.statusBadge} ${msg.active ? '' : styles.statusInactive}`}
+                                style={{ cursor: 'pointer', border: 'none' }}
+                                onClick={() => handleToggleActive(msg)}
+                              >
+                                {msg.active ? '활성' : '비활성'}
+                              </button>
+                            </td>
+                            <td>{new Date(msg.createdAt).toLocaleDateString('ko-KR')}</td>
+                            <td>
+                              <button type="button" className={styles.editBtn} onClick={() => openEdit(msg)}>&#x270E;</button>
+                              <button
+                                type="button"
+                                className={styles.editBtn}
+                                style={{ color: '#dc2626', marginLeft: 4 }}
+                                onClick={() => handleDelete(msg.id)}
+                              >
+                                &#x2715;
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 메시지 추가/수정 모달 */}
+      {showModal && (
+        <div className={styles.overlay} onClick={closeModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{editTarget ? '메시지 수정' : '메시지 추가'}</h3>
+
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>내용</label>
+                <textarea
+                  className={styles.formInput}
+                  rows={4}
+                  placeholder="학생에게 표시할 메시지를 입력하세요"
+                  value={formContent}
+                  onChange={(e) => setFormContent(e.target.value)}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              {editTarget && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>상태</label>
+                  <div className={styles.radioGroup}>
+                    <label className={styles.radioLabel}>
+                      <input type="radio" checked={formActive} onChange={() => setFormActive(true)} />
+                      활성
+                    </label>
+                    <label className={styles.radioLabel}>
+                      <input type="radio" checked={!formActive} onChange={() => setFormActive(false)} />
+                      비활성
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
+                  {editTarget ? '수정' : '등록'}
+                </button>
+                <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {MsgConfirmDialog}
     </>
   );
 }

@@ -137,11 +137,11 @@ export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
                     <button
                       key={key}
                       type="button"
-                      className={styles.keypadButton}
+                      className={`${styles.keypadButton} ${key === 'clear' || key === 'backspace' ? styles.keypadSpecial : ''}`}
                       onClick={() => handleKeyPress(key)}
                       disabled={loading}
                     >
-                      {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+                      {key === 'backspace' ? '⌫' : key === 'clear' ? '−' : key}
                     </button>
                   ))}
                 </div>

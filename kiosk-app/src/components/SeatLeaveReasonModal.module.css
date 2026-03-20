@@ -11,9 +11,9 @@
 .modal {
   position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-sm);
   padding: var(--space-8) var(--space-6) var(--space-7);
-  width: 360px;
+  width: 22.5rem;
   max-width: 90vw;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .title {
-  font-size: var(--font-3xl);
+  font-size: var(--font-2xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
   text-align: center;
@@ -79,9 +79,9 @@
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-5) var(--space-3);
-  background: var(--color-bg-gray);
-  border: none;
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-white);
+  border: 3px solid var(--color-border-hover);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -91,13 +91,14 @@
 }
 
 .reasonIcon {
-  font-size: var(--icon-md);
-  line-height: 1;
+  width: 1.3rem;
+  height: 1.3rem;
+  object-fit: contain;
 }
 
 .reasonLabel {
-  font-size: var(--font-base);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
   color: var(--color-text);
 }
 

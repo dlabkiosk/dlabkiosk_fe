@@ -1,19 +1,24 @@
+import noCardIcon from '../assets/no_card.png';
+import seatLeaveIcon from '../assets/seatleave.png';
+import nonFacetofaceIcon from '../assets/non_facetoface.png';
+import searchStudentIcon from '../assets/search_student.png';
+import mealPlanIcon from '../assets/meal_plan.png';
+import seatmapIcon from '../assets/seatmap.png';
 import styles from './QuickMenu.module.css';
 
 interface QuickMenuItem {
   id: string;
   label: string;
   icon: string;
-  size: 'large' | 'small';
 }
 
 const MENU_ITEMS: QuickMenuItem[] = [
-  { id: 'student-info', label: '학적 조회', icon: '🔍', size: 'large' },
-  { id: 'seat-leave', label: '좌석 이탈', icon: 'ℹ️', size: 'large' },
-  { id: 'no-card', label: '카드 미소지', icon: '🪪', size: 'large' },
-  { id: 'remote-apply', label: '비대면 신청', icon: '📡', size: 'small' },
-  { id: 'meal-plan', label: '주간 식단표', icon: '🍽️', size: 'small' },
-  { id: 'seat-map', label: '좌석 배치도', icon: '🗺️', size: 'small' },
+  { id: 'no-card', label: '카드 미소지', icon: noCardIcon },
+  { id: 'seat-leave', label: '좌석이탈', icon: seatLeaveIcon },
+  { id: 'remote-apply', label: '비대면 신청', icon: nonFacetofaceIcon },
+  { id: 'student-info', label: '학적 조회', icon: searchStudentIcon },
+  { id: 'meal-plan', label: '식단표', icon: mealPlanIcon },
+  { id: 'seat-map', label: '좌석 배치도', icon: seatmapIcon },
 ];
 
 interface QuickMenuProps {
@@ -21,24 +26,15 @@ interface QuickMenuProps {
 }
 
 export default function QuickMenu({ onMenuClick }: QuickMenuProps) {
-  const largeItems = MENU_ITEMS.filter((item) => item.size === 'large');
-  const smallItems = MENU_ITEMS.filter((item) => item.size === 'small');
-
   return (
     <nav className={styles.container}>
-      <div className={styles.largeRow}>
-        {largeItems.map((item) => (
-          <button key={item.id} type="button" className={styles.largeButton} onClick={() => onMenuClick(item.id)}>
-            <span className={styles.largeIcon}>{item.icon}</span>
-            <span className={styles.largeLabel}>{item.label}</span>
-          </button>
-        ))}
-      </div>
-      <div className={styles.smallRow}>
-        {smallItems.map((item) => (
-          <button key={item.id} type="button" className={styles.smallButton} onClick={() => onMenuClick(item.id)}>
-            <span className={styles.smallIcon}>{item.icon}</span>
-            <span className={styles.smallLabel}>{item.label}</span>
+      <div className={styles.grid}>
+        {MENU_ITEMS.map((item) => (
+          <button key={item.id} type="button" className={styles.menuButton} onClick={() => onMenuClick(item.id)}>
+            <span className={styles.iconWrap}>
+              <img src={item.icon} alt={item.label} className={styles.iconImg} />
+            </span>
+            <span className={styles.label}>{item.label}</span>
           </button>
         ))}
       </div>
