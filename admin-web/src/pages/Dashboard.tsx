@@ -48,16 +48,6 @@ function StatRow({ label, value }: StatRowProps) {
   );
 }
 
-/* ── 식사 타입 한글 변환 ── */
-function mealTypeLabel(type: string): string {
-  switch (type) {
-    case 'BREAKFAST': return '조식';
-    case 'LUNCH': return '중식';
-    case 'DINNER': return '석식';
-    default: return type;
-  }
-}
-
 /* ── Page ── */
 
 export default function Dashboard() {
@@ -75,7 +65,7 @@ export default function Dashboard() {
   const daily = data?.dailyOperation;
   const att = data?.attendanceSummary;
   const seat = data?.seatLeaveSummary;
-  const meals = data?.mealTags ?? [];
+  const mealSummary = data?.mealTagSummary;
   const seatChanges = data?.seatChangeRequests ?? [];
   const notices = data?.notices ?? [];
 
@@ -114,30 +104,8 @@ export default function Dashboard() {
         </DashboardCard>
 
         <DashboardCard title="식사 태그 현황" icon={<LuUtensils />}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>식사 구분</th>
-                <th>태그 시간</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={3}>로딩 중...</td></tr>
-              ) : meals.length > 0 ? (
-                meals.slice(0, 5).map((row, idx) => (
-                  <tr key={idx}>
-                    <td>{row.name}</td>
-                    <td>{mealTypeLabel(row.mealType)}</td>
-                    <td>{row.taggedAt ? row.taggedAt.slice(11, 16) : '–'}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={3} className={styles.emptyCell}>데이터 없음</td></tr>
-              )}
-            </tbody>
-          </table>
+          <StatRow label="중식" value={mealSummary ? `${mealSummary.lunchCount}명` : placeholder} />
+          <StatRow label="석식" value={mealSummary ? `${mealSummary.dinnerCount}명` : placeholder} />
         </DashboardCard>
       </div>
 

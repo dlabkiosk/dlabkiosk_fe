@@ -152,7 +152,7 @@ export default function PhoneManagement() {
     // 반 필터 (서버에서 지원 안 하므로 클라이언트에서 처리)
     if (appliedFilters.className) {
       const keyword = appliedFilters.className.toLowerCase();
-      rows = rows.filter((r) => r.className.toLowerCase().includes(keyword));
+      rows = rows.filter((r) => (r.className ?? '').toLowerCase().includes(keyword));
     }
 
     return rows;

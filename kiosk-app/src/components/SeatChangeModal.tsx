@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getAvailableSeats, submitSeatChangeRequest } from '../api/seatChangeApi';
-import type { AvailableSeat } from '../api/seatChangeApi';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { submitSeatChangeRequest } from '../api/seatChangeApi';
+import { getSeatAreas, getSeats } from '../api/seatApi';
+import type { SeatArea, SeatInfo } from '../api/seatApi';
 import type { Student } from '../data/mockStudents';
 import styles from './SeatChangeModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
 const PRIORITY_LABELS = ['1순위', '2순위', '3순위'] as const;
+const CELL_W = 48;
+const CELL_H = 36;
 
 interface SeatChangeModalProps {
   student: Student;
@@ -13,20 +16,36 @@ interface SeatChangeModalProps {
 }
 
 export default function SeatChangeModal({ student, onClose }: SeatChangeModalProps) {
-  const [seats, setSeats] = useState<AvailableSeat[]>([]);
+  const [areas, setAreas] = useState<SeatArea[]>([]);
+  const [selectedAreaCd, setSelectedAreaCd] = useState<string>('');
+  const [seats, setSeats] = useState<SeatInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSeats, setSelectedSeats] = useState<(number | null)[]>([null, null, null]);
+  const [selectedSeats, setSelectedSeats] = useState<(string | null)[]>([null, null, null]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 구역 목록 로드
   useEffect(() => {
-    getAvailableSeats()
-      .then((data) => setSeats(data))
-      .catch(() => setErrorMessage('좌석 목록을 불러올 수 없습니다.'))
-      .finally(() => setLoading(false));
+    getSeatAreas()
+      .then((list) => {
+        setAreas(list);
+        if (list.length > 0) setSelectedAreaCd(list[0].areaCd);
+      })
+      .catch(() => setErrorMessage('구역 정보를 불러올 수 없습니다.'));
   }, []);
+
+  // 구역 선택 시 좌석 로드
+  useEffect(() => {
+    if (!selectedAreaCd) return;
+    setLoading(true);
+    setErrorMessage(null);
+    getSeats(selectedAreaCd)
+      .then(setSeats)
+      .catch(() => setErrorMessage('좌석 정보를 불러올 수 없습니다.'))
+      .finally(() => setLoading(false));
+  }, [selectedAreaCd]);
 
   useEffect(() => {
     return () => {
@@ -34,20 +53,33 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
     };
   }, []);
 
-  const handleSeatToggle = useCallback((seatId: number) => {
+  const activeSeats = useMemo(() => seats.filter((s) => s.seatGn === 'Y'), [seats]);
+
+  const canvasSize = useMemo(() => {
+    if (activeSeats.length === 0) return { width: 300, height: 200 };
+    const maxX = Math.max(...activeSeats.map((s) => s.xPos));
+    const maxY = Math.max(...activeSeats.map((s) => s.yPos));
+    return {
+      width: Math.max(300, maxX * CELL_W + CELL_W + 16),
+      height: Math.max(200, maxY * CELL_H + CELL_H + 16),
+    };
+  }, [activeSeats]);
+
+  const isOccupied = (seat: SeatInfo) => seat.state !== 'B' && seat.state !== 'N';
+  const isCurrentSeat = (seatNm: string) => seatNm === student.assignedSeatLabel;
+
+  const handleSeatToggle = useCallback((seatCd: string) => {
     setSelectedSeats((prev) => {
-      // 이미 선택된 좌석이면 제거
-      const idx = prev.indexOf(seatId);
+      const idx = prev.indexOf(seatCd);
       if (idx !== -1) {
         const next = [...prev];
         next[idx] = null;
         return next;
       }
-      // 빈 슬롯에 추가
       const emptyIdx = prev.indexOf(null);
       if (emptyIdx === -1) return prev;
       const next = [...prev];
-      next[emptyIdx] = seatId;
+      next[emptyIdx] = seatCd;
       return next;
     });
     setErrorMessage(null);
@@ -57,40 +89,37 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
     setSelectedSeats((prev) => {
       const next = [...prev];
       next[index] = null;
-      // 앞으로 당기기: [A, null, B] → [A, B, null]
-      const compacted: (number | null)[] = next.filter((s) => s !== null);
+      const compacted: (string | null)[] = next.filter((s) => s !== null);
       while (compacted.length < 3) compacted.push(null);
       return compacted;
     });
   }, []);
 
-  const getSeatLabel = (seatId: number | null) => {
-    if (seatId === null) return null;
-    return seats.find((s) => s.seatId === seatId)?.seatLabel ?? '';
+  const getSeatLabel = (seatCd: string | null) => {
+    if (seatCd === null) return null;
+    return seats.find((s) => s.seatCd === seatCd)?.seatNm ?? seatCd;
   };
 
   const handleSubmit = useCallback(async () => {
-    if (submitting) return;
-    if (selectedSeats[0] === null) return;
+    if (submitting || selectedSeats[0] === null) return;
     setSubmitting(true);
     setErrorMessage(null);
     try {
       await submitSeatChangeRequest({
         identifier: student.identifier ?? student.studentNumber,
-        desiredSeatId1: selectedSeats[0],
-        desiredSeatId2: selectedSeats[1] ?? undefined,
-        desiredSeatId3: selectedSeats[2] ?? undefined,
+        seatLabel: getSeatLabel(selectedSeats[0]) ?? undefined,
+        desiredSeatId1: Number(selectedSeats[0]),
+        desiredSeatId2: selectedSeats[1] ? Number(selectedSeats[1]) : undefined,
+        desiredSeatId3: selectedSeats[2] ? Number(selectedSeats[2]) : undefined,
       });
       setSuccess(true);
-      successTimer.current = setTimeout(() => {
-        onClose();
-      }, SUCCESS_DISPLAY_MS);
+      successTimer.current = setTimeout(onClose, SUCCESS_DISPLAY_MS);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '좌석 변경 신청에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
-  }, [student.studentNumber, selectedSeats, submitting, onClose]);
+  }, [student, selectedSeats, seats, submitting, onClose]);
 
   if (success) {
     return (
@@ -108,9 +137,6 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
     );
   }
 
-  const isSelected = (seatId: number) => selectedSeats.includes(seatId);
-  const isCurrentSeat = (seatLabel: string) => seatLabel === student.assignedSeatLabel;
-
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -118,72 +144,114 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
           &#x2715;
         </button>
 
-        <h2 className={styles.title}>좌석 변경</h2>
-        <p className={styles.guide}>
-          {student.name} 학생 (현재: {student.assignedSeatLabel})
-        </p>
+        <div className={styles.header}>
+          <h2 className={styles.title}>좌석 변경</h2>
+          <p className={styles.guide}>
+            {student.name} (현재: {student.assignedSeatLabel})
+          </p>
 
-        {/* 선택된 순위 표시 */}
-        <div className={styles.prioritySection}>
-          {PRIORITY_LABELS.map((label, idx) => {
-            const seatLabel = getSeatLabel(selectedSeats[idx]);
-            return (
-              <div key={label} className={`${styles.prioritySlot} ${seatLabel ? styles.priorityFilled : ''}`}>
-                <span className={styles.priorityLabel}>{label}{idx === 0 ? ' (필수)' : ''}</span>
-                {seatLabel ? (
-                  <button
-                    type="button"
-                    className={styles.priorityValue}
-                    onClick={() => removeSelection(idx)}
-                  >
-                    {seatLabel} ✕
-                  </button>
-                ) : (
-                  <span className={styles.priorityEmpty}>좌석 선택</span>
-                )}
-              </div>
-            );
-          })}
+          {/* 순위 선택 표시 */}
+          <div className={styles.prioritySection}>
+            {PRIORITY_LABELS.map((label, idx) => {
+              const seatLabel = getSeatLabel(selectedSeats[idx]);
+              return (
+                <div key={label} className={`${styles.prioritySlot} ${seatLabel ? styles.priorityFilled : ''}`}>
+                  <span className={styles.priorityLabel}>{label}{idx === 0 ? ' (필수)' : ''}</span>
+                  {seatLabel ? (
+                    <button
+                      type="button"
+                      className={styles.priorityValue}
+                      onClick={() => removeSelection(idx)}
+                    >
+                      {seatLabel} ✕
+                    </button>
+                  ) : (
+                    <span className={styles.priorityEmpty}>좌석 선택</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 구역 탭 */}
+          {areas.length > 1 && (
+            <div className={styles.areaTabs}>
+              {areas.map((a) => (
+                <button
+                  key={a.areaCd}
+                  type="button"
+                  className={`${styles.areaTab} ${selectedAreaCd === a.areaCd ? styles.areaTabActive : ''}`}
+                  onClick={() => setSelectedAreaCd(a.areaCd)}
+                >
+                  {a.areaNm}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {errorMessage && (
           <p className={styles.errorMessage}>{errorMessage}</p>
         )}
 
-        {/* 좌석 그리드 */}
-        {loading ? (
-          <p className={styles.loadingText}>좌석 목록 불러오는 중...</p>
-        ) : (
-          <div className={styles.seatGrid}>
-            {seats.map((seat) => {
-              const current = isCurrentSeat(seat.seatLabel);
-              const selected = isSelected(seat.seatId);
-              const occupied = !seat.available && !current;
-              return (
-                <button
-                  key={seat.seatId}
-                  type="button"
-                  className={`${styles.seatButton} ${selected ? styles.seatSelected : ''} ${current ? styles.seatCurrent : ''} ${occupied && !selected ? styles.seatOccupied : ''}`}
-                  onClick={() => !current && handleSeatToggle(seat.seatId)}
-                  disabled={current}
-                >
-                  {seat.seatLabel}
-                  {current && <span className={styles.currentBadge}>현재</span>}
-                  {occupied && <span className={`${styles.occupiedBadge} ${selected ? styles.occupiedBadgeSelected : ''}`}>사용중</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* 좌석 배치도 */}
+        <div className={styles.canvasWrap}>
+          {loading ? (
+            <p className={styles.loadingText}>좌석 배치도 불러오는 중...</p>
+          ) : activeSeats.length === 0 ? (
+            <p className={styles.loadingText}>등록된 좌석이 없습니다.</p>
+          ) : (
+            <div
+              className={styles.canvas}
+              style={{ width: canvasSize.width, height: canvasSize.height }}
+            >
+              {activeSeats.map((seat) => {
+                const current = isCurrentSeat(seat.seatNm);
+                const selected = selectedSeats.includes(seat.seatCd);
+                const occupied = isOccupied(seat) && !current;
+                const selectionIdx = selectedSeats.indexOf(seat.seatCd);
 
-        <button
-          type="button"
-          className={styles.submitButton}
-          onClick={handleSubmit}
-          disabled={submitting || selectedSeats[0] === null}
-        >
-          {submitting ? '신청 중...' : '신청하기'}
-        </button>
+                let cellClass = styles.seatCell;
+                if (current) cellClass += ` ${styles.seatCurrent}`;
+                else if (selected) cellClass += ` ${styles.seatSelected}`;
+                else if (occupied) cellClass += ` ${styles.seatOccupied}`;
+                else cellClass += ` ${styles.seatEmpty}`;
+
+                return (
+                  <button
+                    key={seat.seatCd}
+                    type="button"
+                    className={cellClass}
+                    style={{
+                      position: 'absolute',
+                      left: seat.xPos * CELL_W,
+                      top: seat.yPos * CELL_H,
+                    }}
+                    onClick={() => !current && handleSeatToggle(seat.seatCd)}
+                    disabled={current}
+                  >
+                    <span className={styles.seatLabel}>{seat.seatNm}</span>
+                    {current && <span className={styles.statusBadge}>현재</span>}
+                    {selected && selectionIdx !== -1 && (
+                      <span className={styles.selectionBadge}>{selectionIdx + 1}순위</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.footer}>
+          <button
+            type="button"
+            className={styles.submitButton}
+            onClick={handleSubmit}
+            disabled={submitting || selectedSeats[0] === null}
+          >
+            {submitting ? '신청 중...' : '신청하기'}
+          </button>
+        </div>
       </div>
     </div>
   );
