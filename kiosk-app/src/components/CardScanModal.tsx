@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import cardImg from '../assets/card.png';
+import cardAndQrImg from '../assets/card_and_qr.jpg';
 import { searchStudent, getStudentBySeat, getStudentByPhone } from '../api/studentApi';
 import { getStudentMessages } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
@@ -351,63 +351,34 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         <h2 className={styles.title}>{title}</h2>
 
         {!keypadMode ? (
-          keypadOnly ? (
-            <>
-              <p className={styles.guide}>인증 방법을 선택해주세요</p>
+          <>
+            <p className={styles.guide}>
+              {searching ? '학생 조회 중...' : '카드 태그 및 QR을 스캔해주세요'}
+            </p>
 
-              {errorMessage && (
-                <p className={styles.errorMessage}>{errorMessage}</p>
-              )}
+            <img src={cardAndQrImg} alt="카드 태그 및 QR 스캔" className={styles.cardImage} />
 
-              <div className={styles.keypadOnlyButtons}>
-                <button
-                  type="button"
-                  className={styles.keypadOnlyButton}
-                  onClick={() => openKeypad('seatLabel')}
-                >
-                  <span className={styles.keypadOnlyIcon}>💺</span>
-                  <span className={styles.keypadOnlyLabel}>좌석번호로 인증</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.keypadOnlyButton}
-                  onClick={() => openKeypad('phoneLast4')}
-                >
-                  <span className={styles.keypadOnlyIcon}>📱</span>
-                  <span className={styles.keypadOnlyLabel}>휴대폰 뒷자리로 인증</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <img src={cardImg} alt="카드 태그" className={styles.cardImage} />
+            {errorMessage && (
+              <p className={styles.errorMessage}>{errorMessage}</p>
+            )}
 
-              <p className={styles.guide}>
-                {searching ? '학생 조회 중...' : '카드를 태그하거나 QR코드를 찍어주세요'}
-              </p>
-
-              {errorMessage && (
-                <p className={styles.errorMessage}>{errorMessage}</p>
-              )}
-
-              <div className={styles.fallbackButtons}>
-                <button
-                  type="button"
-                  className={styles.studentIdButton}
-                  onClick={() => openKeypad('seatLabel')}
-                >
-                  좌석번호로 인증
-                </button>
-                <button
-                  type="button"
-                  className={styles.studentIdButton}
-                  onClick={() => openKeypad('phoneLast4')}
-                >
-                  휴대폰 뒷자리로 인증
-                </button>
-              </div>
-            </>
-          )
+            <div className={styles.fallbackButtons}>
+              <button
+                type="button"
+                className={styles.seatButton}
+                onClick={() => openKeypad('seatLabel')}
+              >
+                좌석 번호로 인증
+              </button>
+              <button
+                type="button"
+                className={styles.phoneButton}
+                onClick={() => openKeypad('phoneLast4')}
+              >
+                휴대폰 뒷자리로 인증
+              </button>
+            </div>
+          </>
         ) : (
           <div className={styles.keypadSection}>
             <div className={styles.studentIdDisplay}>

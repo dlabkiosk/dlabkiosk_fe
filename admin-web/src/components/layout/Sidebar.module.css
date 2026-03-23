@@ -24,7 +24,7 @@
 .nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--size-badge-padding-h) 0;
+  /* padding: var(--size-badge-padding-h) 0; */
 }
 
 .menuGroup {

@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: var(--space-3);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -35,6 +35,51 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.tab {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tabActive {
+  background: var(--color-text);
+  color: #fff;
+  border-color: var(--color-text);
+}
+
+/* 4위 이하 순위 번호 */
+.rankNumber {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-hint);
+  flex-shrink: 0;
+}
+
+/* 전지점 - 지점명 */
+.rankStore {
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+  white-space: nowrap;
 }
 
 .rankList {
@@ -78,4 +123,60 @@
   color: var(--color-text-hint);
   text-align: center;
   padding: var(--space-4) 0;
+}
+
+/* 모달 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--color-bg-white);
+  border-radius: var(--radius-sm);
+  width: 90%;
+  max-width: 20rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modalTitle {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: var(--font-md);
+  color: var(--color-text-hint);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.modalBody {
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  overflow-y: auto;
+}
+
+.modal .tabs {
+  padding: var(--space-3) var(--space-5) 0;
+  margin-bottom: 0;
 }

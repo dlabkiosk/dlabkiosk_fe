@@ -8,10 +8,9 @@ export interface DailyOperation {
   mealRequests: number;
 }
 
-export interface MealTag {
-  name: string;
-  mealType: string;
-  taggedAt: string;
+export interface MealTagSummary {
+  lunchCount: number;
+  dinnerCount: number;
 }
 
 export interface AttendanceSummary {
@@ -27,15 +26,15 @@ export interface SeatLeaveSummary {
   waitingReturn: number;
 }
 
-export interface StudyRanking {
-  code: number;
-  message: string;
-  data: Record<string, string>[];
-  extra: Record<string, string>;
-  success: boolean;
-  total_inwon: string;
-  study_tm: string;
-}
+// export interface StudyRanking {
+//   code: number;
+//   message: string;
+//   data: Record<string, string>[];
+//   extra: Record<string, string>;
+//   success: boolean;
+//   total_inwon: string;
+//   study_tm: string;
+// }
 
 export interface PendingApproval {
   id: number;
@@ -63,10 +62,10 @@ export interface SeatChangeRequest {
 
 export interface DashboardData {
   dailyOperation: DailyOperation;
-  mealTags: MealTag[];
+  mealTagSummary: MealTagSummary;
   attendanceSummary: AttendanceSummary;
   seatLeaveSummary: SeatLeaveSummary;
-  studyRanking: StudyRanking;
+  // studyRanking: StudyRanking;
   seatChangeRequests: SeatChangeRequest[];
   pendingApprovals: PendingApproval[];
   notices: DashboardNotice[];

@@ -17,6 +17,8 @@ import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
 import { tag, tagConfirm, resolveActionLabel } from '../api/tagApi';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
+import { sendEventLog } from '../api/eventLogApi';
+import type { InputMethod } from '../api/eventLogApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
 import { useCardScanner } from '../hooks/useCardScanner';
@@ -63,19 +65,19 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   isAnyModalOpenRef.current = isAnyModalOpen;
 
   // 메인화면에서 카드/QR 인식 시 자동으로 출결 태그 처리
-  const lastAutoTagCard = useRef<string | null>(null);
-  const lastAutoTagQr = useRef<string | null>(null);
+  const lastAutoTagCardTime = useRef<number>(0);
+  const lastAutoTagQrTime = useRef<number>(0);
 
   useEffect(() => {
-    if (scanResult && scanResult.rawValue !== lastAutoTagCard.current && !isAnyModalOpenRef.current) {
-      lastAutoTagCard.current = scanResult.rawValue;
+    if (scanResult && scanResult.receivedAt.getTime() !== lastAutoTagCardTime.current && !isAnyModalOpenRef.current) {
+      lastAutoTagCardTime.current = scanResult.receivedAt.getTime();
       setScanTarget({ actionId: 'tag', label: '출결' });
     }
   }, [scanResult]);
 
   useEffect(() => {
-    if (qrResult && qrResult.rawValue !== lastAutoTagQr.current && !isAnyModalOpenRef.current) {
-      lastAutoTagQr.current = qrResult.rawValue;
+    if (qrResult && qrResult.receivedAt.getTime() !== lastAutoTagQrTime.current && !isAnyModalOpenRef.current) {
+      lastAutoTagQrTime.current = qrResult.receivedAt.getTime();
       setScanTarget({ actionId: 'tag', label: '출결' });
     }
   }, [qrResult]);
@@ -144,13 +146,27 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     throw new Error('학생을 식별할 수 없습니다.');
   }, []);
 
+  /** ScanActionParams로부터 입력 방식 판별 */
+  const resolveInputMethod = useCallback((params: ScanActionParams): InputMethod => {
+    if (params.seatLabel) return 'SEAT_LABEL';
+    if (params.phoneLast4) return 'PHONE_LAST4';
+    // identifier인 경우: 마지막 스캔 시점 기준으로 카드/QR 판별
+    if (qrResult && scanResult) {
+      return qrResult.receivedAt > scanResult.receivedAt ? 'QR' : 'CARD';
+    }
+    if (qrResult) return 'QR';
+    return 'CARD';
+  }, [scanResult, qrResult]);
+
   const handleTagAction = useCallback(async (params: ScanActionParams) => {
     const identifier = await resolveIdentifier(params);
+    const inputMethod = resolveInputMethod(params);
     console.log('[handleTagAction] params:', params, '→ identifier:', JSON.stringify(identifier));
 
     // 좌석 이탈 중이면 먼저 복귀 처리
     try {
       const leaveResult = await endSeatLeave(identifier);
+      sendEventLog({ eventType: 'SEAT_LEAVE_END', inputMethod, identifier, success: true, resultAction: 'SEAT_LEAVE_END', studentName: leaveResult.studentName });
       return {
         name: leaveResult.studentName,
         message: '좌석 복귀가 완료되었습니다.',
@@ -159,35 +175,54 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       // 이탈 중이 아니면 무시 → 기존 태그 로직
     }
 
-    const result = await tag({ identifier });
-    return {
-      name: result.studentName,
-      studentId: result.studentId,
-      message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
-      pendingActions: result.pendingActions,
-      identifier,
-    };
-  }, [resolveIdentifier]);
+    try {
+      const result = await tag({ identifier });
+      sendEventLog({ eventType: 'TAG', inputMethod, identifier, success: true, resultAction: result.action, studentName: result.studentName });
+      return {
+        name: result.studentName,
+        studentId: result.studentId,
+        message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
+        pendingActions: result.pendingActions,
+        identifier,
+      };
+    } catch (err) {
+      sendEventLog({ eventType: 'TAG', inputMethod, identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
+  }, [resolveIdentifier, resolveInputMethod]);
 
   const handleTagConfirm = useCallback(async (identifier: string, action: string) => {
-    const result = await tagConfirm({ identifier, action });
-    return {
-      name: result.studentName,
-      studentId: result.studentId,
-      message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
-    };
+    try {
+      const result = await tagConfirm({ identifier, action });
+      sendEventLog({ eventType: 'TAG_CONFIRM', inputMethod: 'CARD', identifier, success: true, resultAction: result.action, studentName: result.studentName });
+      return {
+        name: result.studentName,
+        studentId: result.studentId,
+        message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
+      };
+    } catch (err) {
+      sendEventLog({ eventType: 'TAG_CONFIRM', inputMethod: 'CARD', identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
   }, []);
 
   // 좌석 이탈 액션 — identifier로 학생 식별
   const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
     if (!scanTarget?.reasonId) throw new Error('이탈 사유를 선택해주세요.');
     const identifier = await resolveIdentifier(params);
-    const result = await startSeatLeave(identifier, scanTarget.reasonId);
-    return {
-      name: result.studentName,
-      message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
-    };
-  }, [scanTarget?.reasonId, resolveIdentifier]);
+    const inputMethod = resolveInputMethod(params);
+    try {
+      const result = await startSeatLeave(identifier, scanTarget.reasonId);
+      sendEventLog({ eventType: 'SEAT_LEAVE_START', inputMethod, identifier, success: true, resultAction: 'SEAT_LEAVE_START', studentName: result.studentName });
+      return {
+        name: result.studentName,
+        message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
+      };
+    } catch (err) {
+      sendEventLog({ eventType: 'SEAT_LEAVE_START', inputMethod, identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
+  }, [scanTarget?.reasonId, resolveIdentifier, resolveInputMethod]);
 
   const getScanAction = () => {
     if (!scanTarget) return undefined;
