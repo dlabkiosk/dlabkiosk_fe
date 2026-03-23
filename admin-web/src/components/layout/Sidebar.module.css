@@ -6,7 +6,7 @@
   width: var(--sidebar-width, 260px);
   height: 100vh;
   background: var(--color-sidebar-bg);
-  border-right: 1px solid var(--color-border);
+  /* border-right: 1px solid var(--color-border); */
   display: flex;
   flex-direction: column;
   z-index: 10;
@@ -40,7 +40,7 @@
   border: none;
   background: none;
   color: var(--color-sidebar-text);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   text-decoration: none;
   transition: background 0.15s;
