@@ -114,11 +114,19 @@ export default function PhoneManagement() {
   const [editTarget, setEditTarget] = useState<PhoneSubmission | null>(null);
   const [editForm, setEditForm] = useState({ memo: '', parentPhoneNumber: '' });
 
-  /* ── 서버에서 전체 데이터 조회 (날짜 필터 없이) ── */
+  /* ── 서버에서 데이터 조회 (선택 날짜 기준 해당 월 범위로 요청) ── */
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const dateStr = appliedFilters.date || today;
+      const d = new Date(dateStr);
+      const startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const endDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
       const result: PageResponse<PhoneSubmission> = await getPhoneSubmissions({
+        startDate,
+        endDate,
         studentName: appliedFilters.name || undefined,
         studentNumber: appliedFilters.number || undefined,
         page: 0,
@@ -130,7 +138,7 @@ export default function PhoneManagement() {
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters.name, appliedFilters.number]);
+  }, [appliedFilters.name, appliedFilters.number, appliedFilters.date, today]);
 
   /* ── 클라이언트 날짜 필터: 선택 날짜가 startDate~endDate 범위에 포함되는 건만 ── */
   const filteredData = useMemo(() => {

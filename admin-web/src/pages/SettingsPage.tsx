@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LuSettings, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import styles from './SettingsPage.module.css';
 import {
@@ -1150,6 +1150,7 @@ function SeatLeaveReasonSettings() {
 
 /* ── 지점 정보 탭 ── */
 function BranchInfo() {
+  const nav = useNavigate();
   const { confirm, alert, ConfirmDialog: StoreConfirmDialog } = useConfirm();
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1211,17 +1212,6 @@ function BranchInfo() {
     }
     init();
   }, [fetchStores]);
-
-  const openDetail = async (store: Store) => {
-    try {
-      const detail = await getStore(store.id);
-      setSelectedStore(detail);
-      setIsEditing(false);
-      setShowModal(true);
-    } catch {
-      await alert('지점 정보를 불러올 수 없습니다.');
-    }
-  };
 
   const startEdit = () => {
     if (!selectedStore) return;
@@ -1450,7 +1440,7 @@ function BranchInfo() {
     );
   }
 
-  // ADMIN: 지점 목록 + 클릭 시 모달
+  // ADMIN: 지점 목록 + 클릭 시 상세 페이지 이동
   return (
     <>
       <div className={styles.section}>
@@ -1465,7 +1455,7 @@ function BranchInfo() {
               <th style={{ width: 80 }}>지점코드</th>
               <th>지점명</th>
               <th>주소</th>
-              <th style={{ width: 100 }}>전화번호</th>
+              <th style={{ width: 140 }}>전화번호</th>
               <th style={{ width: 70 }}>상태</th>
               <th style={{ width: 80 }}>DSA</th>
             </tr>
@@ -1475,7 +1465,7 @@ function BranchInfo() {
               <tr><td colSpan={6} className={styles.emptyCell}>등록된 지점이 없습니다.</td></tr>
             ) : (
               stores.map((store) => (
-                <tr key={store.id} style={{ cursor: 'pointer' }} onClick={() => openDetail(store)}>
+                <tr key={store.id} style={{ cursor: 'pointer' }} onClick={() => nav(`/settings/branch/${store.id}`)}>
                   <td>{store.storeCode}</td>
                   <td>{store.storeName}</td>
                   <td>{store.address || '-'}</td>
@@ -1496,17 +1486,6 @@ function BranchInfo() {
           </tbody>
         </table>
       </div>
-
-      {/* 상세/수정 모달 */}
-      {showModal && selectedStore && (
-        <div className={styles.overlay} onClick={() => { setShowModal(false); setIsEditing(false); }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className={styles.modalClose} onClick={() => { setShowModal(false); setIsEditing(false); }}>&#x2715;</button>
-            <h3 className={styles.modalTitle}>{isEditing ? '지점 수정' : '지점 상세'}</h3>
-            {renderStoreDetail(selectedStore)}
-          </div>
-        </div>
-      )}
 
       {/* 등록 모달 */}
       {showCreateModal && (
@@ -1593,7 +1572,7 @@ function StudentMessageSettings() {
     if (!studentSearch.trim()) return students;
     const q = studentSearch.trim().toLowerCase();
     return students.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.studentNumber.toLowerCase().includes(q)
+      (s) => (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q)
     );
   }, [students, studentSearch]);
 
@@ -1755,7 +1734,7 @@ function StudentMessageSettings() {
                               <button
                                 type="button"
                                 className={`${styles.statusBadge} ${msg.active ? '' : styles.statusInactive}`}
-                                style={{ cursor: 'pointer', border: 'none' }}
+                                style={{ cursor: 'pointer', border: msg.active ? 'none' : '1px solid #d1d5db', background: msg.active ? undefined : '#fff', color: msg.active ? undefined : '#6b7280' }}
                                 onClick={() => handleToggleActive(msg)}
                               >
                                 {msg.active ? '활성' : '비활성'}

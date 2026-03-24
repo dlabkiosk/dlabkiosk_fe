@@ -27,7 +27,7 @@
   height: 1.125rem;
   border-radius: var(--radius-full);
   border: none;
-  background: var(--color-text);
+  background: #555555;
   font-size: 0.75rem;
   color: #fff;
   cursor: pointer;
@@ -57,9 +57,9 @@
 }
 
 .tabActive {
-  background: var(--color-text);
+  background: var(--color-primary);
   color: #fff;
-  border-color: var(--color-text);
+  /* border-color: var(--color-text); */
 }
 
 /* 4위 이하 순위 번호 */

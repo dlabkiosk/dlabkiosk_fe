@@ -298,8 +298,7 @@ export default function SeatManagement() {
         let seatLeaveReason: string | null = null;
 
         // 자체 백엔드 출결 상태 (조퇴/하원 판별용)
-        // seatLabel 매칭 시도 → 실패 시 학생이름으로 매칭 (DB seatLabel ≠ assignedSeatLabel 대응)
-        const studentName = stu?.name ?? st?.assignedStudentName ?? null;
+        const studentName = dsa?.studentName ?? stu?.name ?? st?.assignedStudentName ?? null;
         const attStatus = attendanceBySeatLabel.get(seat.seatLabel)
           || (studentName ? attendanceByStudentName.get(studentName) : undefined);
 
@@ -316,6 +315,10 @@ export default function SeatManagement() {
           if (dsa.away) {
             attendanceLabel = '좌석이탈';
           }
+          // DSA 이탈사유 우선 사용
+          if (attendanceLabel === '좌석이탈' && dsa.leaveReasonName) {
+            seatLeaveReason = dsa.leaveReasonName;
+          }
         }
 
         // 자체 백엔드 출결로 조퇴/하원 덮어쓰기 (DSA에는 해당 상태 없음)
@@ -329,8 +332,7 @@ export default function SeatManagement() {
 
         // DSA도 없고 출결 데이터도 없을 때: 자체 DB 폴백
         if (!dsa && !attStatus) {
-          const hasStudent = !!(stu?.name ?? st?.assignedStudentName);
-          if (hasStudent) {
+          if (studentName) {
             const leaveReason = activeLeaveBySeatLabel.get(seat.seatLabel);
             if (leaveReason) {
               attendanceLabel = '좌석이탈';
@@ -346,14 +348,14 @@ export default function SeatManagement() {
           attendanceLabel = '학습중';
         }
 
-        // 좌석이탈 사유 보강
+        // 좌석이탈 사유 보강: DSA에서 못 받았으면 자체 DB 폴백
         if (attendanceLabel === '좌석이탈' && !seatLeaveReason) {
           seatLeaveReason = activeLeaveBySeatLabel.get(seat.seatLabel) ?? null;
         }
 
         return {
           ...seat,
-          assignedStudentName: stu?.name ?? st?.assignedStudentName ?? null,
+          assignedStudentName: dsa?.studentName ?? stu?.name ?? st?.assignedStudentName ?? null,
           assignedStudentNumber: stu?.studentNumber ?? null,
           assignedClassName: stu?.className ?? null,
           waitingCount: st?.waitingCount ?? 0,

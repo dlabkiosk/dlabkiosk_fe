@@ -25,6 +25,14 @@ html {
   /* Background */
   --color-bg: #f0f4f8;
   --color-bg-white: #fff;
+  --color-top-section-bg: #F6F7FB;
+  --color-page-bg: #fff;
+  --color-qm-1: var(--color-bg-white);
+  --color-qm-2: var(--color-bg-white);
+  --color-qm-3: var(--color-bg-white);
+  --color-qm-4: var(--color-bg-white);
+  --color-qm-5: var(--color-bg-white);
+  --color-qm-6: var(--color-bg-white);
   --color-bg-gray: #f5f5f5;
   --color-bg-light: #f5f7fa;
 
@@ -32,7 +40,7 @@ html {
   --color-border: #eee;
   --color-border-medium: #ddd;
   --color-border-dark: #e0e0e0;
-  --color-border-hover: #f8f8f8;
+  --color-border-hover: #f3f3f3;
 
   /* ── Font Size ── */
   --font-2xs: 0.625rem;   /* 10px */

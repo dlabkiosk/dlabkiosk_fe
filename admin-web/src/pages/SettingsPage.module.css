@@ -238,8 +238,9 @@
 }
 
 .statusInactive {
-  background-color: #f3f4f6;
+  background-color: #fff;
   color: #6b7280;
+  border: 1px solid #d1d5db;
 }
 
 /* ── Drag & Drop ── */

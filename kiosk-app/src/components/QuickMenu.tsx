@@ -14,7 +14,7 @@ interface QuickMenuItem {
 
 const MENU_ITEMS: QuickMenuItem[] = [
   { id: 'no-card', label: '카드 미소지', icon: noCardIcon },
-  { id: 'seat-leave', label: '좌석이탈', icon: seatLeaveIcon },
+  { id: 'seat-leave', label: '좌석 이탈', icon: seatLeaveIcon },
   { id: 'remote-apply', label: '비대면 신청', icon: nonFacetofaceIcon },
   { id: 'student-info', label: '학적 조회', icon: searchStudentIcon },
   { id: 'meal-plan', label: '식단표', icon: mealPlanIcon },
