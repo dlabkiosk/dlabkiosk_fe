@@ -34,6 +34,8 @@ export interface SeatStatusByArea {
   /** S(등원), D(외출), N(미출석), B(공석), A(좌석이탈) */
   state: 'S' | 'D' | 'N' | 'B' | 'A';
   away: boolean;
+  studentName: string | null;
+  leaveReasonName: string | null;
 }
 
 /** 좌석 생성/수정 요청 바디 */
@@ -104,9 +106,12 @@ export function getSeatAreas(): Promise<SeatArea[]> {
   return apiGet<SeatArea[]>('/api/v1/admin/seats/areas');
 }
 
-/** 구역별 좌석 현황 조회 (areaCd 필수) */
-export function getSeatStatusByArea(areaCd: string): Promise<SeatStatusByArea[]> {
-  return apiGet<SeatStatusByArea[]>(`/api/v1/admin/seats/status?areaCd=${encodeURIComponent(areaCd)}`);
+/** 구역별 좌석 현황 조회 (areaCd 필수, storeId 선택) */
+export function getSeatStatusByArea(areaCd: string, storeId?: number): Promise<SeatStatusByArea[]> {
+  const query = new URLSearchParams();
+  if (storeId) query.set('storeId', String(storeId));
+  query.set('areaCd', areaCd);
+  return apiGet<SeatStatusByArea[]>(`/api/v1/admin/seats/status?${query.toString()}`);
 }
 
 /** 좌석 전체 조회 (MANAGER: 자기 지점, ADMIN: 전체, areaCd로 구역 필터 가능) */

@@ -11,6 +11,7 @@ import PhoneManagement from './pages/PhoneManagement';
 import SeatLeaveManagement from './pages/SeatLeaveManagement';
 import SeatManagement from './pages/SeatManagement';
 import SettingsPage from './pages/SettingsPage';
+import BranchDetailPage from './pages/BranchDetailPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/notices/new" element={<NoticeCreate />} />
             <Route path="/notices/:noticeId" element={<NoticeDetail />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/branch/:storeId" element={<BranchDetailPage />} />
           </Route>
         </Route>
       </Routes>

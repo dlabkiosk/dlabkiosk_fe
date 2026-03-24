@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { kioskLogout } from '../api/kioskAuthApi';
 import type { KioskSession } from '../api/kioskAuthApi';
+import useTheme from '../hooks/useTheme';
+import type { ThemeId } from '../hooks/useTheme';
 import styles from './KioskAdminPanel.module.css';
 
 const ADMIN_PASSWORD = '0000';
@@ -14,10 +16,17 @@ interface KioskAdminPanelProps {
   onLogout: () => void;
 }
 
+const THEME_OPTIONS: { id: ThemeId; label: string; color: string }[] = [
+  { id: 'basic', label: '기본', color: '#00C4A7' },
+  { id: 'blue', label: '블루', color: '#2563eb' },
+  { id: 'orange', label: '오렌지', color: '#ea580c' },
+];
+
 export default function KioskAdminPanel({ connected, error, session, onConnect, onClose, onLogout }: KioskAdminPanelProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const handleKeyPress = (key: string) => {
     if (key === 'backspace') {
@@ -140,6 +149,23 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>지점 코드</span>
             <span className={styles.infoValue}>{session.storeCode}</span>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>테마 설정</h3>
+          <div className={styles.themeGroup}>
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`${styles.themeButton} ${theme === opt.id ? styles.themeButtonActive : ''}`}
+                onClick={() => setTheme(opt.id)}
+              >
+                <span className={styles.themeColorDot} style={{ background: opt.color }} />
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 
