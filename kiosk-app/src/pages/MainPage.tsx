@@ -189,7 +189,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
     if (!scanTarget?.reasonId) throw new Error('이탈 사유를 선택해주세요.');
     const identifier = await resolveIdentifier(params);
-    const inputMethod = resolveInputMethod(params);
     try {
       const result = await startSeatLeave(identifier, scanTarget.reasonId);
       return {
@@ -199,7 +198,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     } catch (err) {
       throw err;
     }
-  }, [scanTarget?.reasonId, resolveIdentifier, resolveInputMethod]);
+  }, [scanTarget?.reasonId, resolveIdentifier]);
 
   const getScanAction = () => {
     if (!scanTarget) return undefined;

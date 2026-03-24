@@ -36,7 +36,6 @@ export interface ScanActionResult {
   name: string;
   studentId?: number;
   message?: string;
-  pendingActions?: PendingActionItem[];
   identifier?: string;
 }
 
@@ -52,19 +51,15 @@ interface CardScanModalProps {
   onClose: () => void;
   onStudentFound?: (student: Student) => void;
   onAction?: (params: ScanActionParams) => Promise<ScanActionResult>;
-  onPendingConfirm?: (identifier: string, action: string) => Promise<ScanActionResult>;
 }
 
-export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onPendingConfirm }: CardScanModalProps) {
+export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction }: CardScanModalProps) {
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(defaultKeypadMode ?? null);
   const [inputValue, setInputValue] = useState('');
   const [successInfo, setSuccessInfo] = useState<{ name: string; action: string } | null>(null);
   const [studentMessages, setStudentMessages] = useState<StudentMessage[]>([]);
-  const [pendingActions, setPendingActions] = useState<PendingActionItem[]>([]);
-  const [pendingIdentifier, setPendingIdentifier] = useState<string | null>(null);
-  const [confirmingAction, setConfirmingAction] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,21 +84,11 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }, ms);
   }, [onClose]);
 
-  const showSuccess = useCallback((name: string, message?: string, studentId?: number, resultPendingActions?: PendingActionItem[], identifier?: string) => {
+  const showSuccess = useCallback((name: string, message?: string, studentId?: number) => {
     setSearching(false);
     setSuccessInfo({ name, action: message || '출결 처리 되었습니다.' });
     setStudentMessages([]);
-
-    // pendingActions가 있으면 자동 닫기 안 함 (사용자 확인 필요)
-    if (resultPendingActions && resultPendingActions.length > 0 && identifier) {
-      setPendingActions(resultPendingActions);
-      setPendingIdentifier(identifier);
-      // 타이머 없음 — 사용자가 확인하거나 닫아야 함
-    } else {
-      setPendingActions([]);
-      setPendingIdentifier(null);
-      startSuccessTimer(SUCCESS_DISPLAY_MS);
-    }
+    startSuccessTimer(SUCCESS_DISPLAY_MS);
 
     // 학생 메시지 조회 — 메시지가 있으면 타이머를 연장
     if (studentId) {
@@ -111,9 +96,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         .then((msgs) => {
           if (msgs.length > 0) {
             setStudentMessages(msgs);
-            if (!resultPendingActions || resultPendingActions.length === 0) {
-              startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
-            }
+            startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
           }
         })
         .catch(() => { /* 메시지 조회 실패는 무시 */ });
@@ -142,7 +125,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setSearching(true);
     if (onAction) {
       onAction({ identifier })
-        .then((result) => showSuccess(result.name, result.message, result.studentId, result.pendingActions, result.identifier ?? identifier))
+        .then((result) => showSuccess(result.name, result.message, result.studentId))
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       searchStudent({ identifier })
@@ -156,7 +139,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setSearching(true);
     if (onAction) {
       onAction({ seatLabel })
-        .then((result) => showSuccess(result.name, result.message, result.studentId, result.pendingActions, result.identifier))
+        .then((result) => showSuccess(result.name, result.message, result.studentId))
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       getStudentBySeat(seatLabel)
@@ -170,7 +153,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setSearching(true);
     if (onAction) {
       onAction({ phoneLast4 })
-        .then((result) => showSuccess(result.name, result.message, result.studentId, result.pendingActions, result.identifier))
+        .then((result) => showSuccess(result.name, result.message, result.studentId))
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       getStudentByPhone(phoneLast4)
@@ -248,33 +231,6 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setKeypadMode(null);
     setInputValue('');
   }, []);
-
-  // pendingAction 확인 처리
-  const handlePendingConfirm = useCallback((action: string) => {
-    if (!pendingIdentifier || !onPendingConfirm || confirmingAction) return;
-    setConfirmingAction(true);
-    onPendingConfirm(pendingIdentifier, action)
-      .then((result) => {
-        setPendingActions([]);
-        setPendingIdentifier(null);
-        setConfirmingAction(false);
-        setSuccessInfo({ name: result.name, action: result.message || '출결 처리 되었습니다.' });
-        startSuccessTimer(SUCCESS_DISPLAY_MS);
-      })
-      .catch((err) => {
-        setConfirmingAction(false);
-        showError(err?.message);
-        // 에러 후 자동 닫기
-        setPendingActions([]);
-        startSuccessTimer(ERROR_DISPLAY_MS);
-      });
-  }, [pendingIdentifier, onPendingConfirm, confirmingAction, startSuccessTimer, showError]);
-
-  const handleDismissPending = useCallback(() => {
-    setPendingActions([]);
-    setPendingIdentifier(null);
-    startSuccessTimer(SUCCESS_DISPLAY_MS);
-  }, [startSuccessTimer]);
 
   const openKeypad = (mode: KeypadMode) => {
     setKeypadMode(mode);
