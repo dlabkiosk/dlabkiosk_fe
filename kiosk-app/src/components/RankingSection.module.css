@@ -27,7 +27,7 @@
   height: 1.125rem;
   border-radius: var(--radius-full);
   border: none;
-  background: #555555;
+  background: var(--color-text-dday);
   font-size: 0.75rem;
   color: #fff;
   cursor: pointer;
@@ -57,8 +57,9 @@
 }
 
 .tabActive {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-top-section-bg);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
   /* border-color: var(--color-text); */
 }
 
@@ -75,11 +76,12 @@
   flex-shrink: 0;
 }
 
-/* 전지점 - 지점명 */
+/* 전지점 - 지점명 (이름 옆 인라인) */
 .rankStore {
   font-size: var(--font-2xs);
   color: var(--color-text-hint);
   white-space: nowrap;
+  margin-left: var(--space-1);
 }
 
 .rankList {

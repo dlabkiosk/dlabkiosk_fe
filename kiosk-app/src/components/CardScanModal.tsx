@@ -304,37 +304,6 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
                 ))}
               </div>
             )}
-            {pendingActions.length > 0 ? (
-              <div className={styles.pendingSection}>
-                {pendingActions.map((pa) => (
-                  <button
-                    key={pa.regCd}
-                    type="button"
-                    className={styles.pendingConfirmButton}
-                    onClick={() => handlePendingConfirm(pa.action)}
-                    disabled={confirmingAction}
-                  >
-                    {confirmingAction ? '처리 중...' : pa.message}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={styles.pendingDismissButton}
-                  onClick={handleDismissPending}
-                  disabled={confirmingAction}
-                >
-                  확인 안함
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className={styles.closeSuccessButton}
-                onClick={onClose}
-              >
-                닫기
-              </button>
-            )}
           </div>
         </div>
       </div>

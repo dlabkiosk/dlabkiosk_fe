@@ -65,3 +65,188 @@
   margin-right: 0.25rem;
   vertical-align: -0.125rem;
 }
+
+/* ── 모달 ── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--color-bg-white);
+  border-radius: var(--radius-sm);
+  width: 90%;
+  max-width: 20rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modalTitle {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  flex: 1;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: var(--font-md);
+  color: var(--color-text-hint);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  font-size: var(--font-xl);
+  color: var(--color-text-hint);
+  cursor: pointer;
+  padding: 0 var(--space-2) 0 0;
+  line-height: 1;
+}
+
+.modalBody {
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  overflow-y: auto;
+}
+
+.emptyText {
+  font-size: var(--font-sm);
+  color: var(--color-text-hint);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+/* ── 리스트 모달 ── */
+
+.modalList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* .modalListItem::after {
+  content: '';
+  display: block;
+  margin: 0 auto;
+  width:100%;
+  height: 1px;
+  background: var(--color-border);
+} */
+
+.modalListItem:last-child::after {
+  display: none;
+}
+
+.modalItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.modalItemTitle {
+  font-size: var(--font-xs);
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modalItemDate {
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── 페이지네이션 ── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.pageButton {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.pageButton:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pageInfo {
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+}
+
+/* ── 상세 모달 ── */
+
+.detailHeader {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detailTitle {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-1) 0;
+  word-break: break-word;
+}
+
+.detailDate {
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+}
+
+.detailContent {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -7,7 +7,7 @@ import styles from './SeatChangeModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
 const PRIORITY_LABELS = ['1순위', '2순위', '3순위'] as const;
-const CELL_W = 48;
+const CELL_W = 50;
 const CELL_H = 36;
 
 interface SeatChangeModalProps {
@@ -21,6 +21,7 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
   const [seats, setSeats] = useState<SeatInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeats, setSelectedSeats] = useState<(string | null)[]>([null, null, null]);
+  const [selectedSeatNames, setSelectedSeatNames] = useState<(string | null)[]>([null, null, null]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -68,16 +69,18 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
   const isOccupied = (seat: SeatInfo) => seat.state !== 'B' && seat.state !== 'N';
   const isCurrentSeat = (seatNm: string) => seatNm === student.assignedSeatLabel;
 
-  const handleSeatToggle = useCallback((seatCd: string) => {
+  const handleSeatToggle = useCallback((seatCd: string, seatNm: string) => {
     setSelectedSeats((prev) => {
       const idx = prev.indexOf(seatCd);
       if (idx !== -1) {
+        setSelectedSeatNames((names) => { const n = [...names]; n[idx] = null; return n; });
         const next = [...prev];
         next[idx] = null;
         return next;
       }
       const emptyIdx = prev.indexOf(null);
       if (emptyIdx === -1) return prev;
+      setSelectedSeatNames((names) => { const n = [...names]; n[emptyIdx] = seatNm; return n; });
       const next = [...prev];
       next[emptyIdx] = seatCd;
       return next;
@@ -91,13 +94,22 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
       next[index] = null;
       const compacted: (string | null)[] = next.filter((s) => s !== null);
       while (compacted.length < 3) compacted.push(null);
+
+      // selectedSeatNames도 동일하게 compact
+      setSelectedSeatNames((names) => {
+        const nextNames = [...names];
+        nextNames[index] = null;
+        const compactedNames: (string | null)[] = nextNames.filter((s) => s !== null);
+        while (compactedNames.length < 3) compactedNames.push(null);
+        return compactedNames;
+      });
+
       return compacted;
     });
   }, []);
 
-  const getSeatLabel = (seatCd: string | null) => {
-    if (seatCd === null) return null;
-    return seats.find((s) => s.seatCd === seatCd)?.seatNm ?? seatCd;
+  const getSeatLabel = (index: number) => {
+    return selectedSeatNames[index] ?? null;
   };
 
   const handleSubmit = useCallback(async () => {
@@ -107,7 +119,7 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
     try {
       await submitSeatChangeRequest({
         identifier: student.identifier ?? student.studentNumber,
-        seatLabel: getSeatLabel(selectedSeats[0]) ?? undefined,
+        seatLabel: getSeatLabel(0) ?? undefined,
         desiredSeatId1: Number(selectedSeats[0]),
         desiredSeatId2: selectedSeats[1] ? Number(selectedSeats[1]) : undefined,
         desiredSeatId3: selectedSeats[2] ? Number(selectedSeats[2]) : undefined,
@@ -153,7 +165,7 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
           {/* 순위 선택 표시 */}
           <div className={styles.prioritySection}>
             {PRIORITY_LABELS.map((label, idx) => {
-              const seatLabel = getSeatLabel(selectedSeats[idx]);
+              const seatLabel = getSeatLabel(idx);
               return (
                 <div key={label} className={`${styles.prioritySlot} ${seatLabel ? styles.priorityFilled : ''}`}>
                   <span className={styles.priorityLabel}>{label}{idx === 0 ? ' (필수)' : ''}</span>
@@ -227,7 +239,7 @@ export default function SeatChangeModal({ student, onClose }: SeatChangeModalPro
                       left: seat.xPos * CELL_W,
                       top: seat.yPos * CELL_H,
                     }}
-                    onClick={() => !current && handleSeatToggle(seat.seatCd)}
+                    onClick={() => !current && handleSeatToggle(seat.seatCd, seat.seatNm)}
                     disabled={current}
                   >
                     <span className={styles.seatLabel}>{seat.seatNm}</span>

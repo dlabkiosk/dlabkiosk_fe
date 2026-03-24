@@ -15,10 +15,8 @@ import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
 import SeatChangeModal from '../components/SeatChangeModal';
 import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
-import { tag, tagConfirm, resolveActionLabel } from '../api/tagApi';
+import { tag, resolveActionLabel } from '../api/tagApi';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
-import { sendEventLog } from '../api/eventLogApi';
-import type { InputMethod } from '../api/eventLogApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
 import { useCardScanner } from '../hooks/useCardScanner';
@@ -147,7 +145,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   }, []);
 
   /** ScanActionParams로부터 입력 방식 판별 */
-  const resolveInputMethod = useCallback((params: ScanActionParams): InputMethod => {
+  const resolveInputMethod = useCallback((params: ScanActionParams): string => {
     if (params.seatLabel) return 'SEAT_LABEL';
     if (params.phoneLast4) return 'PHONE_LAST4';
     // identifier인 경우: 마지막 스캔 시점 기준으로 카드/QR 판별
@@ -166,7 +164,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     // 좌석 이탈 중이면 먼저 복귀 처리
     try {
       const leaveResult = await endSeatLeave(identifier);
-      sendEventLog({ eventType: 'SEAT_LEAVE_END', inputMethod, identifier, success: true, resultAction: 'SEAT_LEAVE_END', studentName: leaveResult.studentName });
       return {
         name: leaveResult.studentName,
         message: '좌석 복귀가 완료되었습니다.',
@@ -176,35 +173,17 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     }
 
     try {
-      const result = await tag({ identifier });
-      sendEventLog({ eventType: 'TAG', inputMethod, identifier, success: true, resultAction: result.action, studentName: result.studentName });
+      const result = await tag({ identifier, inputMethod });
       return {
         name: result.studentName,
         studentId: result.studentId,
         message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
-        pendingActions: result.pendingActions,
         identifier,
       };
     } catch (err) {
-      sendEventLog({ eventType: 'TAG', inputMethod, identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }, [resolveIdentifier, resolveInputMethod]);
-
-  const handleTagConfirm = useCallback(async (identifier: string, action: string) => {
-    try {
-      const result = await tagConfirm({ identifier, action });
-      sendEventLog({ eventType: 'TAG_CONFIRM', inputMethod: 'CARD', identifier, success: true, resultAction: result.action, studentName: result.studentName });
-      return {
-        name: result.studentName,
-        studentId: result.studentId,
-        message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
-      };
-    } catch (err) {
-      sendEventLog({ eventType: 'TAG_CONFIRM', inputMethod: 'CARD', identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
-      throw err;
-    }
-  }, []);
 
   // 좌석 이탈 액션 — identifier로 학생 식별
   const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
@@ -213,13 +192,11 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     const inputMethod = resolveInputMethod(params);
     try {
       const result = await startSeatLeave(identifier, scanTarget.reasonId);
-      sendEventLog({ eventType: 'SEAT_LEAVE_START', inputMethod, identifier, success: true, resultAction: 'SEAT_LEAVE_START', studentName: result.studentName });
       return {
         name: result.studentName,
         message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
       };
     } catch (err) {
-      sendEventLog({ eventType: 'SEAT_LEAVE_START', inputMethod, identifier, success: false, errorMessage: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }, [scanTarget?.reasonId, resolveIdentifier, resolveInputMethod]);
@@ -228,12 +205,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     if (!scanTarget) return undefined;
     if (scanTarget.actionId === 'tag') return handleTagAction;
     if (scanTarget.actionId === 'leave-seat') return handleSeatLeaveAction;
-    return undefined;
-  };
-
-  const getPendingConfirm = () => {
-    if (!scanTarget) return undefined;
-    if (scanTarget.actionId === 'tag') return handleTagConfirm;
     return undefined;
   };
 
@@ -324,7 +295,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           onClose={handleScanClose}
           onStudentFound={getOnStudentFound()}
           onAction={getScanAction()}
-          onPendingConfirm={getPendingConfirm()}
         />
       )}
 

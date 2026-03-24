@@ -100,8 +100,10 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
             ) : (
               <span className={styles.rankNumber}>{entry.rank}</span>
             )}
-            <span className={styles.rankName}>{entry.studentName}</span>
-            <span className={styles.rankStore}>{entry.storeName}</span>
+            <span className={styles.rankName}>
+              {entry.studentName}
+              <span className={styles.rankStore}>{entry.storeName.replace(/^DLAB\s*/i, '')}</span>
+            </span>
             <span className={styles.rankTime}>{entry.studyTime}</span>
           </li>
         ))

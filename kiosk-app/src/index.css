@@ -43,6 +43,7 @@ html {
   --color-border-hover: #f3f3f3;
 
   /* ── Font Size ── */
+  --font-3xs: 0.5rem;     /* 8px */
   --font-2xs: 0.625rem;   /* 10px */
   --font-xs: 0.75rem;     /* 12px */
   --font-sm: 0.8125rem;   /* 13px */
