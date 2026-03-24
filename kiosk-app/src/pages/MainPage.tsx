@@ -177,7 +177,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       return {
         name: result.studentName,
         studentId: result.studentId,
-        message: result.messages?.[0] || `${resolveActionLabel(result)} 처리 되었습니다.`,
+        message: `${resolveActionLabel(result)} 처리 되었습니다.`,
         identifier,
       };
     } catch (err) {

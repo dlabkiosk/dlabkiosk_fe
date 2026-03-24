@@ -213,18 +213,25 @@ function BannerManagement() {
   };
 
   /* 드래그로 잘림 조정 */
-  const handlePreviewMouseDown = () => setDragging(true);
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
+
+  const handlePreviewMouseDown = (e: React.MouseEvent) => {
+    dragStartRef.current = { x: e.clientX, y: e.clientY, posX: objectPos.x, posY: objectPos.y };
+    setDragging(true);
+  };
 
   useEffect(() => {
     if (!dragging) return;
     const handleMove = (e: MouseEvent) => {
-      if (!previewRef.current) return;
+      if (!previewRef.current || !dragStartRef.current) return;
       const rect = previewRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
+      const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
+      const x = Math.max(0, Math.min(100, dragStartRef.current.posX - dx));
+      const y = Math.max(0, Math.min(100, dragStartRef.current.posY - dy));
       setObjectPos({ x, y });
     };
-    const handleUp = () => setDragging(false);
+    const handleUp = () => { setDragging(false); dragStartRef.current = null; };
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     return () => {
@@ -315,27 +322,18 @@ function BannerManagement() {
         </div>
         <div className={styles.sectionBody}>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>파일</label>
-            <div className={styles.uploadArea}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-              />
-              <p className={styles.uploadHint}>
-                {editTarget ? '변경할 파일을 선택하세요 (선택 안 하면 기존 유지)' : '이미지 또는 영상 파일을 선택하세요'}
-              </p>
-            </div>
-          </div>
-
-          {/* 미리보기 (4:3) */}
-          {previewUrl && (
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                미리보기
-                <span className={styles.previewHint}> — 드래그하여 잘림 위치 조정</span>
-              </label>
+            <label className={styles.formLabel}>
+              파일
+              {previewUrl && <span className={styles.previewHint}> — 드래그하여 잘림 위치 조정</span>}
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+              className={styles.fileInput}
+            />
+            {previewUrl ? (
               <div
                 ref={previewRef}
                 className={styles.previewBox}
@@ -360,9 +358,25 @@ function BannerManagement() {
                     draggable={false}
                   />
                 )}
+                <button
+                  type="button"
+                  className={styles.changeFileButton}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  파일 변경
+                </button>
               </div>
-            </div>
-          )}
+            ) : (
+              <div
+                className={styles.uploadArea}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <p className={styles.uploadPlaceholder}>
+                  {editTarget ? '변경할 파일을 선택하세요' : '클릭하여 이미지 또는 영상을 선택하세요'}
+                </p>
+              </div>
+            )}
+          </div>
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>미디어 타입</label>

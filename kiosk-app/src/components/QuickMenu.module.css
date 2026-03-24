@@ -30,6 +30,12 @@
 .menuButton:nth-child(5) { background: var(--color-qm-5); }
 .menuButton:nth-child(6) { background: var(--color-qm-6); }
 
+:global([data-theme="blue"]) .menuButton,
+:global([data-theme="orange"]) .menuButton {
+  border-color: transparent;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
 .menuButton:active {
   background-color: var(--color-bg-gray);
 }
