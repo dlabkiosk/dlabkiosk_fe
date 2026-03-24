@@ -15,7 +15,7 @@ import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
 import SeatChangeModal from '../components/SeatChangeModal';
 import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
-import { tag, resolveActionLabel } from '../api/tagApi';
+import { tag, tagConfirm, tagMealConfirm, resolveActionLabel } from '../api/tagApi';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
@@ -144,17 +144,13 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     throw new Error('학생을 식별할 수 없습니다.');
   }, []);
 
-  /** ScanActionParams로부터 입력 방식 판별 */
+  /** ScanActionParams로부터 입력 방식 판별 — 백엔드 inputMethod 값 기준 */
   const resolveInputMethod = useCallback((params: ScanActionParams): string => {
     if (params.seatLabel) return 'SEAT_LABEL';
     if (params.phoneLast4) return 'PHONE_LAST4';
-    // identifier인 경우: 마지막 스캔 시점 기준으로 카드/QR 판별
-    if (qrResult && scanResult) {
-      return qrResult.receivedAt > scanResult.receivedAt ? 'QR' : 'CARD';
-    }
-    if (qrResult) return 'QR';
-    return 'CARD';
-  }, [scanResult, qrResult]);
+    // 카드/QR 모두 백엔드에서는 RFID로 취급
+    return 'RFID';
+  }, []);
 
   const handleTagAction = useCallback(async (params: ScanActionParams) => {
     const identifier = await resolveIdentifier(params);
@@ -172,18 +168,48 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       // 이탈 중이 아니면 무시 → 기존 태그 로직
     }
 
-    try {
-      const result = await tag({ identifier, inputMethod });
-      return {
-        name: result.studentName,
-        studentId: result.studentId,
-        message: `${resolveActionLabel(result)} 처리 되었습니다.`,
-        identifier,
-      };
-    } catch (err) {
-      throw err;
-    }
+    const result = await tag({ identifier, inputMethod });
+    return {
+      name: result.studentName,
+      studentId: result.studentId,
+      message: `${resolveActionLabel(result)} 처리 되었습니다.`,
+      identifier,
+      inputMethod,
+      pendingActions: result.pendingActions,
+      mealInfo: result.mealInfo,
+      messages: result.messages,
+    };
   }, [resolveIdentifier, resolveInputMethod]);
+
+  // 외출/조퇴 pendingAction 확인
+  const handleConfirmAction = useCallback(async (params: { identifier: string; inputMethod: string; action: string }) => {
+    const result = await tagConfirm(params);
+    return {
+      name: result.studentName,
+      studentId: result.studentId,
+      message: `${resolveActionLabel(result)} 처리 되었습니다.`,
+      identifier: params.identifier,
+      inputMethod: params.inputMethod,
+      pendingActions: result.pendingActions,
+      mealInfo: result.mealInfo,
+      messages: result.messages,
+    };
+  }, []);
+
+  // 급식 태그 확인
+  const handleMealConfirm = useCallback(async (params: { identifier: string; inputMethod: string }) => {
+    const result = await tagMealConfirm(params);
+    return {
+      name: result.studentName,
+      studentId: result.studentId,
+      message: result.mealInfo?.message || '급식 확인이 완료되었습니다.',
+      identifier: params.identifier,
+      inputMethod: params.inputMethod,
+      pendingActions: result.pendingActions,
+      mealInfo: result.mealInfo,
+      messages: result.messages,
+    };
+  }, []);
 
   // 좌석 이탈 액션 — identifier로 학생 식별
   const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
@@ -294,6 +320,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           onClose={handleScanClose}
           onStudentFound={getOnStudentFound()}
           onAction={getScanAction()}
+          onConfirmAction={scanTarget.actionId === 'tag' ? handleConfirmAction : undefined}
+          onMealConfirm={scanTarget.actionId === 'tag' ? handleMealConfirm : undefined}
         />
       )}
 

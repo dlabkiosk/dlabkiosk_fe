@@ -70,16 +70,16 @@ export function tag(body: { identifier: string; inputMethod?: string }): Promise
   );
 }
 
-/** 외출/조퇴 확인 */
-export function tagConfirm(body: { identifier: string; action: string }): Promise<TagResult> {
+/** 외출/조퇴 확인 — 승인된 외출(D)/조퇴(C) 신청을 학생이 확인 후 호출 */
+export function tagConfirm(body: { identifier: string; inputMethod?: string; action: string }): Promise<TagResult> {
   return withErrorMapping(
-    apiPost<TagResult>('/api/v1/kiosk/tag/confirm', body as Record<string, unknown>),
+    apiPost<TagResult>('/api/v1/kiosk/tag/confirm', body as unknown as Record<string, unknown>),
   );
 }
 
-/** 급식 태그 확인 */
-export function tagMealConfirm(body: { identifier: string }): Promise<TagResult> {
+/** 급식 태그 확인 — 식사시간에 급식 신청 내역 확인 후 태그 */
+export function tagMealConfirm(body: { identifier: string; inputMethod?: string }): Promise<TagResult> {
   return withErrorMapping(
-    apiPost<TagResult>('/api/v1/kiosk/tag/meal-confirm', body as Record<string, unknown>),
+    apiPost<TagResult>('/api/v1/kiosk/tag/meal-confirm', body as unknown as Record<string, unknown>),
   );
 }

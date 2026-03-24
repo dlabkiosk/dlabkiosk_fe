@@ -305,6 +305,30 @@
   margin: 0;
 }
 
+/* 급식 정보 */
+.mealInfoSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3h) var(--space-4);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+}
+
+.mealInfoLabel {
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.mealInfoMessage {
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 /* pendingActions 확인 */
 .pendingSection {
   width: 100%;
