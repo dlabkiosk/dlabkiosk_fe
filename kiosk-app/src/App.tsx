@@ -3,10 +3,12 @@ import KioskLoginPage from './pages/KioskLoginPage';
 import MainPage from './pages/MainPage';
 import { kioskMe } from './api/kioskAuthApi';
 import type { KioskSession } from './api/kioskAuthApi';
+import useTheme from './hooks/useTheme';
 
 export default function App() {
   const [session, setSession] = useState<KioskSession | null>(null);
   const [checking, setChecking] = useState(true);
+  useTheme(); // 앱 시작 시 테마 초기화 (로그인 페이지 포함)
 
   // 서버 세션 확인 (항상 서버 기준)
   useEffect(() => {
