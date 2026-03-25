@@ -35,7 +35,7 @@
 }
 
 .title {
-  font-size: var(--font-3xl);
+  font-size: var(--font-2xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
   text-align: center;
@@ -51,7 +51,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
 }
 
@@ -62,9 +62,9 @@
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-5) var(--space-3);
-  background: var(--color-bg-gray);
-  border: none;
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-white);
+  border: 3px solid var(--color-border-hover);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -74,13 +74,13 @@
 }
 
 .actionIcon {
-  width: 2rem;
-  height: 2rem;
+  width: 1.3rem;
+  height: 1.3rem;
   object-fit: contain;
 }
 
 .actionLabel {
-  font-size: var(--font-base);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
   color: var(--color-text);
 }
