@@ -63,7 +63,7 @@ function withErrorMapping(promise: Promise<TagResult>): Promise<TagResult> {
   });
 }
 
-/** 출결 태그 — RFID/QR identifier로 출결 자동 판별 */
+/** 출결 태그 — RFID/QR identifier 또는 좌석번호/전번뒷자리로 출결 자동 판별 */
 export function tag(body: { identifier: string; inputMethod?: string }): Promise<TagResult> {
   return withErrorMapping(
     apiPost<TagResult>('/api/v1/kiosk/tag', body as unknown as Record<string, unknown>),

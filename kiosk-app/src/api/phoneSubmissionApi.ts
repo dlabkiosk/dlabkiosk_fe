@@ -40,6 +40,7 @@ export function getMyPhoneSubmissions(identifier: string): Promise<ActiveSubmiss
 
 export async function submitPhoneSubmission(params: {
   identifier: string;
+  inputMethod?: string;
   submissionType: SubmissionType;
   startDate?: string;
   endDate?: string;

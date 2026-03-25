@@ -47,9 +47,9 @@ export function getSeatLeaveReasons(): Promise<SeatLeaveReason[]> {
   return apiGet<SeatLeaveReason[]>('/api/v1/kiosk/seat-leaves/reasons');
 }
 
-/** 좌석 이탈 시작 — identifier로 학생 식별 */
-export function startSeatLeave(identifier: string, reasonId: number): Promise<SeatLeaveResult> {
-  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/start', { identifier, reasonId })
+/** 좌석 이탈 시작 — identifier + inputMethod로 학생 식별 */
+export function startSeatLeave(identifier: string, reasonId: number, inputMethod?: string): Promise<SeatLeaveResult> {
+  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/start', { identifier, reasonId, inputMethod })
     .catch((err) => {
       if (err instanceof ApiError) {
         // 에러 코드 기반 매핑
@@ -67,7 +67,7 @@ export function startSeatLeave(identifier: string, reasonId: number): Promise<Se
     });
 }
 
-/** 좌석 이탈 복귀 — identifier로 학생 식별 */
-export function endSeatLeave(identifier: string): Promise<SeatLeaveResult> {
-  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/end', { identifier });
+/** 좌석 이탈 복귀 — identifier + inputMethod로 학생 식별 */
+export function endSeatLeave(identifier: string, inputMethod?: string): Promise<SeatLeaveResult> {
+  return apiPost<SeatLeaveResult>('/api/v1/kiosk/seat-leaves/end', { identifier, inputMethod });
 }

@@ -58,11 +58,12 @@ function buildSubmittedDateSet(submissions: ActiveSubmissionPeriod[]): Set<strin
 
 interface PhoneSubmissionModalProps {
   identifier: string;
+  inputMethod?: string;
   studentName: string;
   onClose: () => void;
 }
 
-export default function PhoneSubmissionModal({ identifier, studentName, onClose }: PhoneSubmissionModalProps) {
+export default function PhoneSubmissionModal({ identifier, inputMethod, studentName, onClose }: PhoneSubmissionModalProps) {
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -169,6 +170,7 @@ export default function PhoneSubmissionModal({ identifier, studentName, onClose 
         : (sortedEnd && sortedEnd !== sortedStart ? 'PERIOD' : 'DAILY');
       await submitPhoneSubmission({
         identifier,
+        inputMethod,
         submissionType,
         startDate: noPhone ? undefined : (sortedStart ?? undefined),
         endDate: noPhone ? undefined : (sortedEnd ?? sortedStart ?? undefined),

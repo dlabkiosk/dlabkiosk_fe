@@ -11,7 +11,7 @@
 .modal {
   position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-sm);
   width: 22.5rem;
   max-width: 90vw;
   max-height: 50vh;
@@ -251,6 +251,69 @@
   text-align: center;
   padding: var(--space-2) var(--space-4);
   margin: 0;
+}
+
+/* ── Existing request ── */
+.existingBody {
+  padding: var(--space-4);
+}
+
+.existingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.existingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-sm);
+}
+
+.existingLabel {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.existingValue {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.existingStatusBadge {
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  color: #b45309;
+  background-color: #fef3c7;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.cancelButton {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-error);
+  color: var(--color-bg-white);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cancelButton:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ── Success ── */

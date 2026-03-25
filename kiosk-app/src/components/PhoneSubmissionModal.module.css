@@ -11,7 +11,7 @@
 .modal {
   position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-sm);
   padding: var(--space-7) var(--space-6) var(--space-6);
   width: 23.75rem;
   max-width: 90vw;

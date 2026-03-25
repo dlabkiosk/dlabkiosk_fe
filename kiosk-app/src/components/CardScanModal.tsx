@@ -56,7 +56,7 @@ interface CardScanModalProps {
   /** keypadOnly 시 초기 키패드 모드 지정 */
   defaultKeypadMode?: KeypadMode;
   onClose: () => void;
-  onStudentFound?: (student: Student) => void;
+  onStudentFound?: (student: Student, inputMethod: string) => void;
   onAction?: (params: ScanActionParams) => Promise<ScanActionResult>;
   /** 외출/조퇴 pendingAction 확인 */
   onConfirmAction?: (params: { identifier: string; inputMethod: string; action: string }) => Promise<ScanActionResult>;
@@ -142,10 +142,10 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }
   }, [startSuccessTimer]);
 
-  const handleStudentFound = useCallback((student: Student) => {
+  const handleStudentFound = useCallback((student: Student, inputMethod: string) => {
     setSearching(false);
     if (onStudentFound) {
-      onStudentFound(student);
+      onStudentFound(student, inputMethod);
       return;
     }
     showSuccess({ name: student.name, studentId: student.id });
@@ -168,7 +168,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       searchStudent({ identifier })
-        .then((data) => handleStudentFound(toStudent(data, identifier)))
+        .then((data) => handleStudentFound(toStudent(data, identifier), 'RFID'))
         .catch(() => { setSearching(false); showError(); });
     }
   }, [onAction, handleStudentFound, showSuccess, showError]);
@@ -182,7 +182,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       getStudentBySeat(seatLabel)
-        .then((data) => handleStudentFound(toStudent(data, seatLabel)))
+        .then((data) => handleStudentFound(toStudent(data, seatLabel), 'SEAT_LABEL'))
         .catch(() => { setSearching(false); showError('해당 좌석에 배정된 학생이 없습니다.'); });
     }
   }, [onAction, handleStudentFound, showSuccess, showError]);
@@ -196,7 +196,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         .catch((err) => { setSearching(false); showError(err?.message); });
     } else {
       getStudentByPhone(phoneLast4)
-        .then((data) => handleStudentFound(toStudent(data, phoneLast4)))
+        .then((data) => handleStudentFound(toStudent(data, phoneLast4), 'PHONE_LAST4'))
         .catch(() => { setSearching(false); showError('일치하는 학생이 없습니다.'); });
     }
   }, [onAction, handleStudentFound, showSuccess, showError]);
@@ -296,14 +296,22 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     });
   }, [maxLength]);
 
+  const isInputValid = keypadMode === 'phoneLast4'
+    ? inputValue.length === PHONE_DIGITS_LENGTH
+    : inputValue.length > 0;
+
   const handleKeypadSubmit = useCallback(() => {
+    if (keypadMode === 'phoneLast4' && inputValue.length !== PHONE_DIGITS_LENGTH) {
+      showError('휴대폰 뒷자리 4자리를 입력해주세요.');
+      return;
+    }
     if (inputValue.length === 0) return;
     if (keypadMode === 'seatLabel') {
       handleSeatLabel(inputValue);
     } else {
       handlePhoneLast4(inputValue);
     }
-  }, [inputValue, keypadMode, handleSeatLabel, handlePhoneLast4]);
+  }, [inputValue, keypadMode, handleSeatLabel, handlePhoneLast4, showError]);
 
   const handleBackToScan = useCallback(() => {
     setKeypadMode(null);
@@ -463,7 +471,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
               type="button"
               className={styles.submitButton}
               onClick={handleKeypadSubmit}
-              disabled={inputValue.length === 0 || searching}
+              disabled={!isInputValid || searching}
             >
               {searching ? '조회 중...' : '입력 완료'}
             </button>

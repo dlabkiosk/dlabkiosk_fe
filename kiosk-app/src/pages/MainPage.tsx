@@ -37,8 +37,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showSeatLeaveReason, setShowSeatLeaveReason] = useState(false);
   const [showMealPlan, setShowMealPlan] = useState(false);
   const [showSeatMap, setShowSeatMap] = useState(false);
-  const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string } | null>(null);
-  const [seatChangeStudent, setSeatChangeStudent] = useState<Student | null>(null);
+  const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string; inputMethod: string } | null>(null);
+  const [seatChangeStudent, setSeatChangeStudent] = useState<{ student: Student; inputMethod: string } | null>(null);
   const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number; defaultKeypadMode?: 'seatLabel' | 'phoneLast4' } | null>(null);
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
@@ -107,19 +107,19 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   }, []);
 
   // 휴대폰 미소지: 학생 식별 후 날짜/옵션 모달 열기
-  const handlePhoneStudentFound = useCallback((student: Student) => {
+  const handlePhoneStudentFound = useCallback((student: Student, inputMethod: string) => {
     setScanTarget(null);
     setScanResult(null);
     setQrResult(null);
-    setPhoneSubmissionStudent({ identifier: student.identifier ?? String(student.id), name: student.name });
+    setPhoneSubmissionStudent({ identifier: student.identifier ?? String(student.id), name: student.name, inputMethod });
   }, []);
 
   // 좌석 변경: 학생 식별 후 좌석 선택 모달 열기
-  const handleSeatChangeStudentFound = useCallback((student: Student) => {
+  const handleSeatChangeStudentFound = useCallback((student: Student, inputMethod: string) => {
     setScanTarget(null);
     setScanResult(null);
     setQrResult(null);
-    setSeatChangeStudent(student);
+    setSeatChangeStudent({ student, inputMethod });
   }, []);
 
   // 좌석 이탈 사유 선택 → CardScanModal로 학생 식별
@@ -136,7 +136,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     setQrResult(null);
   };
 
-  // 통합 태그 액션 — /search API가 identifier 하나로 카드/QR/좌석번호/폰뒷자리 전부 처리
+  // 통합 식별자 추출 (좌석이탈 등 identifier 하나만 받는 API용)
   const resolveIdentifier = useCallback(async (params: ScanActionParams): Promise<string> => {
     if (params.identifier) return params.identifier;
     if (params.seatLabel) return params.seatLabel;
@@ -153,13 +153,15 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   }, []);
 
   const handleTagAction = useCallback(async (params: ScanActionParams) => {
-    const identifier = await resolveIdentifier(params);
     const inputMethod = resolveInputMethod(params);
-    console.log('[handleTagAction] params:', params, '→ identifier:', JSON.stringify(identifier));
+    // 좌석이탈 복귀 등 identifier 하나만 받는 API용
+    const fallbackIdentifier = params.identifier || params.seatLabel || params.phoneLast4;
+    if (!fallbackIdentifier) throw new Error('학생을 식별할 수 없습니다.');
+    console.log('[handleTagAction] params:', params, '→ inputMethod:', inputMethod);
 
     // 좌석 이탈 중이면 먼저 복귀 처리
     try {
-      const leaveResult = await endSeatLeave(identifier);
+      const leaveResult = await endSeatLeave(fallbackIdentifier, inputMethod);
       return {
         name: leaveResult.studentName,
         message: '좌석 복귀가 완료되었습니다.',
@@ -168,18 +170,22 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       // 이탈 중이 아니면 무시 → 기존 태그 로직
     }
 
-    const result = await tag({ identifier, inputMethod });
+    // identifier는 필수 — 입력 방식에 따라 값을 채우고 inputMethod로 구별
+    const result = await tag({
+      identifier: fallbackIdentifier,
+      inputMethod,
+    });
     return {
       name: result.studentName,
       studentId: result.studentId,
       message: `${resolveActionLabel(result)} 처리 되었습니다.`,
-      identifier,
+      identifier: fallbackIdentifier,
       inputMethod,
       pendingActions: result.pendingActions,
       mealInfo: result.mealInfo,
       messages: result.messages,
     };
-  }, [resolveIdentifier, resolveInputMethod]);
+  }, [resolveInputMethod]);
 
   // 외출/조퇴 pendingAction 확인
   const handleConfirmAction = useCallback(async (params: { identifier: string; inputMethod: string; action: string }) => {
@@ -215,8 +221,9 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const handleSeatLeaveAction = useCallback(async (params: ScanActionParams) => {
     if (!scanTarget?.reasonId) throw new Error('이탈 사유를 선택해주세요.');
     const identifier = await resolveIdentifier(params);
+    const inputMethod = resolveInputMethod(params);
     try {
-      const result = await startSeatLeave(identifier, scanTarget.reasonId);
+      const result = await startSeatLeave(identifier, scanTarget.reasonId, inputMethod);
       return {
         name: result.studentName,
         message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
@@ -329,6 +336,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       {phoneSubmissionStudent && (
         <PhoneSubmissionModal
           identifier={phoneSubmissionStudent.identifier}
+          inputMethod={phoneSubmissionStudent.inputMethod}
           studentName={phoneSubmissionStudent.name}
           onClose={() => setPhoneSubmissionStudent(null)}
         />
@@ -337,7 +345,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       {/* 좌석 변경 - 학생 식별 후 좌석 선택 */}
       {seatChangeStudent && (
         <SeatChangeModal
-          student={seatChangeStudent}
+          student={seatChangeStudent.student}
+          inputMethod={seatChangeStudent.inputMethod}
           onClose={() => setSeatChangeStudent(null)}
         />
       )}

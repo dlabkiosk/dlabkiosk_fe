@@ -32,12 +32,12 @@ export function searchStudent(params: { identifier?: string; studentNumber?: str
   return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?${query.toString()}`);
 }
 
-/** 좌석번호로 학생 검색 — /search?identifier=seatLabel */
+/** 좌석번호로 학생 검색 */
 export function getStudentBySeat(seatLabel: string): Promise<StudentSearchResult> {
-  return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(seatLabel)}`);
+  return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(seatLabel)}&inputMethod=SEAT_LABEL`);
 }
 
-/** 전화번호 뒷자리로 학생 검색 — /search?identifier=phoneLast4 */
+/** 전화번호 뒷자리로 학생 검색 */
 export function getStudentByPhone(phoneLast4: string): Promise<StudentSearchResult> {
-  return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(phoneLast4)}`);
+  return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(phoneLast4)}&inputMethod=PHONE_LAST4`);
 }
