@@ -16,7 +16,7 @@ import styles from './SeatLeaveManagement.module.css';
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'studentNumber' | 'className' | 'seatLabel' | 'startedAt' | 'elapsed' | 'reasonName';
+type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'startedAt' | 'elapsed' | 'reasonName';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -65,10 +65,9 @@ export default function SeatLeaveManagement() {
   /* 필터 */
   const [searchName, setSearchName] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
-  const [searchClass, setSearchClass] = useState('');
   const [searchStartDate, setSearchStartDate] = useState(today);
   const [searchEndDate, setSearchEndDate] = useState(today);
-  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', className: '', start: today, end: today });
+  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', start: today, end: today });
 
   /* 선택 */
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -109,9 +108,9 @@ export default function SeatLeaveManagement() {
       ]);
 
       // studentId → studentNumber / className 매핑
-      const studentById = new Map<number, { studentNumber: string; className: string }>();
+      const studentById = new Map<number, { studentNumber: string }>();
       students.forEach((s) => {
-        studentById.set(s.id, { studentNumber: s.studentNumber, className: s.className });
+        studentById.set(s.id, { studentNumber: s.studentNumber });
       });
 
       const enriched = result.content.map((row) => {
@@ -119,7 +118,6 @@ export default function SeatLeaveManagement() {
         return {
           ...row,
           studentNumber: row.studentNumber || stu?.studentNumber,
-          className: row.className || stu?.className,
         };
       });
 
@@ -138,17 +136,16 @@ export default function SeatLeaveManagement() {
 
   /* ── 필터 ── */
   const handleSearch = () => {
-    setAppliedFilters({ name: searchName, number: searchNumber, className: searchClass, start: searchStartDate, end: searchEndDate });
+    setAppliedFilters({ name: searchName, number: searchNumber, start: searchStartDate, end: searchEndDate });
     setPage(1);
   };
 
   const handleReset = () => {
     setSearchName('');
     setSearchNumber('');
-    setSearchClass('');
     setSearchStartDate(today);
     setSearchEndDate(today);
-    setAppliedFilters({ name: '', number: '', className: '', start: today, end: today });
+    setAppliedFilters({ name: '', number: '', start: today, end: today });
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -183,7 +180,6 @@ export default function SeatLeaveManagement() {
     return data.filter((row) => {
       if (appliedFilters.name && !row.studentName.includes(appliedFilters.name)) return false;
       if (appliedFilters.number && !(row.studentNumber ?? '').includes(appliedFilters.number)) return false;
-      if (appliedFilters.className && !(row.className ?? '').includes(appliedFilters.className)) return false;
       return true;
     });
   }, [data, appliedFilters]);
@@ -199,13 +195,12 @@ export default function SeatLeaveManagement() {
       void alert('다운로드할 데이터가 없습니다.');
       return;
     }
-    const header = ['이름', '학번', '반', '좌석', '이탈신청시간', '상태', '경과', '사유'];
+    const header = ['이름', '학번', '좌석', '이탈신청시간', '상태', '경과', '사유'];
     const csvRows = sortedData.map((row) => {
       const elapsed = getElapsedMinutes(row.startedAt, row.endedAt);
       return [
         row.studentName,
         row.studentNumber ?? '',
-        row.className ?? '',
         row.seatLabel,
         row.startedAt ? row.startedAt.replace('T', ' ').slice(0, 16) : '',
         row.endedAt ? '복귀' : '이탈중',
@@ -291,16 +286,6 @@ export default function SeatLeaveManagement() {
             />
           </div>
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="sl-class">반</label>
-            <input
-              id="sl-class"
-              className={styles.filterInput}
-              value={searchClass}
-              onChange={(e) => setSearchClass(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-          <div className={styles.filterGroup}>
             <label className={styles.filterLabel} htmlFor="sl-start">시작일</label>
             <input
               id="sl-start"
@@ -346,9 +331,6 @@ export default function SeatLeaveManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
                 학번 <SortIcon field="studentNumber" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
-                반 <SortIcon field="className" />
-              </th>
               <th className={styles.sortableCol} onClick={() => handleSort('seatLabel')}>
                 좌석 <SortIcon field="seatLabel" />
               </th>
@@ -366,11 +348,11 @@ export default function SeatLeaveManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={10}>불러오는 중...</td>
+                <td colSpan={9}>불러오는 중...</td>
               </tr>
             ) : sortedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={10}>데이터가 없습니다.</td>
+                <td colSpan={9}>데이터가 없습니다.</td>
               </tr>
             ) : (
               sortedData.map((row) => {
@@ -387,7 +369,6 @@ export default function SeatLeaveManagement() {
                     </td>
                     <td>{row.studentName}</td>
                     <td>{row.studentNumber ?? '-'}</td>
-                    <td>{row.className ?? '-'}</td>
                     <td>{row.seatLabel}</td>
                     <td>{formatTime(row.startedAt)}</td>
                     <td>

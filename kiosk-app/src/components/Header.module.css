@@ -1,13 +1,41 @@
 .header {
   display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-5) var(--space-4) var(--space-6);
+  gap: var(--space-1h);
+}
+
+.datetime {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  white-space: nowrap;
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+}
+
+.mainRow {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-5) var(--space-1) var(--space-3);
+}
+
+.logoSection {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 
 .logo {
-  height: 3.75rem;
+  height: 1.3rem;
   object-fit: contain;
+}
+
+.storeName {
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
 }
 
 .ddayList {

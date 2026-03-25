@@ -171,6 +171,21 @@
   opacity: 0.9;
 }
 
+.cardDeleteButton {
+  padding: var(--size-btn-padding-v-md) var(--spacing-lg);
+  background-color: #fff;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cardDeleteButton:hover {
+  background-color: #fef2f2;
+}
+
 /* ── Register button ── */
 .registerButton {
   padding: var(--spacing-sm-md) var(--spacing-md-lg);

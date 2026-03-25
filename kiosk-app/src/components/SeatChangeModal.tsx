@@ -8,8 +8,8 @@ import styles from './SeatChangeModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
 const PRIORITY_LABELS = ['1순위', '2순위', '3순위'] as const;
-const CELL_W = 50;
-const CELL_H = 36;
+const CELL_W = 25;
+const CELL_H = 18;
 
 interface SeatSelection {
   seatId: number;
@@ -170,10 +170,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
         inputMethod,
       });
       setCancelSuccess(true);
-      setTimeout(() => {
-        setExistingRequest(null);
-        setCancelSuccess(false);
-      }, 1500);
+      successTimer.current = setTimeout(onClose, SUCCESS_DISPLAY_MS);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '신청 취소에 실패했습니다.');
     } finally {
@@ -207,12 +204,14 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
             &#x2715;
           </button>
 
-          <div className={styles.header}>
-            <h2 className={styles.title}>좌석 변경 신청 내역</h2>
-            <p className={styles.guide}>
-              {existingRequest.studentName} (현재: {existingRequest.currentSeatLabel})
-            </p>
-          </div>
+          {!cancelSuccess && (
+            <div className={styles.header}>
+              <h2 className={styles.title}>좌석 변경 신청 내역</h2>
+              <p className={styles.guide}>
+                {existingRequest.studentName} (현재: {existingRequest.currentSeatLabel})
+              </p>
+            </div>
+          )}
 
           <div className={styles.existingBody}>
             {cancelSuccess ? (

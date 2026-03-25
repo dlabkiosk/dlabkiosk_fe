@@ -52,10 +52,10 @@ export default function BranchDetailPage() {
     setFormAddress(store.address);
     setFormPhone(store.phone);
     setFormActive(store.active);
-    setFormKioskPin('');
-    setFormDsaAcadCd('');
-    setFormDsaClientId('');
-    setFormDsaSecretId('');
+    setFormKioskPin(store.kioskPin || '');
+    setFormDsaAcadCd(store.dsaAcadCd || '');
+    setFormDsaClientId(store.dsaClientId || '');
+    setFormDsaSecretId(store.dsaSecretId || '');
     setIsEditing(true);
   };
 
@@ -202,26 +202,38 @@ export default function BranchDetailPage() {
             </span>
           </div>
 
-          {isEditing && (
-            <>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>키오스크 PIN</label>
-                <input className={styles.formInput} value={formKioskPin} onChange={(e) => setFormKioskPin(e.target.value)} placeholder="변경 시 입력" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA 학원코드</label>
-                <input className={styles.formInput} value={formDsaAcadCd} onChange={(e) => setFormDsaAcadCd(e.target.value)} placeholder="변경 시 입력" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA Client ID</label>
-                <input className={styles.formInput} value={formDsaClientId} onChange={(e) => setFormDsaClientId(e.target.value)} placeholder="변경 시 입력" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA Secret ID</label>
-                <input className={styles.formInput} value={formDsaSecretId} onChange={(e) => setFormDsaSecretId(e.target.value)} placeholder="변경 시 입력" />
-              </div>
-            </>
-          )}
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>키오스크 PIN</label>
+            {isEditing ? (
+              <input className={styles.formInput} value={formKioskPin} onChange={(e) => setFormKioskPin(e.target.value)} placeholder={store.kioskPin || '변경 시 입력'} />
+            ) : (
+              <p className={styles.formValue}>{store.kioskPin || '-'}</p>
+            )}
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA 학원코드</label>
+            {isEditing ? (
+              <input className={styles.formInput} value={formDsaAcadCd} onChange={(e) => setFormDsaAcadCd(e.target.value)} placeholder={store.dsaAcadCd || '변경 시 입력'} />
+            ) : (
+              <p className={styles.formValue}>{store.dsaAcadCd || '-'}</p>
+            )}
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA Client ID</label>
+            {isEditing ? (
+              <input className={styles.formInput} value={formDsaClientId} onChange={(e) => setFormDsaClientId(e.target.value)} placeholder={store.dsaClientId || '변경 시 입력'} />
+            ) : (
+              <p className={styles.formValue}>{store.dsaClientId || '-'}</p>
+            )}
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>DSA Secret ID</label>
+            {isEditing ? (
+              <input className={styles.formInput} value={formDsaSecretId} onChange={(e) => setFormDsaSecretId(e.target.value)} placeholder={store.dsaSecretId || '변경 시 입력'} />
+            ) : (
+              <p className={styles.formValue}>{store.dsaSecretId || '-'}</p>
+            )}
+          </div>
 
           <div className={styles.modalActions}>
             {isEditing ? (

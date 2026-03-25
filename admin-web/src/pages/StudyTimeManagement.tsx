@@ -82,7 +82,6 @@ function getCalendarGrid(year: number, month: number): (Date | null)[][] {
 interface StudentStudyRow {
   id: number;
   studentNumber: string;
-  className: string;
   name: string;
   seat: string;
   dailyTimes: Record<string, string>;
@@ -90,7 +89,7 @@ interface StudentStudyRow {
 
 /* ── 정렬 ── */
 
-type SortField = 'name' | 'studentNumber' | 'className' | 'seat';
+type SortField = 'name' | 'studentNumber' | 'seat';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -109,14 +108,14 @@ function compareStudyRows(a: StudentStudyRow, b: StudentStudyRow, field: SortFie
 
 function generateMockData(monday: Date): StudentStudyRow[] {
   const mockRows = [
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '21:30' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '21:00' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '16:30' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', cls: '1반', seat: '김코드', baseTime: '' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '21:30' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '21:00' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '16:30' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
+    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
   ];
 
   return mockRows.map((row, idx) => {
@@ -128,7 +127,6 @@ function generateMockData(monday: Date): StudentStudyRow[] {
     return {
       id: idx + 1,
       studentNumber: row.num,
-      className: row.cls,
       name: row.name,
       seat: row.seat,
       dailyTimes,
@@ -151,7 +149,6 @@ export default function StudyTimeManagement() {
 
   // 필터
   const [filterNumber, setFilterNumber] = useState('');
-  const [filterClass, setFilterClass] = useState('');
   const [filterName, setFilterName] = useState('');
 
   // 정렬
@@ -182,11 +179,10 @@ export default function StudyTimeManagement() {
   const filtered = useMemo(() => {
     return mockData.filter((row) => {
       if (filterNumber && !row.studentNumber.includes(filterNumber)) return false;
-      if (filterClass && !row.className.includes(filterClass)) return false;
       if (filterName && !row.name.includes(filterName)) return false;
       return true;
     });
-  }, [mockData, filterNumber, filterClass, filterName]);
+  }, [mockData, filterNumber, filterName]);
 
   const sortedData = useMemo(() => {
     if (!sort.field) return filtered;
@@ -195,7 +191,6 @@ export default function StudyTimeManagement() {
 
   const handleReset = () => {
     setFilterNumber('');
-    setFilterClass('');
     setFilterName('');
     setSort({ field: null, dir: 'asc' });
   };
@@ -300,15 +295,6 @@ export default function StudyTimeManagement() {
               onChange={(e) => setFilterNumber(e.target.value)}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>반</label>
-            <input
-              className={styles.filterInputShort}
-              value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
-            />
-          </div>
-
           <div className={styles.datePickerWrap} ref={calRef}>
             <button type="button" className={styles.datePickerButton} onClick={toggleCalendar}>
               {formatDateDot(startDate)} ~ {formatDateDot(endDate)}
@@ -396,9 +382,6 @@ export default function StudyTimeManagement() {
                 <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
                   학번 <SortIcon field="studentNumber" />
                 </th>
-                <th className={styles.sortableCol} onClick={() => handleSort('className')}>
-                  반 <SortIcon field="className" />
-                </th>
                 <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
                   좌석 <SortIcon field="seat" />
                 </th>
@@ -411,7 +394,7 @@ export default function StudyTimeManagement() {
             <tbody>
               {sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={6 + dayHeaders.length}>데이터가 없습니다.</td>
+                  <td colSpan={5 + dayHeaders.length}>데이터가 없습니다.</td>
                 </tr>
               ) : (
                 sortedData.map((row) => (
@@ -421,7 +404,6 @@ export default function StudyTimeManagement() {
                     </td>
                     <td>{row.name}</td>
                     <td>{row.studentNumber}</td>
-                    <td>{row.className}</td>
                     <td>{row.seat}</td>
                     <td>{calcTotal(row.dailyTimes)}</td>
                     {dayHeaders.map((d) => {

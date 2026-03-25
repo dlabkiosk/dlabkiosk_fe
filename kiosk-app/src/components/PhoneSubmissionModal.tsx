@@ -211,9 +211,6 @@ export default function PhoneSubmissionModal({ identifier, inputMethod, studentN
           &#x2715;
         </button>
 
-        <h2 className={styles.title}>휴대폰 미소지</h2>
-        <p className={styles.subtitle}>신청 날짜를 선택하세요</p>
-
         {hasNoPhone ? (
           <div className={styles.noPhoneNotice}>
             <span className={styles.noPhoneNoticeIcon}>📵</span>
@@ -224,6 +221,9 @@ export default function PhoneSubmissionModal({ identifier, inputMethod, studentN
           </div>
         ) : (
           <>
+            <h2 className={styles.title}>휴대폰 미소지</h2>
+            <p className={styles.subtitle}>신청 날짜를 선택하세요</p>
+
             {/* 월 네비게이션 */}
             <div className={styles.calendarNav}>
               <button
@@ -298,7 +298,7 @@ export default function PhoneSubmissionModal({ identifier, inputMethod, studentN
                 className={`${styles.noPhoneBtn} ${noPhone ? styles.noPhoneBtnSelected : ''}`}
                 onClick={() => setNoPhone(!noPhone)}
               >
-                📵 휴대폰 없음
+                휴대폰 없음
               </button>
               <button
                 type="button"

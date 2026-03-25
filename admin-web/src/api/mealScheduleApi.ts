@@ -1,42 +1,50 @@
-import { apiGet, apiPost, apiPut } from './client';
+import { apiGet, apiPost, apiDelete } from './client';
 
-export interface MealScheduleItem {
+/* ── 타입 ── */
+
+export interface MealMenuDay {
   id?: number;
-  date: string;          // YYYY-MM-DD
+  menuDate: string;       // YYYY-MM-DD
+  dayOfWeek?: string;     // MONDAY, TUESDAY, ...
   lunch: string;
   dinner: string;
-  isHoliday: boolean;
+  closed: boolean;
 }
 
-export interface MealScheduleWeekResponse {
-  weekStart: string;     // YYYY-MM-DD (월요일)
-  meals: MealScheduleItem[];
+export interface MealMenuWeekResponse {
+  weekStartDate: string;  // YYYY-MM-DD (월요일)
+  weekEndDate: string;    // YYYY-MM-DD (일요일)
+  days: MealMenuDay[];
 }
 
-export interface MealScheduleSaveBody {
-  weekStart: string;
-  meals: {
-    date: string;
+export interface MealMenuSaveBody {
+  weekStartDate: string;
+  days: {
+    menuDate: string;
     lunch: string;
     dinner: string;
-    isHoliday: boolean;
+    closed: boolean;
   }[];
 }
 
-export function getMealScheduleWeek(weekStart: string): Promise<MealScheduleWeekResponse> {
-  return apiGet<MealScheduleWeekResponse>(
-    `/api/v1/admin/meal-schedules?weekStart=${encodeURIComponent(weekStart)}`,
-  );
+/* ── API ── */
+
+/** 해당 주 식단 조회 */
+export function getMealMenuWeek(weekStartDate: string, storeId?: number): Promise<MealMenuWeekResponse> {
+  const params = new URLSearchParams({ weekStartDate });
+  if (storeId !== undefined) params.set('storeId', String(storeId));
+  return apiGet<MealMenuWeekResponse>(`/api/v1/admin/meal-menus?${params.toString()}`);
 }
 
-export function saveMealSchedule(body: MealScheduleSaveBody): Promise<MealScheduleWeekResponse> {
-  return apiPost<MealScheduleWeekResponse>('/api/v1/admin/meal-schedules', body as unknown as Record<string, unknown>);
+/** 해당 주 식단 등록/수정 (upsert) */
+export function saveMealMenu(body: MealMenuSaveBody, storeId?: number): Promise<MealMenuWeekResponse> {
+  const params = storeId !== undefined ? `?storeId=${storeId}` : '';
+  return apiPost<MealMenuWeekResponse>(`/api/v1/admin/meal-menus${params}`, body as unknown as Record<string, unknown>);
 }
 
-export function updateMealSchedule(body: MealScheduleSaveBody): Promise<MealScheduleWeekResponse> {
-  return apiPut<MealScheduleWeekResponse>('/api/v1/admin/meal-schedules', body as unknown as Record<string, unknown>);
-}
-
-export function syncMealScheduleToKiosk(weekStart: string): Promise<void> {
-  return apiPost<void>('/api/v1/admin/meal-schedules/sync', { weekStart });
+/** 해당 주 식단 전체 삭제 */
+export function deleteMealMenu(weekStartDate: string, storeId?: number): Promise<string> {
+  const params = new URLSearchParams({ weekStartDate });
+  if (storeId !== undefined) params.set('storeId', String(storeId));
+  return apiDelete<string>(`/api/v1/admin/meal-menus?${params.toString()}`);
 }

@@ -3,7 +3,6 @@ import { apiGet } from './client';
 export interface MealCheckRow {
   id: number;
   studentName: string;
-  className: string;
   studentNumber: string;
   seatLabel: string;
   lunchRequested: boolean;
@@ -25,7 +24,6 @@ export interface MealCheckListResponse {
 export interface MealCheckParams {
   yearMonth: string;
   studentName?: string;
-  className?: string;
   studentNumber?: string;
   page?: number;
   size?: number;
@@ -37,7 +35,6 @@ export function getMealCheckList(params: MealCheckParams): Promise<MealCheckList
   const query = new URLSearchParams();
   query.set('yearMonth', params.yearMonth);
   if (params.studentName) query.set('studentName', params.studentName);
-  if (params.className) query.set('className', params.className);
   if (params.studentNumber) query.set('studentNumber', params.studentNumber);
   if (params.page !== undefined) query.set('page', String(params.page));
   if (params.size !== undefined) query.set('size', String(params.size));

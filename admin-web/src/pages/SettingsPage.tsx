@@ -16,7 +16,7 @@ import {
   updateAdvertisement,
   deleteAdvertisement,
 } from '../api/advertisementApi';
-import type { Advertisement } from '../api/advertisementApi';
+import type { Advertisement, CropParams } from '../api/advertisementApi';
 import MealScheduleSettings from '../components/MealScheduleSettings';
 import {
   getSeatLeaveReasons,
@@ -137,6 +137,7 @@ function BannerManagement() {
   const { alert, ConfirmDialog } = useConfirm();
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(false);
+  const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
   const [fetchError, setFetchError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,6 +153,7 @@ function BannerManagement() {
   const [active, setActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
 
   const fetchAds = useCallback(async () => {
     setLoading(true);
@@ -169,16 +171,36 @@ function BannerManagement() {
 
   useEffect(() => { fetchAds(); }, [fetchAds]);
 
+  useEffect(() => {
+    getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {});
+  }, []);
+
   const handleFileChange = (selected: File | null) => {
     setFile(selected);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    if (selected) {
-      setPreviewUrl(URL.createObjectURL(selected));
-      setObjectPos({ x: 50, y: 50 });
-      // 파일 MIME 타입으로 미디어 타입 자동 설정
-      setMediaType(selected.type.startsWith('video/') ? 'VIDEO' : 'IMAGE');
-    } else {
+    if (!selected) {
       setPreviewUrl(null);
+      setNaturalSize(null);
+      return;
+    }
+    const url = URL.createObjectURL(selected);
+    setPreviewUrl(url);
+    setObjectPos({ x: 50, y: 50 });
+    const isVideo = selected.type.startsWith('video/');
+    setMediaType(isVideo ? 'VIDEO' : 'IMAGE');
+
+    // 원본 크기 저장
+    if (isVideo) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        setNaturalSize({ w: video.videoWidth, h: video.videoHeight });
+      };
+      video.src = url;
+    } else {
+      const img = new Image();
+      img.onload = () => setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+      img.src = url;
     }
   };
 
@@ -194,6 +216,7 @@ function BannerManagement() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setObjectPos({ x: 50, y: 50 });
+    setNaturalSize(null);
     setMediaType('IMAGE');
     setDisplaySeconds(5);
     setActive(true);
@@ -240,10 +263,41 @@ function BannerManagement() {
     };
   }, [dragging]);
 
+  /** objectPos(%) + 원본 크기 → 픽셀 crop 좌표 계산 (object-fit:cover 기준) */
+  const calcCrop = (): CropParams | undefined => {
+    if (!naturalSize) return undefined;
+    const { w: imgW, h: imgH } = naturalSize;
+    const CONTAINER_RATIO = 16 / 9;
+    const imgRatio = imgW / imgH;
+
+    let cropX = 0;
+    let cropY = 0;
+    let cropWidth = imgW;
+    let cropHeight = imgH;
+
+    if (imgRatio > CONTAINER_RATIO) {
+      // 이미지가 더 넓음 → 좌우 잘림
+      cropWidth = Math.round(imgH * CONTAINER_RATIO);
+      cropHeight = imgH;
+      const overflow = imgW - cropWidth;
+      cropX = Math.round((objectPos.x / 100) * overflow);
+    } else if (imgRatio < CONTAINER_RATIO) {
+      // 이미지가 더 높음 → 상하 잘림
+      cropWidth = imgW;
+      cropHeight = Math.round(imgW / CONTAINER_RATIO);
+      const overflow = imgH - cropHeight;
+      cropY = Math.round((objectPos.y / 100) * overflow);
+    }
+    // 정확히 16:9면 crop 불필요 → undefined 반환
+    if (cropX === 0 && cropY === 0 && cropWidth === imgW && cropHeight === imgH) return undefined;
+    return { cropX, cropY, cropWidth, cropHeight };
+  };
+
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
+      const crop = file ? calcCrop() : undefined;
       if (editTarget) {
         await updateAdvertisement(editTarget.id, {
           file: file ?? undefined,
@@ -251,10 +305,11 @@ function BannerManagement() {
           displayOrder: editTarget.displayOrder,
           displaySeconds,
           active,
+          crop,
         });
       } else {
         if (!file) { await alert('파일을 선택해주세요.'); setSubmitting(false); return; }
-        await createAdvertisement({ file, mediaType, displayOrder: ads.length + 1, displaySeconds });
+        await createAdvertisement({ file, mediaType, displayOrder: ads.length + 1, displaySeconds, crop, storeId: myStoreId });
       }
       resetForm();
       await fetchAds();
@@ -374,6 +429,7 @@ function BannerManagement() {
                 <p className={styles.uploadPlaceholder}>
                   {editTarget ? '변경할 파일을 선택하세요' : '클릭하여 이미지 또는 영상을 선택하세요'}
                 </p>
+                <p className={styles.uploadHint}>권장 비율: 16:9 (예: 1920×1080)</p>
               </div>
             )}
           </div>
@@ -524,7 +580,7 @@ function ExamSchedule() {
   const [calMonth, setCalMonth] = useState(today.getMonth() + 1);
   const [exams, setExams] = useState<ExamScheduleType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'calendar' | 'table'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'table'>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTarget, setEditTarget] = useState<ExamScheduleType | null>(null);
 
@@ -1233,10 +1289,10 @@ function BranchInfo() {
     setFormAddress(selectedStore.address);
     setFormPhone(selectedStore.phone);
     setFormActive(selectedStore.active);
-    setFormKioskPin('');
-    setFormDsaAcadCd('');
-    setFormDsaClientId('');
-    setFormDsaSecretId('');
+    setFormKioskPin(selectedStore.kioskPin || '');
+    setFormDsaAcadCd(selectedStore.dsaAcadCd || '');
+    setFormDsaClientId(selectedStore.dsaClientId || '');
+    setFormDsaSecretId(selectedStore.dsaSecretId || '');
     setIsEditing(true);
   };
 

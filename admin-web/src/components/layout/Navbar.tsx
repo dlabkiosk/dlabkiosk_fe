@@ -13,6 +13,7 @@ export default function Navbar() {
     try { await logout(); } catch { /* 실패해도 로그아웃 진행 */ }
     sessionStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('adminName');
+    sessionStorage.removeItem('storeName');
     navigate('/login');
   };
 

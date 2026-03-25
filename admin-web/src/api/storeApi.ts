@@ -9,6 +9,10 @@ export interface Store {
   address: string;
   phone: string;
   active: boolean;
+  kioskPin: string;
+  dsaAcadCd: string;
+  dsaClientId: string;
+  dsaSecretId: string;
   dsaConnected: boolean;
   createdAt: string;
   updatedAt: string;

@@ -272,7 +272,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   return (
     <div className={styles.page}>
       <div className={styles.topSection}>
-        <Header onAdminAccess={() => setShowAdmin(true)} />
+        <Header storeName={session.storeName} onAdminAccess={() => setShowAdmin(true)} />
 
         <div className={styles.infoSection}>
           <NoticeSection />
@@ -305,7 +305,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       )}
 
       {showMealPlan && (
-        <WeeklyMealModal onClose={() => setShowMealPlan(false)} />
+        <WeeklyMealModal storeId={session.storeId} onClose={() => setShowMealPlan(false)} />
       )}
 
       {showRemoteApply && (

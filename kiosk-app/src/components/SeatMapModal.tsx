@@ -45,8 +45,8 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
   /** 사용 좌석만 표시 (통로·미사용 제외) */
   const activeSeats = useMemo(() => seats.filter((s) => s.seatGn === 'Y'), [seats]);
 
-  const CELL_W = 50;
-  const CELL_H = 36;
+  const CELL_W = 25;
+  const CELL_H = 18;
 
   const canvasSize = useMemo(() => {
     if (activeSeats.length === 0) return { width: 400, height: 300 };

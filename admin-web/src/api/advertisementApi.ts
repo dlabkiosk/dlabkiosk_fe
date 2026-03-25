@@ -48,49 +48,72 @@ async function handleFormDataResponse(res: Response, fallbackMessage: string): P
   return json.data;
 }
 
-/** 광고 등록 (multipart/form-data) */
+export interface CropParams {
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
+}
+
+/** query params 빌드 (undefined 값 제외) */
+function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : '';
+}
+
+/** 광고 등록 — file: body(multipart), 나머지: query params */
 export async function createAdvertisement(params: {
   file: File;
   mediaType: string;
   displayOrder: number;
   displaySeconds: number;
   storeId?: number;
+  crop?: CropParams;
 }): Promise<Advertisement> {
   validateFile(params.file);
 
   const formData = new FormData();
   formData.append('file', params.file);
-  formData.append('mediaType', params.mediaType);
-  formData.append('displayOrder', String(params.displayOrder));
-  formData.append('displaySeconds', String(params.displaySeconds));
-  if (params.storeId !== undefined) {
-    formData.append('storeId', String(params.storeId));
-  }
+
+  const query = buildQuery({
+    mediaType: params.mediaType,
+    displayOrder: params.displayOrder,
+    displaySeconds: params.displaySeconds,
+    storeId: params.storeId,
+    cropX: params.crop ? Math.round(params.crop.cropX) : undefined,
+    cropY: params.crop ? Math.round(params.crop.cropY) : undefined,
+    cropWidth: params.crop ? Math.round(params.crop.cropWidth) : undefined,
+    cropHeight: params.crop ? Math.round(params.crop.cropHeight) : undefined,
+  });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/admin/advertisements`, {
+    res = await fetch(`${API_BASE_URL}/api/v1/admin/advertisements${query}`, {
       method: 'POST',
       credentials: 'include',
       body: formData,
     });
   } catch (err) {
     console.error('[광고 등록] fetch 실패:', err);
-    console.error('[광고 등록] URL:', `${API_BASE_URL}/api/v1/admin/advertisements`);
     throw new Error('서버에 연결할 수 없습니다. 네트워크를 확인해주세요.');
   }
 
   return handleFormDataResponse(res, '광고 등록에 실패했습니다.');
 }
 
-/** 광고 수정 (multipart/form-data, 파일은 선택) */
+/** 광고 수정 — file: body(multipart, 선택), 나머지: query params */
 export async function updateAdvertisement(id: number, params: {
   file?: File;
   mediaType: string;
   displayOrder: number;
   displaySeconds: number;
   active: boolean;
+  crop?: CropParams;
 }): Promise<Advertisement> {
   if (params.file) validateFile(params.file);
 
@@ -98,15 +121,22 @@ export async function updateAdvertisement(id: number, params: {
   if (params.file) {
     formData.append('file', params.file);
   }
-  formData.append('mediaType', params.mediaType);
-  formData.append('displayOrder', String(params.displayOrder));
-  formData.append('displaySeconds', String(params.displaySeconds));
-  formData.append('active', String(params.active));
+
+  const query = buildQuery({
+    mediaType: params.mediaType,
+    displayOrder: params.displayOrder,
+    displaySeconds: params.displaySeconds,
+    active: params.active,
+    cropX: params.crop ? Math.round(params.crop.cropX) : undefined,
+    cropY: params.crop ? Math.round(params.crop.cropY) : undefined,
+    cropWidth: params.crop ? Math.round(params.crop.cropWidth) : undefined,
+    cropHeight: params.crop ? Math.round(params.crop.cropHeight) : undefined,
+  });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}/api/v1/admin/advertisements/${id}`, {
+    res = await fetch(`${API_BASE_URL}/api/v1/admin/advertisements/${id}${query}`, {
       method: 'PUT',
       credentials: 'include',
       body: formData,

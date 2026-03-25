@@ -7,22 +7,22 @@ import styles from './MealManagement.module.css';
 /* ── Mock Data ── */
 
 const MOCK_DATA: MealCheckRow[] = [
-  { id: 1, studentName: '홍길동', className: '1', studentNumber: '2345', seatLabel: '23', lunchRequested: true, lunchTaggedAt: '12:11', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:00', dinnerNeedsConfirm: false },
-  { id: 2, studentName: '홍길동', className: '2', studentNumber: '1111', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:05', dinnerNeedsConfirm: false },
-  { id: 3, studentName: '홍길동', className: '3', studentNumber: '2122', seatLabel: '25', lunchRequested: true, lunchTaggedAt: '12:10', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:09', dinnerNeedsConfirm: true },
-  { id: 4, studentName: '홍길동', className: '2', studentNumber: '3133', seatLabel: '20', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: true, dinnerTaggedAt: '18:10', dinnerNeedsConfirm: false },
-  { id: 5, studentName: '홍길동', className: '1', studentNumber: '4544', seatLabel: '55', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: false, dinnerTaggedAt: '18:22', dinnerNeedsConfirm: false },
-  { id: 6, studentName: '홍길동', className: '3', studentNumber: '4444', seatLabel: '32', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: false },
-  { id: 7, studentName: '홍길동', className: '2', studentNumber: '2222', seatLabel: '44', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: null, dinnerNeedsConfirm: false },
-  { id: 8, studentName: '홍길동', className: '1', studentNumber: '2323', seatLabel: '33', lunchRequested: true, lunchTaggedAt: '12:15', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: true },
-  { id: 9, studentName: '홍길동', className: '3', studentNumber: '2122', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:30', dinnerNeedsConfirm: false },
+  { id: 1, studentName: '홍길동', studentNumber: '2345', seatLabel: '23', lunchRequested: true, lunchTaggedAt: '12:11', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:00', dinnerNeedsConfirm: false },
+  { id: 2, studentName: '홍길동', studentNumber: '1111', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:05', dinnerNeedsConfirm: false },
+  { id: 3, studentName: '홍길동', studentNumber: '2122', seatLabel: '25', lunchRequested: true, lunchTaggedAt: '12:10', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:09', dinnerNeedsConfirm: true },
+  { id: 4, studentName: '홍길동', studentNumber: '3133', seatLabel: '20', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: true, dinnerTaggedAt: '18:10', dinnerNeedsConfirm: false },
+  { id: 5, studentName: '홍길동', studentNumber: '4544', seatLabel: '55', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: false, dinnerTaggedAt: '18:22', dinnerNeedsConfirm: false },
+  { id: 6, studentName: '홍길동', studentNumber: '4444', seatLabel: '32', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: false },
+  { id: 7, studentName: '홍길동', studentNumber: '2222', seatLabel: '44', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: null, dinnerNeedsConfirm: false },
+  { id: 8, studentName: '홍길동', studentNumber: '2323', seatLabel: '33', lunchRequested: true, lunchTaggedAt: '12:15', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: true },
+  { id: 9, studentName: '홍길동', studentNumber: '2122', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:30', dinnerNeedsConfirm: false },
 ];
 
 const ITEMS_PER_PAGE = 10;
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'className' | 'studentNumber' | 'seatLabel' | 'lunchRequested' | 'lunchTaggedAt' | 'dinnerRequested' | 'dinnerTaggedAt';
+type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'lunchRequested' | 'lunchTaggedAt' | 'dinnerRequested' | 'dinnerTaggedAt';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -36,7 +36,6 @@ function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, di
 
   switch (field) {
     case 'studentName': va = a.studentName; vb = b.studentName; break;
-    case 'className': va = a.className; vb = b.className; break;
     case 'studentNumber': va = a.studentNumber; vb = b.studentNumber; break;
     case 'seatLabel': va = a.seatLabel; vb = b.seatLabel; break;
     case 'lunchRequested': va = a.lunchRequested; vb = b.lunchRequested; break;
@@ -63,7 +62,7 @@ function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, di
 /* ── 엑셀 다운로드 ── */
 
 function downloadCsv(rows: MealCheckRow[], yearMonth: string) {
-  const header = '이름,반,번호,좌석,점심신청,점심체크,저녁신청,저녁체크';
+  const header = '이름,번호,좌석,점심신청,점심체크,저녁신청,저녁체크';
   const lines = rows.map((r) => {
     const lunch = r.lunchRequested ? 'O' : '미신청';
     const lunchCheck = r.lunchTaggedAt
@@ -73,7 +72,7 @@ function downloadCsv(rows: MealCheckRow[], yearMonth: string) {
     const dinnerCheck = r.dinnerTaggedAt
       ? `O ${r.dinnerTaggedAt}${r.dinnerNeedsConfirm ? ' *확인필요' : ''}`
       : '';
-    return `${r.studentName},${r.className},${r.studentNumber},${r.seatLabel},${lunch},${lunchCheck},${dinner},${dinnerCheck}`;
+    return `${r.studentName},${r.studentNumber},${r.seatLabel},${lunch},${lunchCheck},${dinner},${dinnerCheck}`;
   });
 
   const bom = '\uFEFF';
@@ -100,10 +99,9 @@ export default function MealManagement() {
 
   /* 필터 */
   const [searchName, setSearchName] = useState('');
-  const [searchClass, setSearchClass] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
   const [searchDate, setSearchDate] = useState(today);
-  const [appliedFilters, setAppliedFilters] = useState({ name: '', className: '', number: '', date: today });
+  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', date: today });
 
   /* 정렬 */
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
@@ -115,16 +113,15 @@ export default function MealManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const handleSearch = () => {
-    setAppliedFilters({ name: searchName, className: searchClass, number: searchNumber, date: searchDate });
+    setAppliedFilters({ name: searchName, number: searchNumber, date: searchDate });
     setPage(1);
   };
 
   const handleReset = () => {
     setSearchName('');
-    setSearchClass('');
     setSearchNumber('');
     setSearchDate(today);
-    setAppliedFilters({ name: '', className: '', number: '', date: today });
+    setAppliedFilters({ name: '', number: '', date: today });
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -143,9 +140,6 @@ export default function MealManagement() {
 
     if (appliedFilters.name) {
       data = data.filter((r) => r.studentName.includes(appliedFilters.name));
-    }
-    if (appliedFilters.className) {
-      data = data.filter((r) => r.className === appliedFilters.className);
     }
     if (appliedFilters.number) {
       data = data.filter((r) => r.studentNumber.includes(appliedFilters.number));
@@ -224,15 +218,6 @@ export default function MealManagement() {
             />
           </div>
           <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>반</span>
-            <input
-              className={styles.filterInput}
-              value={searchClass}
-              onChange={(e) => setSearchClass(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </div>
-          <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>날짜</span>
             <input
               type="date"
@@ -265,9 +250,6 @@ export default function MealManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
                 학번 <SortIcon field="studentNumber" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
-                반 <SortIcon field="className" />
-              </th>
               <th className={styles.sortableCol} onClick={() => handleSort('seatLabel')}>
                 좌석 <SortIcon field="seatLabel" />
               </th>
@@ -288,7 +270,7 @@ export default function MealManagement() {
           <tbody>
             {pageData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={9}>데이터가 없습니다.</td>
+                <td colSpan={8}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pageData.map((row) => (
@@ -302,7 +284,6 @@ export default function MealManagement() {
                   </td>
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
-                  <td>{row.className}</td>
                   <td>{row.seatLabel}</td>
                   <td>{row.lunchRequested ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>

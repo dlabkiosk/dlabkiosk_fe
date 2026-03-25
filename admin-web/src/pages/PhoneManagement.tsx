@@ -20,7 +20,7 @@ import styles from './PhoneManagement.module.css';
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'studentNumber' | 'className' | 'seatLabel' | 'parentPhoneNumber' | 'memo';
+type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'parentPhoneNumber' | 'memo';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -35,7 +35,6 @@ function compareRows(a: PhoneSubmission, b: PhoneSubmission, field: SortField, d
   switch (field) {
     case 'studentName': va = a.studentName; vb = b.studentName; break;
     case 'studentNumber': va = a.studentNumber; vb = b.studentNumber; break;
-    case 'className': va = a.className; vb = b.className; break;
     case 'seatLabel': va = a.seatLabel; vb = b.seatLabel; break;
     case 'parentPhoneNumber': va = a.parentPhoneNumber ?? ''; vb = b.parentPhoneNumber ?? ''; break;
     case 'memo': va = a.memo ?? ''; vb = b.memo ?? ''; break;
@@ -48,14 +47,14 @@ function compareRows(a: PhoneSubmission, b: PhoneSubmission, field: SortField, d
 /* ── CSV 다운로드 ── */
 
 function downloadCsv(rows: PhoneSubmission[], dateLabel: string) {
-  const header = '이름,학번,반,좌석번호,학부모 전화번호,신청일,신청기간,메모';
+  const header = '이름,학번,좌석번호,학부모 전화번호,신청일,신청기간,메모';
   const lines = rows.map((r) => {
     const period = r.submissionType === 'PERMANENT'
       ? `${r.startDate} ~ 퇴원까지`
       : (r.endDate ? `${r.startDate} ~ ${r.endDate}` : r.startDate);
     const date = r.submittedAt.slice(0, 10);
     const memo = (r.memo || '').replace(/,/g, ' ');
-    return `${r.studentName},${r.studentNumber},${r.className},${r.seatLabel},${r.parentPhoneNumber || ''},${date},${period},${memo}`;
+    return `${r.studentName},${r.studentNumber},${r.seatLabel},${r.parentPhoneNumber || ''},${date},${period},${memo}`;
   });
 
   const bom = '\uFEFF';
@@ -92,9 +91,8 @@ export default function PhoneManagement() {
   /* 필터 */
   const [searchName, setSearchName] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
-  const [searchClass, setSearchClass] = useState('');
   const [searchDate, setSearchDate] = useState(today);
-  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', className: '', date: today });
+  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', date: today });
 
   /* 정렬 */
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
@@ -157,14 +155,8 @@ export default function PhoneManagement() {
       });
     }
 
-    // 반 필터 (서버에서 지원 안 하므로 클라이언트에서 처리)
-    if (appliedFilters.className) {
-      const keyword = appliedFilters.className.toLowerCase();
-      rows = rows.filter((r) => (r.className ?? '').toLowerCase().includes(keyword));
-    }
-
     return rows;
-  }, [allData, appliedFilters.date, appliedFilters.className]);
+  }, [allData, appliedFilters.date]);
 
   useEffect(() => {
     fetchData();
@@ -172,16 +164,15 @@ export default function PhoneManagement() {
 
   /* ── 필터 ── */
   const handleSearch = () => {
-    setAppliedFilters({ name: searchName, number: searchNumber, className: searchClass, date: searchDate });
+    setAppliedFilters({ name: searchName, number: searchNumber, date: searchDate });
     setPage(1);
   };
 
   const handleReset = () => {
     setSearchName('');
     setSearchNumber('');
-    setSearchClass('');
     setSearchDate(today);
-    setAppliedFilters({ name: '', number: '', className: '', date: today });
+    setAppliedFilters({ name: '', number: '', date: today });
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -363,16 +354,6 @@ export default function PhoneManagement() {
             />
           </div>
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="phone-class">반</label>
-            <input
-              id="phone-class"
-              className={styles.filterInput}
-              value={searchClass}
-              onChange={(e) => setSearchClass(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-          <div className={styles.filterGroup}>
             <label className={styles.filterLabel} htmlFor="phone-date">날짜</label>
             <input
               id="phone-date"
@@ -415,9 +396,6 @@ export default function PhoneManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
                 학번 <SortIcon field="studentNumber" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
-                반 <SortIcon field="className" />
-              </th>
               <th className={styles.sortableCol} onClick={() => handleSort('seatLabel')}>
                 좌석번호 <SortIcon field="seatLabel" />
               </th>
@@ -433,11 +411,11 @@ export default function PhoneManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={8}>불러오는 중...</td>
+                <td colSpan={7}>불러오는 중...</td>
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={8}>데이터가 없습니다.</td>
+                <td colSpan={7}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row: PhoneSubmission) => (
@@ -455,7 +433,6 @@ export default function PhoneManagement() {
                   </td>
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
-                  <td>{row.className}</td>
                   <td>{row.seatLabel}</td>
                   <td>{row.parentPhoneNumber || '-'}</td>
                   <td className={styles.memoTd}>{truncateMemo(row.memo)}</td>
@@ -534,10 +511,6 @@ export default function PhoneManagement() {
                 <tr>
                   <th>학번</th>
                   <td>{detailTarget.studentNumber}</td>
-                </tr>
-                <tr>
-                  <th>반</th>
-                  <td>{detailTarget.className}</td>
                 </tr>
                 <tr>
                   <th>좌석번호</th>

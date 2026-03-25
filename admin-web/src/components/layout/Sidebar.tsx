@@ -66,6 +66,7 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.logo}>
         <img src={logoImg} alt="D'Lab" className={styles.logoImage} />
+        <span className={styles.storeName}>{(sessionStorage.getItem('storeName') ?? '').replace(/^D'?LAB\s*/i, '')}</span>
       </div>
 
       <nav className={styles.nav}>

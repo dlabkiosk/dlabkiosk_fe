@@ -24,7 +24,6 @@ type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATU
 interface AttendanceStudentRow {
   name: string;
   studentId: string;
-  className: string;
   seat: string;
   status: AttendanceStatus;
   phoneSubmitted: boolean;
@@ -33,7 +32,6 @@ interface AttendanceStudentRow {
 const MOCK_DATA: AttendanceStudentRow[] = Array.from({ length: 12 }, (_, i) => ({
   name: '홍길동',
   studentId: '20260302',
-  className: 'A',
   seat: 'A10',
   status: (i < 3 ? '등원' : '-') as AttendanceStatus,
   phoneSubmitted: i < 5,
@@ -44,7 +42,7 @@ const PHONE_OPTIONS = ['전체', 'O', 'X'];
 
 /* ── 정렬 ── */
 
-type SortField = 'name' | 'studentId' | 'className' | 'seat' | 'status' | 'phoneSubmitted';
+type SortField = 'name' | 'studentId' | 'seat' | 'status' | 'phoneSubmitted';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -75,14 +73,12 @@ const ITEMS_PER_PAGE = 12;
 export default function AttendanceManagement() {
   /* Filters */
   const [searchStudentId, setSearchStudentId] = useState('');
-  const [searchClass, setSearchClass] = useState('');
   const [searchName, setSearchName] = useState('');
   const [filterStatus, setFilterStatus] = useState('전체');
   const [filterPhone, setFilterPhone] = useState('전체');
 
   const [appliedFilters, setAppliedFilters] = useState({
     studentId: '',
-    className: '',
     name: '',
     status: '전체',
     phone: '전체',
@@ -99,7 +95,6 @@ export default function AttendanceManagement() {
     return MOCK_DATA.filter((row) => {
       if (appliedFilters.studentId && !row.studentId.includes(appliedFilters.studentId)) return false;
       if (appliedFilters.name && !row.name.includes(appliedFilters.name)) return false;
-      if (appliedFilters.className && appliedFilters.className !== '전체' && row.className !== appliedFilters.className) return false;
       if (appliedFilters.status !== '전체' && row.status !== appliedFilters.status) return false;
       if (appliedFilters.phone !== '전체') {
         const match = appliedFilters.phone === 'O' ? row.phoneSubmitted : !row.phoneSubmitted;
@@ -120,7 +115,6 @@ export default function AttendanceManagement() {
   const handleSearch = () => {
     setAppliedFilters({
       studentId: searchStudentId.trim(),
-      className: searchClass.trim(),
       name: searchName.trim(),
       status: filterStatus,
       phone: filterPhone,
@@ -130,11 +124,10 @@ export default function AttendanceManagement() {
 
   const handleReset = () => {
     setSearchStudentId('');
-    setSearchClass('');
     setSearchName('');
     setFilterStatus('전체');
     setFilterPhone('전체');
-    setAppliedFilters({ studentId: '', className: '', name: '', status: '전체', phone: '전체' });
+    setAppliedFilters({ studentId: '', name: '', status: '전체', phone: '전체' });
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -228,18 +221,6 @@ export default function AttendanceManagement() {
           </div>
 
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="att-class">반</label>
-            <input
-              id="att-class"
-              className={styles.filterInput}
-              type="text"
-              value={searchClass}
-              onChange={(e) => setSearchClass(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-
-          <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>구분</label>
             <select
               className={styles.filterSelect}
@@ -290,9 +271,6 @@ export default function AttendanceManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('studentId')}>
                 학번 <SortIcon field="studentId" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('className')}>
-                반 <SortIcon field="className" />
-              </th>
               <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
                 좌석 <SortIcon field="seat" />
               </th>
@@ -307,7 +285,7 @@ export default function AttendanceManagement() {
           <tbody>
             {pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={7}>검색 결과가 없습니다.</td>
+                <td colSpan={6}>검색 결과가 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row, idx) => {
@@ -323,7 +301,6 @@ export default function AttendanceManagement() {
                     </td>
                     <td>{row.name}</td>
                     <td>{row.studentId}</td>
-                    <td>{row.className}</td>
                     <td>{row.seat}</td>
                     <td>
                       {row.status !== '-' ? (

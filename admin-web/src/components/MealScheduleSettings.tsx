@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  getMealScheduleWeek,
-  saveMealSchedule,
-  updateMealSchedule,
-  syncMealScheduleToKiosk,
-  type MealScheduleItem,
+  getMealMenuWeek,
+  saveMealMenu,
+  deleteMealMenu,
+  type MealMenuDay,
 } from '../api/mealScheduleApi';
+import { getMe } from '../api/authApi';
 import styles from './MealScheduleSettings.module.css';
 
 /* ── 날짜 유틸 ── */
@@ -50,24 +50,24 @@ interface DayMeal {
   id?: number;
   lunch: string;
   dinner: string;
-  isHoliday: boolean;
+  closed: boolean;
 }
 
 type WeekMeals = Record<number, DayMeal>;
 
 function emptyWeek(): WeekMeals {
   return Object.fromEntries(
-    Array.from({ length: 7 }, (_, i) => [i, { lunch: '', dinner: '', isHoliday: i >= 5 }]),
+    Array.from({ length: 7 }, (_, i) => [i, { lunch: '', dinner: '', closed: i >= 5 }]),
   );
 }
 
-function apiToWeekMeals(meals: MealScheduleItem[], monday: Date): WeekMeals {
+function apiToWeekMeals(days: MealMenuDay[], monday: Date): WeekMeals {
   const result = emptyWeek();
-  for (const item of meals) {
-    const itemDate = new Date(item.date + 'T00:00:00');
+  for (const item of days) {
+    const itemDate = new Date(item.menuDate + 'T00:00:00');
     for (let i = 0; i < 7; i++) {
       if (isSameDay(addDays(monday, i), itemDate)) {
-        result[i] = { id: item.id, lunch: item.lunch, dinner: item.dinner, isHoliday: item.isHoliday };
+        result[i] = { id: item.id, lunch: item.lunch, dinner: item.dinner, closed: item.closed };
         break;
       }
     }
@@ -83,9 +83,10 @@ interface WeekMealCardProps {
   meals: WeekMeals;
   onRegister: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }
 
-function WeekMealCard({ title, monday, meals, onRegister, onEdit }: WeekMealCardProps) {
+function WeekMealCard({ title, monday, meals, onRegister, onEdit, onDelete }: WeekMealCardProps) {
   const today = new Date();
   const sunday = addDays(monday, 6);
   const weekRange = `${formatDate(monday)}~${formatDate(sunday)}`;
@@ -127,7 +128,7 @@ function WeekMealCard({ title, monday, meals, onRegister, onEdit }: WeekMealCard
                       <br />
                       <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
                     </td>
-                    {day?.isHoliday ? (
+                    {day?.closed ? (
                       <td colSpan={2} className={styles.holidayCell}>휴무</td>
                     ) : (
                       <>
@@ -155,6 +156,7 @@ function WeekMealCard({ title, monday, meals, onRegister, onEdit }: WeekMealCard
 
           <div className={styles.cardFooter}>
             <button type="button" className={styles.cardEditButton} onClick={onEdit}>수정</button>
+            <button type="button" className={styles.cardDeleteButton} onClick={onDelete}>삭제</button>
           </div>
         </>
       )}
@@ -168,17 +170,17 @@ interface MealModalProps {
   title: string;
   monday: Date;
   initialMeals: WeekMeals;
-  isEdit: boolean;
+  storeId?: number;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function MealScheduleModal({ title, monday, initialMeals, isEdit, onClose, onSaved }: MealModalProps) {
+function MealScheduleModal({ title, monday, initialMeals, storeId, onClose, onSaved }: MealModalProps) {
   const [editMeals, setEditMeals] = useState<WeekMeals>(() => {
     const copy: WeekMeals = {};
     for (let i = 0; i < 7; i++) {
       const m = initialMeals[i];
-      copy[i] = { id: m?.id, lunch: m?.lunch ?? '', dinner: m?.dinner ?? '', isHoliday: m?.isHoliday ?? i >= 5 };
+      copy[i] = { id: m?.id, lunch: m?.lunch ?? '', dinner: m?.dinner ?? '', closed: m?.closed ?? i >= 5 };
     }
     return copy;
   });
@@ -191,32 +193,28 @@ function MealScheduleModal({ title, monday, initialMeals, isEdit, onClose, onSav
     }));
   };
 
-  const toggleHoliday = (dayIdx: number) => {
+  const toggleClosed = (dayIdx: number) => {
     setEditMeals((prev) => ({
       ...prev,
-      [dayIdx]: { ...prev[dayIdx], isHoliday: !prev[dayIdx].isHoliday },
+      [dayIdx]: { ...prev[dayIdx], closed: !prev[dayIdx].closed },
     }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const weekStart = toISODate(monday);
-      const meals = Array.from({ length: 7 }, (_, i) => ({
-        date: toISODate(addDays(monday, i)),
+      const weekStartDate = toISODate(monday);
+      const days = Array.from({ length: 7 }, (_, i) => ({
+        menuDate: toISODate(addDays(monday, i)),
         lunch: editMeals[i].lunch,
         dinner: editMeals[i].dinner,
-        isHoliday: editMeals[i].isHoliday,
+        closed: editMeals[i].closed,
       }));
 
-      if (isEdit) {
-        await updateMealSchedule({ weekStart, meals });
-      } else {
-        await saveMealSchedule({ weekStart, meals });
-      }
+      await saveMealMenu({ weekStartDate, days }, storeId);
       onSaved();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
+      window.alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -256,7 +254,7 @@ function MealScheduleModal({ title, monday, initialMeals, isEdit, onClose, onSav
                     <td className={styles.dayCell}>
                       <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
                     </td>
-                    {day.isHoliday ? (
+                    {day.closed ? (
                       <td colSpan={2} className={styles.holidayCell}>휴무</td>
                     ) : (
                       <>
@@ -281,8 +279,8 @@ function MealScheduleModal({ title, monday, initialMeals, isEdit, onClose, onSav
                     <td className={styles.holidayToggle}>
                       <input
                         type="checkbox"
-                        checked={day.isHoliday}
-                        onChange={() => toggleHoliday(idx)}
+                        checked={day.closed}
+                        onChange={() => toggleClosed(idx)}
                       />
                     </td>
                   </tr>
@@ -312,36 +310,37 @@ export default function MealScheduleSettings() {
 
   const [thisWeekMeals, setThisWeekMeals] = useState<WeekMeals>(emptyWeek);
   const [nextWeekMeals, setNextWeekMeals] = useState<WeekMeals>(emptyWeek);
-  const [syncing, setSyncing] = useState(false);
+  const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
 
   // 모달 상태: null이면 닫힘
-  const [modal, setModal] = useState<{ week: 'this' | 'next'; isEdit: boolean } | null>(null);
+  const [modal, setModal] = useState<{ week: 'this' | 'next' } | null>(null);
+
+  useEffect(() => {
+    getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {});
+  }, []);
 
   const fetchWeek = useCallback(async (monday: Date, setFn: React.Dispatch<React.SetStateAction<WeekMeals>>) => {
     try {
-      const res = await getMealScheduleWeek(toISODate(monday));
-      setFn(apiToWeekMeals(res.meals, monday));
+      const res = await getMealMenuWeek(toISODate(monday), myStoreId);
+      setFn(apiToWeekMeals(res.days, monday));
     } catch {
       // API 미구현 시 빈 상태 유지
     }
-  }, []);
+  }, [myStoreId]);
 
   useEffect(() => {
     fetchWeek(thisMonday, setThisWeekMeals);
     fetchWeek(nextMonday, setNextWeekMeals);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchWeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSync = async () => {
-    if (!confirm('식단표를 키오스크에 동기화하시겠습니까?')) return;
-    setSyncing(true);
+  const handleDelete = async (monday: Date) => {
+    if (!window.confirm('해당 주 식단을 삭제하시겠습니까?')) return;
     try {
-      await syncMealScheduleToKiosk(toISODate(thisMonday));
-      await syncMealScheduleToKiosk(toISODate(nextMonday));
-      alert('동기화가 완료되었습니다.');
+      await deleteMealMenu(toISODate(monday), myStoreId);
+      fetchWeek(thisMonday, setThisWeekMeals);
+      fetchWeek(nextMonday, setNextWeekMeals);
     } catch (err) {
-      alert(err instanceof Error ? err.message : '동기화에 실패했습니다.');
-    } finally {
-      setSyncing(false);
+      window.alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
     }
   };
 
@@ -356,34 +355,28 @@ export default function MealScheduleSettings() {
   const getModalTitle = () => {
     if (!modal) return '';
     const weekLabel = modal.week === 'this' ? '이번주' : '다음주';
-    return modal.isEdit ? `${weekLabel} 식단표 수정` : `${weekLabel} 식단표 등록`;
+    const isEmpty = Object.values(getModalMeals()).every((d) => !d.lunch && !d.dinner);
+    return isEmpty ? `${weekLabel} 식단표 등록` : `${weekLabel} 식단표 수정`;
   };
-
-  const thisWeekEmpty = Object.values(thisWeekMeals).every((d) => !d.lunch && !d.dinner);
-  const nextWeekEmpty = Object.values(nextWeekMeals).every((d) => !d.lunch && !d.dinner);
 
   return (
     <div className={styles.container}>
-      <div className={styles.headerButtons}>
-        <button type="button" className={styles.syncButton} onClick={handleSync} disabled={syncing}>
-          {syncing ? '동기화 중...' : '동기화'}
-        </button>
-      </div>
-
       <div className={styles.gridRow}>
         <WeekMealCard
           title="이번주 식단표"
           monday={thisMonday}
           meals={thisWeekMeals}
-          onRegister={() => setModal({ week: 'this', isEdit: false })}
-          onEdit={() => setModal({ week: 'this', isEdit: true })}
+          onRegister={() => setModal({ week: 'this' })}
+          onEdit={() => setModal({ week: 'this' })}
+          onDelete={() => handleDelete(thisMonday)}
         />
         <WeekMealCard
           title="다음주 식단표"
           monday={nextMonday}
           meals={nextWeekMeals}
-          onRegister={() => setModal({ week: 'next', isEdit: false })}
-          onEdit={() => setModal({ week: 'next', isEdit: true })}
+          onRegister={() => setModal({ week: 'next' })}
+          onEdit={() => setModal({ week: 'next' })}
+          onDelete={() => handleDelete(nextMonday)}
         />
       </div>
 
@@ -392,7 +385,7 @@ export default function MealScheduleSettings() {
           title={getModalTitle()}
           monday={getModalMonday()}
           initialMeals={getModalMeals()}
-          isEdit={modal.isEdit}
+          storeId={myStoreId}
           onClose={() => setModal(null)}
           onSaved={handleModalSaved}
         />
