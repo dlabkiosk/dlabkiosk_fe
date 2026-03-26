@@ -254,7 +254,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
                   <p className={styles.errorMessage}>{errorMessage}</p>
                 )}
 
-                <div className={styles.footer}>
+                <div className={styles.existingFooter}>
                   <button
                     type="button"
                     className={styles.cancelButton}

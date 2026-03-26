@@ -127,12 +127,14 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         : SUCCESS_DISPLAY_MS;
     startSuccessTimer(baseMs);
 
-    // 서버 메시지 추가 조회 — 태그 메시지 뒤에 이어붙임
+    // 서버 메시지 추가 조회 — 태그 메시지와 중복 제거 후 이어붙임
     if (result.studentId) {
+      const tagContents = new Set((result.messages ?? []).map((m) => m.trim()));
       getStudentMessages(result.studentId)
         .then((msgs) => {
-          if (msgs.length > 0) {
-            setStudentMessages((prev) => [...prev, ...msgs]);
+          const deduped = msgs.filter((m) => !tagContents.has(m.content.trim()));
+          if (deduped.length > 0) {
+            setStudentMessages((prev) => [...prev, ...deduped]);
             if (!hasPendingInteraction) {
               startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
             }

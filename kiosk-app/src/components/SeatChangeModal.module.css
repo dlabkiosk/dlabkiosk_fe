@@ -219,6 +219,11 @@
   flex-shrink: 0;
 }
 
+.existingFooter {
+  padding: var(--space-3) var(--space-4);
+  flex-shrink: 0;
+}
+
 .submitButton {
   width: 100%;
   padding: var(--space-3) var(--space-4);
