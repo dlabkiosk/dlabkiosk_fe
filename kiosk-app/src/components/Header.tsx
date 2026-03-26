@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import logoImg from '../assets/logo.png';
 import { useSecretTap } from '../hooks/useSecretTap';
 import { getExamSchedules } from '../api/examScheduleApi';
