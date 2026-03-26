@@ -35,7 +35,7 @@ export default function LoginPage() {
       navigate('/');
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        setError('아이디와 비밀번호를 확인해주세요.');
       } else {
         setError('서버에 연결할 수 없습니다.');
       }

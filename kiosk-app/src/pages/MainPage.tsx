@@ -164,6 +164,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       const leaveResult = await endSeatLeave(fallbackIdentifier, inputMethod);
       return {
         name: leaveResult.studentName,
+        studentId: leaveResult.studentId,
         message: '좌석 복귀가 완료되었습니다.',
       };
     } catch {
@@ -226,7 +227,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       const result = await startSeatLeave(identifier, scanTarget.reasonId, inputMethod);
       return {
         name: result.studentName,
-        message: '좌석 이탈 신청이 완료되었습니다\n꼭 복귀처리를 해주세요!!',
+        studentId: result.studentId,
+        message: '좌석 이탈 신청이 완료되었습니다.\n 꼭 복귀처리를 해주세요.',
       };
     } catch (err) {
       throw err;
