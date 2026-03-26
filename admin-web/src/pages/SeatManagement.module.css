@@ -155,7 +155,6 @@
   display: flex;
   align-items: center;
   gap: 0;
-  margin-left: auto;
 }
 
 .filterLabel {
@@ -209,6 +208,23 @@
   display: flex;
   gap: var(--spacing-xs);
   margin-left: auto;
+}
+
+.searchInput {
+  padding: 0 var(--size-badge-padding-h);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
 }
 
 .searchButton {

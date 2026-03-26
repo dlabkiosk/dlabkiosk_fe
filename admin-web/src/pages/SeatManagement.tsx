@@ -995,9 +995,9 @@ export default function SeatManagement() {
                   ))}
                 </div>
               )}
-              <div className={styles.filterGroup}>
+              <div className={styles.filterActions}>
                 <input
-                  className={styles.filterInput}
+                  className={styles.searchInput}
                   value={searchSeat}
                   onChange={(e) => setSearchSeat(e.target.value)}
                   placeholder="좌석 또는 학생명 검색"

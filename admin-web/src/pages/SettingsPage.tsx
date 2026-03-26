@@ -38,6 +38,13 @@ import {
   deleteStudentMessage,
 } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
+import {
+  getMessageTemplates,
+  createMessageTemplate,
+  updateMessageTemplate,
+  deleteMessageTemplate,
+} from '../api/messageTemplateApi';
+import type { MessageTemplate } from '../api/messageTemplateApi';
 
 /* ── 탭 목록 ── */
 const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리','지점 정보'] as const;
@@ -112,7 +119,12 @@ export default function SettingsPage() {
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
       {activeTab === '이탈사유 관리' && <SeatLeaveReasonSettings />}
-      {activeTab === '메시지 관리' && <StudentMessageSettings />}
+      {activeTab === '메시지 관리' && (
+        <>
+          <MessageTemplateSettings />
+          <StudentMessageSettings />
+        </>
+      )}
       {activeTab === '지점 정보' && <BranchInfo />}
     </div>
   );
@@ -1612,7 +1624,170 @@ function BranchInfo() {
   );
 }
 
-/* ── 메시지 관리 탭 ── */
+/* ── 메시지 템플릿 관리 ── */
+function MessageTemplateSettings() {
+  const { confirm, alert, ConfirmDialog: TplConfirmDialog } = useConfirm();
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<MessageTemplate | null>(null);
+  const [formContent, setFormContent] = useState('');
+  const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
+  const [tplPage, setTplPage] = useState(1);
+  const TPL_PER_PAGE = 5;
+
+  useEffect(() => { getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {}); }, []);
+
+  const fetchTemplates = useCallback(async () => {
+    setLoading(true);
+    try {
+      setTemplates(await getMessageTemplates());
+    } catch {
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  const resetForm = () => { setFormContent(''); setEditTarget(null); };
+
+  const openAdd = () => { resetForm(); setShowModal(true); };
+  const openEdit = (t: MessageTemplate) => {
+    setEditTarget(t);
+    setFormContent(t.content);
+    setShowModal(true);
+  };
+  const closeModal = () => { setShowModal(false); resetForm(); };
+
+  const handleSubmit = async () => {
+    if (!formContent.trim()) return;
+    try {
+      if (editTarget) {
+        await updateMessageTemplate(editTarget.id, { content: formContent.trim() });
+      } else {
+        await createMessageTemplate({ content: formContent.trim(), storeId: myStoreId });
+      }
+      closeModal();
+      await fetchTemplates();
+    } catch {
+      await alert('저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!(await confirm('이 템플릿을 삭제하시겠습니까?'))) return;
+    try {
+      await deleteMessageTemplate(id);
+      await fetchTemplates();
+    } catch {
+      await alert('삭제에 실패했습니다.');
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>메시지 템플릿</h3>
+          <button type="button" className={styles.addBtn} onClick={openAdd}>+ 템플릿 추가</button>
+        </div>
+        <div className={styles.sectionBody}>
+          {loading ? (
+            <p className={styles.placeholderText}>로딩 중...</p>
+          ) : templates.length === 0 ? (
+            <p className={styles.placeholderText}>등록된 템플릿이 없습니다.</p>
+          ) : (
+            <>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th>내용</th>
+                    <th style={{ width: 150 }}>등록일</th>
+                    <th style={{ width: 100 }}>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {templates.slice((tplPage - 1) * TPL_PER_PAGE, tplPage * TPL_PER_PAGE).map((t) => (
+                    <tr key={t.id}>
+                      <td style={{ textAlign: 'left' }}>{t.content}</td>
+                      <td>{new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
+                      <td>
+                        <button type="button" className={styles.editBtn} onClick={() => openEdit(t)}>&#x270E;</button>
+                        <button
+                          type="button"
+                          className={styles.editBtn}
+                          style={{ color: '#dc2626', marginLeft: 4 }}
+                          onClick={() => handleDelete(t.id)}
+                        >
+                          &#x2715;
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {templates.length > TPL_PER_PAGE && (
+                <div className={styles.pagination}>
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    disabled={tplPage <= 1}
+                    onClick={() => setTplPage((p) => p - 1)}
+                  >
+                    &lsaquo;
+                  </button>
+                  <span className={styles.pageInfo}>{tplPage} / {Math.ceil(templates.length / TPL_PER_PAGE)}</span>
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    disabled={tplPage >= Math.ceil(templates.length / TPL_PER_PAGE)}
+                    onClick={() => setTplPage((p) => p + 1)}
+                  >
+                    &rsaquo;
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {showModal && (
+        <div className={styles.overlay} onClick={closeModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{editTarget ? '템플릿 수정' : '템플릿 추가'}</h3>
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>내용</label>
+                <textarea
+                  className={styles.formInput}
+                  rows={4}
+                  placeholder="메시지 템플릿 내용을 입력하세요"
+                  value={formContent}
+                  onChange={(e) => setFormContent(e.target.value)}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
+                  {editTarget ? '수정' : '등록'}
+                </button>
+                <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {TplConfirmDialog}
+    </>
+  );
+}
+
+/* ── 학생 메시지 관리 ── */
 function StudentMessageSettings() {
   const { confirm, alert, ConfirmDialog: MsgConfirmDialog } = useConfirm();
   const [students, setStudents] = useState<Student[]>([]);
@@ -1628,6 +1803,9 @@ function StudentMessageSettings() {
   const [formContent, setFormContent] = useState('');
   const [formActive, setFormActive] = useState(true);
 
+  // 메시지 템플릿
+  const [msgTemplates, setMsgTemplates] = useState<MessageTemplate[]>([]);
+
   // 학생 목록 로드
   useEffect(() => {
     setLoading(true);
@@ -1635,6 +1813,7 @@ function StudentMessageSettings() {
       .then(setStudents)
       .catch(() => setStudents([]))
       .finally(() => setLoading(false));
+    getMessageTemplates().then(setMsgTemplates).catch(() => {});
   }, []);
 
   // 학생 검색 필터
@@ -1736,7 +1915,7 @@ function StudentMessageSettings() {
     <>
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h3 className={styles.sectionTitle}>학생 메시지 관리</h3>
+          <h3 className={styles.sectionTitle}>학생 개인 메시지 관리</h3>
         </div>
         <div className={styles.sectionBody}>
           {/* 학생 선택 영역 */}
@@ -1842,6 +2021,22 @@ function StudentMessageSettings() {
             <h3 className={styles.modalTitle}>{editTarget ? '메시지 수정' : '메시지 추가'}</h3>
 
             <div className={styles.modalForm}>
+              {!editTarget && msgTemplates.length > 0 && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>템플릿 선택</label>
+                  <select
+                    className={styles.formInput}
+                    value=""
+                    onChange={(e) => { if (e.target.value) setFormContent(e.target.value); }}
+                  >
+                    <option value="">-- 템플릿을 선택하세요 --</option>
+                    {msgTemplates.map((t) => (
+                      <option key={t.id} value={t.content}>{t.content}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>내용</label>
                 <textarea
