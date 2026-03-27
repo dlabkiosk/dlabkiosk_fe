@@ -40,7 +40,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showSeatMap, setShowSeatMap] = useState(false);
   const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string; inputMethod: string } | null>(null);
   const [seatChangeStudent, setSeatChangeStudent] = useState<{ student: Student; inputMethod: string } | null>(null);
-  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number; defaultKeypadMode?: 'seatLabel' | 'phoneLast4' } | null>(null);
+  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number; defaultKeypadMode?: 'seatLabel' | 'phoneLast4' | 'phone'; showPhone8?: boolean } | null>(null);
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
@@ -93,7 +93,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     } else if (menuId === 'student-info') {
       setScanResult(null);
       setQrResult(null);
-      setScanTarget({ actionId: 'student-info', label: '학적 조회' });
+      setScanTarget({ actionId: 'student-info', label: '학적 조회', showPhone8: true });
     } else if (menuId === 'seat-map') {
       setShowSeatMap(true);
     }
@@ -149,6 +149,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const resolveInputMethod = useCallback((params: ScanActionParams): string => {
     if (params.seatLabel) return 'SEAT_LABEL';
     if (params.phoneLast4) return 'PHONE_LAST4';
+    if (params.phone8) return 'PHONE';
     // 카드/QR 모두 백엔드에서는 RFID로 취급
     return 'RFID';
   }, []);
@@ -329,6 +330,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           secureClose={scanTarget.secureClose}
           keypadOnly={scanTarget.keypadOnly}
           defaultKeypadMode={scanTarget.defaultKeypadMode}
+          showPhone8={scanTarget.showPhone8}
           onClose={handleScanClose}
           onStudentFound={getOnStudentFound()}
           onAction={getScanAction()}

@@ -8,8 +8,8 @@ import styles from './SeatChangeModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
 const PRIORITY_LABELS = ['1순위', '2순위', '3순위'] as const;
-const CELL_W = 25;
-const CELL_H = 18;
+const CELL_W = 56;
+const CELL_H = 38;
 
 interface SeatSelection {
   seatId: number;

@@ -12,21 +12,19 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
-  padding: var(--space-8) var(--space-6) var(--space-7);
-  width: 22.5rem;
-  max-width: 90vw;
+  padding: var(--space-8) var(--space-10) var(--space-7);
+  width: 75vw;
 }
 
 .closeButton {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: var(--space-8);
+  right: var(--space-8);
   width: var(--icon-lg);
   height: var(--icon-lg);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-medium);
+  border: none;
   background: var(--color-bg-white);
-  font-size: var(--font-base);
+  font-size: var(--font-lg);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -36,17 +34,18 @@
 
 .title {
   font-size: var(--font-2xl);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   color: var(--color-text);
   text-align: center;
-  margin-bottom: var(--space-2);
+  margin-top: var(--space-10);
+  margin-bottom: var(--space-5);
 }
 
 .subtitle {
   font-size: var(--font-base);
   color: var(--color-text-hint);
   text-align: center;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-10);
 }
 
 .buttonGroup {
@@ -55,16 +54,16 @@
 }
 
 .outlineButton {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
+  flex: 2;
+  padding: var(--space-5) var(--space-5);
   font-size: var(--font-base);
   font-weight: var(--weight-medium);
   color: var(--color-primary);
   background: var(--color-bg-white);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-2xs);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background 0.15s;
 }
 
 .outlineButton:active {
@@ -72,16 +71,16 @@
 }
 
 .primaryButton {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
+  flex: 2;
+  padding: var(--space-5) var(--space-5);
   font-size: var(--font-base);
   font-weight: var(--weight-medium);
   color: #fff;
   background: var(--color-primary);
   border: none;
-  border-radius: var(--radius-2xs);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background 0.15s;
 }
 
 .primaryButton:active {

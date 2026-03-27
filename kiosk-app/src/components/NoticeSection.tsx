@@ -4,7 +4,7 @@ import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import styles from './NoticeSection.module.css';
 
-const DEFAULT_COUNT = 5;
+const DEFAULT_COUNT = 3;
 const PAGE_SIZE = 10;
 
 export default function NoticeSection() {

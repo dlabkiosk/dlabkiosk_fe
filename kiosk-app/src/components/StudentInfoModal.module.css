@@ -12,7 +12,7 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
-  width: 25rem;
+  width: 75vw;
   max-width: 95vw;
   max-height: 70vh;
   display: flex;

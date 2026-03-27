@@ -29,9 +29,9 @@ const DEFAULT_STATE: AccessibilityState = {
 };
 
 const FONT_SCALE_VALUES: Record<FontScale, number> = {
-  default: 1,
-  large: 1.25,
-  xlarge: 1.5,
+  default: 2,
+  large: 2.25,
+  xlarge: 2.5,
 };
 
 const ZOOM_VALUES: Record<ZoomScale, number> = {

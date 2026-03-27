@@ -81,6 +81,14 @@ html {
   --space-10: 2.5rem;     /* 40px */
   --space-11: 2.75rem;    /* 44px */
   --space-12: 3rem;       /* 48px */
+  --space-14: 3.5rem;     /* 56px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+  --space-24: 6rem;      /* 96px */
+  --space-32: 8rem;      /* 128px */
+  --space-40: 10rem;     /* 160px */
+  --space-48: 12rem;     /* 192px */
+  --space-56: 14rem;     /* 224px */
 
   /* ── Border Radius ── */
   --radius-2xs: 0.25rem;  /* 4px */
@@ -101,7 +109,7 @@ html {
   --z-modal-top: 200;
 
   /* ── Accessibility ── */
-  --a11y-font-scale: 1;
+  --a11y-font-scale: 2;
   --a11y-zoom: 1;
 }
 

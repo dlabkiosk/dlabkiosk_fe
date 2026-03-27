@@ -12,9 +12,8 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
-  width: 22.5rem;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 90vw;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -22,14 +21,18 @@
 
 .closeButton {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  background: none;
+  top: var(--space-8);
+  right: var(--space-8);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
   border: none;
-  font-size: var(--font-2xl);
-  cursor: pointer;
+  background: var(--color-bg-white);
+  font-size: var(--font-lg);
   color: var(--color-text-muted);
-  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 1;
 }
 
@@ -152,10 +155,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 0.125rem;
-  padding: 0.0625rem;
-  width: 1.25rem;
-  height: 0.875rem;
+  border-radius: 4px;
+  padding: 2px;
+  width: 52px;
+  height: 34px;
   gap: 0;
   border: 1px solid var(--color-border);
   box-sizing: border-box;
@@ -163,7 +166,7 @@
 }
 
 .seatLabel {
-  font-size: 0.25rem;
+  font-size: 10px;
   font-weight: var(--weight-bold);
   color: var(--color-text);
 }
@@ -194,18 +197,18 @@
 }
 
 .statusBadge {
-  font-size: 0.4375rem;
+  font-size: 9px;
   font-weight: 600;
   line-height: 1;
-  padding: 1px 0.1875rem;
-  border-radius: 0.125rem;
+  padding: 1px 3px;
+  border-radius: 2px;
   white-space: nowrap;
   color: #b45309;
   background-color: #fef3c7;
 }
 
 .selectionBadge {
-  font-size: 0.375rem;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
   color: #fff;

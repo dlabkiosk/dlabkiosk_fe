@@ -13,20 +13,18 @@
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
   padding: var(--space-8) var(--space-6) var(--space-7);
-  width: 22.5rem;
-  max-width: 90vw;
+  width: 75vw;
 }
 
 .closeButton {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: var(--space-8);
+  right: var(--space-8);
   width: var(--icon-lg);
   height: var(--icon-lg);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-medium);
+  border: none;
   background: var(--color-bg-white);
-  font-size: var(--font-base);
+  font-size: var(--font-lg);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
@@ -39,6 +37,7 @@
   font-weight: var(--weight-bold);
   color: var(--color-text);
   text-align: center;
+  margin-top: var(--space-10);
   margin-bottom: var(--space-2);
 }
 

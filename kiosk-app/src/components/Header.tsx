@@ -82,19 +82,19 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
 
   return (
     <header className={styles.header}>
-      <div className={styles.datetime}>
-        <span>{formatDate(now)}</span>
-        <span>{formatTime(now)}</span>
+      <div className={styles.logoSection}>
+        <img
+          src={logoImg}
+          alt="D'Lab"
+          className={styles.logo}
+          onClick={handleLogoTap}
+        />
+        {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
       </div>
-      <div className={styles.mainRow}>
-        <div className={styles.logoSection}>
-          <img
-            src={logoImg}
-            alt="D'Lab"
-            className={styles.logo}
-            onClick={handleLogoTap}
-          />
-          {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
+      <div className={styles.rightSection}>
+        <div className={styles.datetime}>
+          <span>{formatDate(now)}</span>
+          <span>{formatTime(now)}</span>
         </div>
         <div className={styles.ddayList}>
           {ddays.map((item, idx) => (

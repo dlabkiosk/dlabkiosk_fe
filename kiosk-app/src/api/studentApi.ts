@@ -41,3 +41,8 @@ export function getStudentBySeat(seatLabel: string): Promise<StudentSearchResult
 export function getStudentByPhone(phoneLast4: string): Promise<StudentSearchResult> {
   return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(phoneLast4)}&inputMethod=PHONE_LAST4`);
 }
+
+/** 전화번호 뒤 8자리로 학생 검색 (학적 조회 전용) */
+export function getStudentByPhone8(phone8: string): Promise<StudentSearchResult> {
+  return apiGet<StudentSearchResult>(`/api/v1/kiosk/students/search?identifier=${encodeURIComponent(phone8)}&inputMethod=PHONE`);
+}

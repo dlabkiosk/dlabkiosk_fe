@@ -1,6 +1,6 @@
 .container {
   margin: 0 var(--space-6);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
   aspect-ratio: 16 / 9;

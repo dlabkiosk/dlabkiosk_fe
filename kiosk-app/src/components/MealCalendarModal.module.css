@@ -12,7 +12,7 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
-  width: 25rem;
+  width: 75vw;
   max-width: 95vw;
   max-height: 85vh;
   display: flex;
@@ -51,14 +51,13 @@
 
 .closeButton {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-5);
+  top: var(--space-8);
+  right: var(--space-8);
   width: var(--icon-lg);
   height: var(--icon-lg);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--color-border-medium);
+  border: none;
   background: var(--color-bg-white);
-  font-size: var(--font-base);
+  font-size: var(--font-lg);
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;

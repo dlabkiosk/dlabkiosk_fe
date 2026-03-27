@@ -7,7 +7,7 @@ export type EventLogType =
   | 'SEAT_LEAVE_START'
   | 'SEAT_LEAVE_END';
 
-export type InputMethod = 'CARD' | 'QR' | 'SEAT_LABEL' | 'PHONE_LAST4';
+export type InputMethod = 'CARD' | 'QR' | 'SEAT_LABEL' | 'PHONE_LAST4' | 'PHONE';
 
 interface EventLogPayload {
   eventType: EventLogType;
