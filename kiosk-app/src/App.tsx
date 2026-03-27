@@ -4,6 +4,7 @@ import MainPage from './pages/MainPage';
 import { kioskMe } from './api/kioskAuthApi';
 import type { KioskSession } from './api/kioskAuthApi';
 import useTheme from './hooks/useTheme';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 
 export default function App() {
   const [session, setSession] = useState<KioskSession | null>(null);
@@ -36,5 +37,9 @@ export default function App() {
     return <KioskLoginPage onLogin={handleLogin} />;
   }
 
-  return <MainPage session={session} onLogout={handleLogout} />;
+  return (
+    <AccessibilityProvider>
+      <MainPage session={session} onLogout={handleLogout} />
+    </AccessibilityProvider>
+  );
 }

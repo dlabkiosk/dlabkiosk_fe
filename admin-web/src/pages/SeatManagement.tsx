@@ -30,6 +30,7 @@ import {
 import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
+import { getMe } from '../api/authApi';
 import useConfirm from '../hooks/useConfirm';
 import styles from './SeatManagement.module.css';
 
@@ -87,6 +88,9 @@ export default function SeatManagement() {
   const initialView = searchParams.get('view') === 'waiting' ? 'waiting' : 'layout';
   const { confirm, alert, ConfirmDialog } = useConfirm();
   const [view, setView] = useState<ViewMode>(initialView);
+
+  /* ── 로그인 지점 ── */
+  const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
 
   /* ── 구역 상태 ── */
   const [areas, setAreas] = useState<SeatArea[]>([]);
@@ -166,9 +170,13 @@ export default function SeatManagement() {
   const [wSearchNumber, setWSearchNumber] = useState('');
   const [wAppliedFilters, setWAppliedFilters] = useState({ name: '', number: '' });
 
-  /* ── 구역 목록 로드 ── */
+  /* ── 로그인 정보 + 구역 목록 로드 ── */
   useEffect(() => {
-    getSeatAreas()
+    getMe()
+      .then((me) => {
+        setMyStoreId(me.storeId);
+        return getSeatAreas(me.storeId);
+      })
       .then((list) => {
         setAreas(list);
         if (list.length > 0 && !selectedAreaCd) {
@@ -189,16 +197,16 @@ export default function SeatManagement() {
         ? getSeatStatusByArea(selectedAreaCd).catch(() => [] as SeatStatusByArea[])
         : Promise.resolve([] as SeatStatusByArea[]);
 
-      let [seatList, statusList, studentList, seatLeaveResult, dsaStatusList, attendanceList] = await Promise.all([
-        getSeats(selectedAreaCd || undefined),
-        getSeatStatus(),
-        getStudents(),
-        getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
+      const DSA_CELL_W = 80;
+      const DSA_CELL_H = 60;
+
+      const [dsaStatusList, attendanceList, seatLeaveResult] = await Promise.all([
         dsaStatusPromise,
         getTodayAttendanceStatus().catch(() => []),
+        getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
       ]);
 
-      // 출결 상태: seatLabel → 출결 상태 + studentName → 출결 상태
+      // 출결 상태 맵
       const attendanceBySeatLabel = new Map<string, string>();
       const attendanceByStudentName = new Map<string, string>();
       attendanceList.forEach((a) => {
@@ -206,81 +214,7 @@ export default function SeatManagement() {
         if (a.studentName) attendanceByStudentName.set(a.studentName, a.status);
       });
 
-      const statusByLabel = new Map<string, SeatStatusItem>();
-      statusList.forEach((s) => statusByLabel.set(s.seatLabel, s));
-
-      const studentBySeatLabel = new Map<string, { name: string; studentNumber: string; className: string }>();
-      studentList.forEach((s) => {
-        if (s.assignedSeatLabel) {
-          studentBySeatLabel.set(s.assignedSeatLabel, {
-            name: s.name,
-            studentNumber: s.studentNumber,
-            className: s.className,
-          });
-        }
-      });
-
-      // DSA 좌석 상태: seatNm → DSA state
-      const dsaStateBySeatNm = new Map<string, SeatStatusByArea>();
-      dsaStatusList.forEach((d) => dsaStateBySeatNm.set(d.seatNm, d));
-
-      // DSA 동기화: DSA 데이터가 실제로 있을 때만 수행
-      const DSA_CELL_W = 80;
-      const DSA_CELL_H = 60;
-      if (selectedAreaCd && dsaStatusList.length > 0) {
-        const syncPromises: Promise<unknown>[] = [];
-        const dbSeatLabelSet = new Set(seatList.map((s) => s.seatLabel));
-
-        // 1) DSA에 있지만 자체 DB에 없는 좌석: 새로 생성
-        dsaStatusList.forEach((dsa) => {
-          if (dsa.seatGn !== 'Y') return;
-          if (dbSeatLabelSet.has(dsa.seatNm)) return;
-          const body = {
-            seatLabel: dsa.seatNm,
-            seatType: 'INDIVIDUAL',
-            xPos: dsa.xPos * DSA_CELL_W,
-            yPos: dsa.yPos * DSA_CELL_H,
-            active: true,
-            areaCd: selectedAreaCd,
-          };
-          console.log(`[DSA동기화] 좌석 생성 시도: ${dsa.seatNm}`, body);
-          syncPromises.push(
-            createSeat(body).catch((err) => {
-              console.error(`[DSA동기화] 좌석 생성 실패 (${dsa.seatNm}):`, err);
-            })
-          );
-        });
-
-        // 2) DSA에 있고 자체 DB에도 있는 좌석: 좌표 + 구역 동기화
-        seatList.forEach((seat) => {
-          const dsa = dsaStateBySeatNm.get(seat.seatLabel);
-          if (!dsa || dsa.seatGn !== 'Y') return;
-          const dsaPixelX = dsa.xPos * DSA_CELL_W;
-          const dsaPixelY = dsa.yPos * DSA_CELL_H;
-          const needPosSync = seat.xPos !== dsaPixelX || seat.yPos !== dsaPixelY;
-          const needAreaSync = seat.areaCd !== selectedAreaCd;
-          if (!needPosSync && !needAreaSync) return;
-          syncPromises.push(
-            updateSeat(seat.id, {
-              seatLabel: seat.seatLabel,
-              seatType: seat.seatType,
-              xPos: dsaPixelX,
-              yPos: dsaPixelY,
-              active: seat.active,
-              areaCd: selectedAreaCd,
-            }).catch((err) => console.warn(`좌석 동기화 실패 (${seat.seatLabel}):`, err))
-          );
-        });
-
-        if (syncPromises.length > 0) {
-          await Promise.all(syncPromises);
-          // 동기화 후 좌석 목록 다시 조회
-          const updatedSeatList = await getSeats(selectedAreaCd || undefined);
-          seatList = updatedSeatList;
-        }
-      }
-
-      // 활성 좌석이탈: seatLabel → reasonName (endedAt이 null인 것만)
+      // 활성 좌석이탈
       const activeLeaveBySeatLabel = new Map<string, string>();
       (seatLeaveResult.content ?? []).forEach((r) => {
         if (!r.endedAt) {
@@ -288,82 +222,68 @@ export default function SeatManagement() {
         }
       });
 
-      const merged: SeatWithStatus[] = seatList.map((seat) => {
-        const st = statusByLabel.get(seat.seatLabel);
-        const stu = studentBySeatLabel.get(seat.seatLabel);
-        const dsa = dsaStateBySeatNm.get(seat.seatLabel);
+      // DSA 데이터 기준으로 좌석 생성
+      const merged: SeatWithStatus[] = dsaStatusList
+        .filter((dsa) => dsa.seatGn === 'Y')
+        .map((dsa) => {
+          const seatLabel = dsa.seatNm;
+          const studentName = dsa.studentName ?? null;
 
-        // 출결 상태 결정: DSA 상태 우선 → 자체 DB 폴백
-        let attendanceLabel: SeatAttendanceLabel = null;
-        let seatLeaveReason: string | null = null;
+          let attendanceLabel: SeatAttendanceLabel = null;
+          let seatLeaveReason: string | null = null;
 
-        // 자체 백엔드 출결 상태 (조퇴/하원 판별용)
-        const studentName = dsa?.studentName ?? stu?.name ?? st?.assignedStudentName ?? null;
-        const attStatus = attendanceBySeatLabel.get(seat.seatLabel)
-          || (studentName ? attendanceByStudentName.get(studentName) : undefined);
-
-        if (dsa && dsa.seatGn === 'Y') {
-          // DSA 실시간 상태 사용
+          // DSA 실시간 상태
           switch (dsa.state) {
             case 'S': attendanceLabel = '학습중'; break;
             case 'D': attendanceLabel = '외출'; break;
             case 'A': attendanceLabel = '좌석이탈'; break;
-            case 'N': // 미출석 → 표시 안함
-            case 'B': // 공석 → 표시 안함
             default: break;
           }
           if (dsa.away) {
             attendanceLabel = '좌석이탈';
           }
-          // DSA 이탈사유 우선 사용
           if (attendanceLabel === '좌석이탈' && dsa.leaveReasonName) {
             seatLeaveReason = dsa.leaveReasonName;
           }
-        }
 
-        // 자체 백엔드 출결로 조퇴/하원 덮어쓰기 (DSA에는 해당 상태 없음)
-        if (attStatus === 'EARLY_LEAVE') {
-          attendanceLabel = '조퇴';
-        } else if (attStatus === 'CHECKED_OUT') {
-          attendanceLabel = '하원';
-        } else if (attStatus === 'OUTING' && attendanceLabel !== '좌석이탈') {
-          attendanceLabel = '외출';
-        }
-
-        // DSA도 없고 출결 데이터도 없을 때: 자체 DB 폴백
-        if (!dsa && !attStatus) {
-          if (studentName) {
-            const leaveReason = activeLeaveBySeatLabel.get(seat.seatLabel);
-            if (leaveReason) {
-              attendanceLabel = '좌석이탈';
-              seatLeaveReason = leaveReason;
-            } else {
-              attendanceLabel = '학습중';
-            }
+          // 자체 백엔드 출결로 조퇴/하원 덮어쓰기
+          const attStatus = attendanceBySeatLabel.get(seatLabel)
+            || (studentName ? attendanceByStudentName.get(studentName) : undefined);
+          if (attStatus === 'EARLY_LEAVE') {
+            attendanceLabel = '조퇴';
+          } else if (attStatus === 'CHECKED_OUT') {
+            attendanceLabel = '하원';
+          } else if (attStatus === 'OUTING' && attendanceLabel !== '좌석이탈') {
+            attendanceLabel = '외출';
           }
-        }
+          if (attStatus === 'PRESENT' && !attendanceLabel) {
+            attendanceLabel = '학습중';
+          }
 
-        // 출결 상태가 PRESENT이고 DSA/이탈 정보 없으면 학습중
-        if (attStatus === 'PRESENT' && !attendanceLabel) {
-          attendanceLabel = '학습중';
-        }
+          // 좌석이탈 사유 보강
+          if (attendanceLabel === '좌석이탈' && !seatLeaveReason) {
+            seatLeaveReason = activeLeaveBySeatLabel.get(seatLabel) ?? null;
+          }
 
-        // 좌석이탈 사유 보강: DSA에서 못 받았으면 자체 DB 폴백
-        if (attendanceLabel === '좌석이탈' && !seatLeaveReason) {
-          seatLeaveReason = activeLeaveBySeatLabel.get(seat.seatLabel) ?? null;
-        }
-
-        return {
-          ...seat,
-          assignedStudentName: dsa?.studentName ?? stu?.name ?? st?.assignedStudentName ?? null,
-          assignedStudentNumber: stu?.studentNumber ?? null,
-          assignedClassName: stu?.className ?? null,
-          waitingCount: st?.waitingCount ?? 0,
-          waitingList: st?.waitingList ?? [],
-          attendanceLabel,
-          seatLeaveReason,
-        };
-      });
+          return {
+            id: 0,
+            storeId: myStoreId ?? 0,
+            seatLabel,
+            seatType: 'INDIVIDUAL',
+            xPos: dsa.xPos * DSA_CELL_W,
+            yPos: dsa.yPos * DSA_CELL_H,
+            active: true,
+            areaCd: selectedAreaCd,
+            areaNm: '',
+            assignedStudentName: studentName,
+            assignedStudentNumber: null,
+            assignedClassName: null,
+            waitingCount: 0,
+            waitingList: [],
+            attendanceLabel,
+            seatLeaveReason,
+          } as SeatWithStatus;
+        });
       setSeats(merged);
     } catch (err) {
       console.error('좌석 배치도 조회 실패:', err);
@@ -429,7 +349,7 @@ export default function SeatManagement() {
   const GRID_Y = SEAT_H;
 
   /** 마우스 좌표 → 캔버스 내 절대 좌표 */
-  const getCanvasPos = (e: React.MouseEvent<HTMLDivElement>) => {
+  const getCanvasPos = (e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
     const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
@@ -602,7 +522,7 @@ export default function SeatManagement() {
   };
 
   /** 드래그 시작 (기존 좌석) */
-  const handleDragStart = (e: React.MouseEvent, seatId: number) => {
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>, seatId: number) => {
     if (!editingLayout) return;
     e.stopPropagation();
     const pos = getCanvasPos(e);
@@ -615,7 +535,7 @@ export default function SeatManagement() {
   };
 
   /** 드래그 시작 (추가 예정 좌석) */
-  const handlePendingDragStart = (e: React.MouseEvent, tempId: string, xPos: number, yPos: number) => {
+  const handlePendingDragStart = (e: React.MouseEvent<HTMLDivElement>, tempId: string, xPos: number, yPos: number) => {
     if (!editingLayout) return;
     e.stopPropagation();
     const pos = getCanvasPos(e);
@@ -625,7 +545,7 @@ export default function SeatManagement() {
   };
 
   /** 드래그 중 / 편집 모드 호버 */
-  const handleDragMove = (e: React.MouseEvent) => {
+  const handleDragMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!draggingSeatId) {
       if (editingLayout || placingMode) {
         const raw = getCanvasPos(e);
@@ -936,35 +856,7 @@ export default function SeatManagement() {
             {view === 'layout' ? <LuList /> : <LuLayoutGrid />}
             {view === 'layout' ? '좌석 대기 리스트 보기' : '배치도 보기'}
           </button>
-          {view === 'layout' && !editingLayout && (
-            <button
-              type="button"
-              className={styles.addSeatBtn}
-              onClick={enterEditMode}
-            >
-              <LuPencil /> 좌석 편집
-            </button>
-          )}
-          {view === 'layout' && editingLayout && (
-            <>
-              <button
-                type="button"
-                className={styles.editSaveBtn}
-                onClick={saveEditMode}
-                disabled={savingLayout || pendingChangeCount === 0}
-              >
-                <LuSave /> {savingLayout ? '저장 중...' : `저장 (${pendingChangeCount})`}
-              </button>
-              <button
-                type="button"
-                className={styles.resetButton}
-                onClick={cancelEditMode}
-                disabled={savingLayout}
-              >
-                취소
-              </button>
-            </>
-          )}
+          {/* 좌석 편집 UI 제거 — DSA 기준 조회만 사용 */}
           <button
             type="button"
             className={styles.refreshBtn}
@@ -1006,28 +898,7 @@ export default function SeatManagement() {
             </div>
           </div>
 
-          {/* 배치 모드 안내 배너 */}
-          {placingMode && !editingLayout && (
-            <div className={styles.placingBanner}>
-              <LuMapPin />
-              <span>
-                {placingMode === 'add'
-                  ? '배치도에서 좌석을 놓을 위치를 클릭하세요'
-                  : '배치도에서 새 위치를 클릭하세요'}
-              </span>
-              <button type="button" className={styles.placingCancelBtn} onClick={cancelPlacing}>
-                취소
-              </button>
-            </div>
-          )}
-
-          {/* 편집 모드 안내 배너 */}
-          {editingLayout && (
-            <div className={styles.placingBanner}>
-              <LuPencil />
-              <span>편집 모드 — 빈 곳을 클릭하면 좌석 추가, 좌석을 드래그하면 이동, 우클릭하면 삭제</span>
-            </div>
-          )}
+          {/* 배치/편집 모드 배너 제거 — DSA 기준 조회만 사용 */}
 
           {/* 배치도 */}
           <div className={styles.contentCard}>
@@ -1038,69 +909,30 @@ export default function SeatManagement() {
 
             {layoutLoading ? (
               <div className={styles.emptyState}>불러오는 중...</div>
-            ) : seats.length === 0 && !placingMode ? (
+            ) : seats.length === 0 ? (
               <div className={styles.emptyState}>등록된 좌석이 없습니다.</div>
             ) : (
               <div
                 ref={canvasRef}
-                className={`${styles.seatCanvas} ${placingMode || editingLayout ? styles.seatCanvasPlacing : ''}`}
+                className={styles.seatCanvas}
                 style={{
                   width: canvasSize.width,
                   height: canvasSize.height,
                 }}
-                onClick={editingLayout ? handleEditCanvasClick : handleCanvasClick}
-                onMouseMove={editingLayout ? handleDragMove : handleCanvasMouseMove}
-                onMouseUp={editingLayout ? handleDragEnd : undefined}
-                onMouseLeave={() => {
-                  handleCanvasMouseLeave();
-                  if (editingLayout) handleDragEnd();
-                }}
               >
                 {filteredSeats.map((seat) => {
-                  if (editingLayout) {
-                    const isDeleted = pendingDeletes.has(seat.id);
-                    const pos = getEditPos(seat);
-                    const isDragging = draggingSeatId === seat.id;
-                    return (
-                      <div
-                        key={seat.id}
-                        className={`${styles.seatCell} ${isDeleted ? styles.seatDeleted : styles.seatEmpty} ${styles.seatEditable} ${isDragging ? styles.seatDragging : ''}`}
-                        style={{
-                          position: 'absolute',
-                          left: pos.x,
-                          top: pos.y,
-                          opacity: isDragging ? 0.4 : 1,
-                        }}
-                        onMouseDown={(e) => {
-                          if (e.button === 0 && !isDeleted) handleDragStart(e, seat.id);
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          togglePendingDelete(seat.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {!isDeleted && <LuGripVertical className={styles.dragHandle} />}
-                        <span className={styles.seatLabel}>{seat.seatLabel}</span>
-                        {isDeleted && <span className={styles.deletedLabel}>삭제</span>}
-                      </div>
-                    );
-                  }
-
                   const occupied = !!seat.assignedStudentName;
                   const attClass = seat.attendanceLabel ? (styles[ATT_STYLE_MAP[seat.attendanceLabel]] ?? '') : '';
                   return (
                     <div
-                      key={seat.id}
-                      className={`${styles.seatCell} ${occupied ? styles.seatOccupied : styles.seatEmpty} ${!placingMode ? styles.seatClickable : ''}`}
+                      key={seat.seatLabel}
+                      className={`${styles.seatCell} ${occupied ? styles.seatOccupied : styles.seatEmpty} ${styles.seatClickable}`}
                       style={{
                         position: 'absolute',
                         left: seat.xPos,
                         top: seat.yPos,
                       }}
                       onClick={(e) => {
-                        if (placingMode) return;
                         e.stopPropagation();
                         openSeatDetail(seat);
                       }}
@@ -1121,63 +953,6 @@ export default function SeatManagement() {
                   );
                 })}
 
-                {/* 편집 모드: 추가 예정 좌석 */}
-                {editingLayout && pendingAdds.map((add) => {
-                  const isDragging = draggingSeatId === add.tempId;
-                  return (
-                    <div
-                      key={add.tempId}
-                      className={`${styles.seatCell} ${styles.seatPendingAdd} ${styles.seatEditable} ${isDragging ? styles.seatDragging : ''}`}
-                      style={{
-                        position: 'absolute',
-                        left: add.xPos,
-                        top: add.yPos,
-                        opacity: isDragging ? 0.4 : 1,
-                      }}
-                      onMouseDown={(e) => {
-                        if (e.button === 0) handlePendingDragStart(e, add.tempId, add.xPos, add.yPos);
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        removePendingAdd(add.tempId);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <LuGripVertical className={styles.dragHandle} />
-                      <span className={styles.seatLabel}>{add.seatLabel}</span>
-                      <span className={styles.newLabel}>추가</span>
-                    </div>
-                  );
-                })}
-
-                {/* 고스트 프리뷰 */}
-                {ghostPos && (() => {
-                  if (editingLayout && draggingSeatId) {
-                    // 드래그 중 고스트
-                    return (
-                      <div
-                        className={styles.seatGhost}
-                        style={{ position: 'absolute', left: ghostPos.x, top: ghostPos.y }}
-                      >
-                        <LuGripVertical />
-                      </div>
-                    );
-                  }
-                  // 편집 모드 호버 또는 배치 모드 호버
-                  const isEditOccupied = editingLayout
-                    ? (seats.some((s) => s.active && !pendingDeletes.has(s.id) && getEditPos(s).x === ghostPos.x && getEditPos(s).y === ghostPos.y)
-                      || pendingAdds.some((a) => a.xPos === ghostPos.x && a.yPos === ghostPos.y))
-                    : isOccupiedCell(ghostPos.x, ghostPos.y);
-                  return (
-                    <div
-                      className={`${styles.seatGhost} ${isEditOccupied ? styles.seatGhostBlocked : ''}`}
-                      style={{ position: 'absolute', left: ghostPos.x, top: ghostPos.y }}
-                    >
-                      {isEditOccupied ? <LuX /> : <LuPlus />}
-                    </div>
-                  );
-                })()}
               </div>
             )}
           </div>
@@ -1386,74 +1161,16 @@ export default function SeatManagement() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>
-                {editMode ? '좌석 수정' : `좌석 ${selectedSeat.seatLabel}`}
+                좌석 {selectedSeat.seatLabel}
               </h3>
               <div className={styles.modalHeaderActions}>
-                {!editMode && (
-                  <>
-                    <button type="button" className={styles.deleteBtnSmall} onClick={handleDeleteSeat}>
-                      좌석 삭제
-                    </button>
-                    <button type="button" className={styles.editBtn} onClick={startEdit}>
-                      <LuPencil /> 수정
-                    </button>
-                  </>
-                )}
                 <button type="button" className={styles.modalCloseBtn} onClick={closeSeatDetail}>
                   <LuX />
                 </button>
               </div>
             </div>
 
-            {editMode ? (
-              <>
-                <div className={styles.modalBody}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>좌석 라벨</label>
-                    <input
-                      className={styles.formInput}
-                      value={editLabel}
-                      onChange={(e) => setEditLabel(e.target.value)}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>좌석 유형</label>
-                    <select
-                      className={styles.formSelect}
-                      value={editType}
-                      onChange={(e) => setEditType(e.target.value)}
-                    >
-                      <option value="INDIVIDUAL">개인석</option>
-                      <option value="GROUP">그룹석</option>
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.pickPositionBtn}
-                    onClick={() => {
-                      editSeatRef.current = selectedSeat;
-                      setPlacingMode('edit');
-                      setSelectedSeat(null);
-                    }}
-                  >
-                    <LuMapPin /> 배치도에서 위치 {editXPos && editYPos ? '다시 ' : ''}선택
-                  </button>
-                </div>
-                <div className={styles.modalFooter}>
-                  <button type="button" className={styles.resetButton} onClick={() => setEditMode(false)}>
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.searchButton}
-                    onClick={handleEditSeat}
-                    disabled={editLoading}
-                  >
-                    {editLoading ? '저장 중...' : '저장'}
-                  </button>
-                </div>
-              </>
-            ) : (
+            {(
               <>
                 <div className={styles.modalBody}>
                   <div className={styles.modalRow}>
@@ -1677,56 +1394,7 @@ export default function SeatManagement() {
           </div>
         </div>
       )}
-      {/* ── 편집 모드: 좌석 추가 모달 ── */}
-      {editAddPos && (
-        <div className={styles.modalOverlay} onClick={() => setEditAddPos(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>좌석 추가</h3>
-              <button type="button" className={styles.modalCloseBtn} onClick={() => setEditAddPos(null)}>
-                <LuX />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>좌석 라벨</label>
-                <input
-                  className={styles.formInput}
-                  value={editAddLabel}
-                  onChange={(e) => setEditAddLabel(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleEditAddConfirm(); }}
-                  placeholder="예: A-1"
-                  autoFocus
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>좌석 유형</label>
-                <select
-                  className={styles.formSelect}
-                  value={editAddType}
-                  onChange={(e) => setEditAddType(e.target.value)}
-                >
-                  <option value="INDIVIDUAL">개인석</option>
-                  <option value="GROUP">그룹석</option>
-                </select>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.resetButton} onClick={() => setEditAddPos(null)}>
-                취소
-              </button>
-              <button
-                type="button"
-                className={styles.searchButton}
-                onClick={handleEditAddConfirm}
-                disabled={!editAddLabel.trim()}
-              >
-                추가
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 편집 모드 좌석 추가 모달 제거 — DSA 기준 조회만 사용 */}
       {ConfirmDialog}
     </div>
   );

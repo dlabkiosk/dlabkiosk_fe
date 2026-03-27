@@ -42,17 +42,17 @@ html {
   --color-border-dark: #e0e0e0;
   --color-border-hover: #f3f3f3;
 
-  /* ── Font Size ── */
-  --font-3xs: 0.5rem;     /* 8px */
-  --font-2xs: 0.625rem;   /* 10px */
-  --font-xs: 0.75rem;     /* 12px */
-  --font-sm: 0.8125rem;   /* 13px */
-  --font-base: 0.875rem;  /* 14px */
-  --font-md: 0.9375rem;   /* 15px */
-  --font-lg: 1rem;        /* 16px */
-  --font-xl: 1.125rem;    /* 18px */
-  --font-2xl: 1.25rem;    /* 20px */
-  --font-3xl: 1.375rem;   /* 22px */
+  /* ── Font Size (글씨 크기만 스케일, 레이아웃 영향 없음) ── */
+  --font-3xs: calc(0.5rem * var(--a11y-font-scale, 1));     /* 8px */
+  --font-2xs: calc(0.625rem * var(--a11y-font-scale, 1));   /* 10px */
+  --font-xs: calc(0.75rem * var(--a11y-font-scale, 1));     /* 12px */
+  --font-sm: calc(0.8125rem * var(--a11y-font-scale, 1));   /* 13px */
+  --font-base: calc(0.875rem * var(--a11y-font-scale, 1));  /* 14px */
+  --font-md: calc(0.9375rem * var(--a11y-font-scale, 1));   /* 15px */
+  --font-lg: calc(1rem * var(--a11y-font-scale, 1));        /* 16px */
+  --font-xl: calc(1.125rem * var(--a11y-font-scale, 1));    /* 18px */
+  --font-2xl: calc(1.25rem * var(--a11y-font-scale, 1));    /* 20px */
+  --font-3xl: calc(1.375rem * var(--a11y-font-scale, 1));   /* 22px */
 
   /* Icon Size */
   --icon-sm: 1.5rem;      /* 24px */
@@ -99,6 +99,10 @@ html {
   /* ── Z-Index ── */
   --z-modal: 100;
   --z-modal-top: 200;
+
+  /* ── Accessibility ── */
+  --a11y-font-scale: 1;
+  --a11y-zoom: 1;
 }
 
 *, *::before, *::after {
@@ -116,6 +120,10 @@ html, body, #root {
   width: 100%;
 }
 
+#root {
+  zoom: var(--a11y-zoom, 1);
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-lg);
@@ -124,4 +132,15 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   user-select: none;
+}
+
+/* 화면확대 모드: 스크롤/터치 드래그 가능 */
+html.a11y-zoomed body {
+  overflow: auto;
+  touch-action: pan-x pan-y;
+}
+html.a11y-zoomed #root {
+  width: 100%;
+  min-height: 100vh;
+  overflow: visible;
 }

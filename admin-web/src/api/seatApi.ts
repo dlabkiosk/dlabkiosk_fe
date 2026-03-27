@@ -101,9 +101,9 @@ export interface PageResponse<T> {
 
 /* ── 좌석 CRUD API ── */
 
-/** 구역 목록 조회 */
-export function getSeatAreas(): Promise<SeatArea[]> {
-  return apiGet<SeatArea[]>('/api/v1/admin/seats/areas');
+/** 구역 목록 조회 (storeId 필수) */
+export function getSeatAreas(storeId: number): Promise<SeatArea[]> {
+  return apiGet<SeatArea[]>(`/api/v1/admin/seats/areas?storeId=${storeId}`);
 }
 
 /** 구역별 좌석 현황 조회 (areaCd 필수, storeId 선택) */

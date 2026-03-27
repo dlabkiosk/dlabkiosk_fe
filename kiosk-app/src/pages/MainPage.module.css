@@ -1,11 +1,12 @@
 .page {
-  max-width: 30rem;
+  width: 100vw;
+  height: 100vh;
+  max-width: calc(100vh * 9 / 16);
   margin: 0 auto;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: var(--space-10);
-  padding-bottom: var(--space-6);
+  padding-bottom: 3rem;
   background-color: var(--color-page-bg);
   overflow-y: auto;
 }

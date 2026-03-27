@@ -23,6 +23,7 @@ import { useCardScanner } from '../hooks/useCardScanner';
 import type { CardScanResult } from '../hooks/useCardScanner';
 import { useQrScanner } from '../hooks/useQrScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
+import AccessibilityBar from '../components/AccessibilityBar';
 import styles from './MainPage.module.css';
 
 interface MainPageProps {
@@ -285,6 +286,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       <QuickMenu onMenuClick={handleMenuClick} />
 
       <AdBanner />
+
+      <AccessibilityBar />
 
       {showNoCard && (
         <NoCardModal

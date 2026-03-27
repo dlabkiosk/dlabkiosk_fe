@@ -13,7 +13,7 @@ interface RankingSectionProps {
 type Tab = 'store' | 'all';
 
 const RANK_ICONS = [ranking1stIcon, ranking2ndIcon, ranking3rdIcon];
-const DEFAULT_COUNT = 3;
+const DEFAULT_COUNT = 5;
 const MODAL_COUNT = 10;
 
 export default function RankingSection({ storeName }: RankingSectionProps) {

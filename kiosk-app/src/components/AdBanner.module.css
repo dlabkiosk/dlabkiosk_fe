@@ -4,6 +4,7 @@
   overflow: hidden;
   position: relative;
   aspect-ratio: 16 / 9;
+  flex-shrink: 0;
   background: #000;
 }
 
