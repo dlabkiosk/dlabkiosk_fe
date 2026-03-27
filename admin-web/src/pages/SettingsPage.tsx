@@ -1803,6 +1803,10 @@ function StudentMessageSettings() {
   const [formContent, setFormContent] = useState('');
   const [formActive, setFormActive] = useState(true);
 
+  // 복수 학생 선택 (신규 등록용)
+  const [modalStudentIds, setModalStudentIds] = useState<number[]>([]);
+  const [modalStudentSearch, setModalStudentSearch] = useState('');
+
   // 메시지 템플릿
   const [msgTemplates, setMsgTemplates] = useState<MessageTemplate[]>([]);
 
@@ -1816,7 +1820,7 @@ function StudentMessageSettings() {
     getMessageTemplates().then(setMsgTemplates).catch(() => {});
   }, []);
 
-  // 학생 검색 필터
+  // 학생 검색 필터 (좌측 목록)
   const filteredStudents = useMemo(() => {
     if (!studentSearch.trim()) return students;
     const q = studentSearch.trim().toLowerCase();
@@ -1824,6 +1828,15 @@ function StudentMessageSettings() {
       (s) => (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q)
     );
   }, [students, studentSearch]);
+
+  // 모달 내 학생 검색 필터
+  const modalFilteredStudents = useMemo(() => {
+    if (!modalStudentSearch.trim()) return students;
+    const q = modalStudentSearch.trim().toLowerCase();
+    return students.filter(
+      (s) => (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q)
+    );
+  }, [students, modalStudentSearch]);
 
   // 선택된 학생의 메시지 로드
   const fetchMessages = useCallback(async (studentId: number) => {
@@ -1849,10 +1862,14 @@ function StudentMessageSettings() {
     setFormContent('');
     setFormActive(true);
     setEditTarget(null);
+    setModalStudentIds([]);
+    setModalStudentSearch('');
   };
 
   const openAdd = () => {
     resetForm();
+    // 현재 선택된 학생이 있으면 미리 체크
+    if (selectedStudentId) setModalStudentIds([selectedStudentId]);
     setShowModal(true);
   };
 
@@ -1868,8 +1885,24 @@ function StudentMessageSettings() {
     resetForm();
   };
 
+  const toggleModalStudent = (id: number) => {
+    setModalStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllModalStudents = () => {
+    const visibleIds = modalFilteredStudents.map((s) => s.id);
+    const allSelected = visibleIds.every((id) => modalStudentIds.includes(id));
+    if (allSelected) {
+      setModalStudentIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setModalStudentIds((prev) => [...new Set([...prev, ...visibleIds])]);
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!formContent.trim() || !selectedStudentId) return;
+    if (!formContent.trim()) return;
     try {
       if (editTarget) {
         await updateStudentMessage(editTarget.id, {
@@ -1877,13 +1910,14 @@ function StudentMessageSettings() {
           active: formActive,
         });
       } else {
+        if (modalStudentIds.length === 0) return;
         await createStudentMessage({
-          studentId: selectedStudentId,
+          studentIds: modalStudentIds,
           content: formContent.trim(),
         });
       }
       closeModal();
-      await fetchMessages(selectedStudentId);
+      if (selectedStudentId) await fetchMessages(selectedStudentId);
     } catch {
       await alert('저장에 실패했습니다.');
     }
@@ -1916,6 +1950,7 @@ function StudentMessageSettings() {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h3 className={styles.sectionTitle}>학생 개인 메시지 관리</h3>
+          <button type="button" className={styles.addBtn} onClick={openAdd}>+ 메시지 추가</button>
         </div>
         <div className={styles.sectionBody}>
           {/* 학생 선택 영역 */}
@@ -1958,7 +1993,6 @@ function StudentMessageSettings() {
                     <span className={styles.msgContentTitle}>
                       {selectedStudent?.name} ({selectedStudent?.studentNumber})
                     </span>
-                    <button type="button" className={styles.addBtn} onClick={openAdd}>+ 메시지 추가</button>
                   </div>
 
                   {msgLoading ? (
@@ -2021,6 +2055,42 @@ function StudentMessageSettings() {
             <h3 className={styles.modalTitle}>{editTarget ? '메시지 수정' : '메시지 추가'}</h3>
 
             <div className={styles.modalForm}>
+              {/* 복수 학생 선택 (신규 등록 시) */}
+              {!editTarget && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    대상 학생 ({modalStudentIds.length}명 선택)
+                  </label>
+                  <input
+                    className={styles.formInput}
+                    placeholder="이름 또는 학번으로 검색"
+                    value={modalStudentSearch}
+                    onChange={(e) => setModalStudentSearch(e.target.value)}
+                  />
+                  <div className={styles.modalStudentPicker}>
+                    <label className={styles.modalStudentCheckAll}>
+                      <input
+                        type="checkbox"
+                        checked={modalFilteredStudents.length > 0 && modalFilteredStudents.every((s) => modalStudentIds.includes(s.id))}
+                        onChange={toggleAllModalStudents}
+                      />
+                      전체 선택
+                    </label>
+                    {modalFilteredStudents.map((s) => (
+                      <label key={s.id} className={styles.modalStudentCheckItem}>
+                        <input
+                          type="checkbox"
+                          checked={modalStudentIds.includes(s.id)}
+                          onChange={() => toggleModalStudent(s.id)}
+                        />
+                        <span>{s.name}</span>
+                        <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {!editTarget && msgTemplates.length > 0 && (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>템플릿 선택</label>
@@ -2066,8 +2136,13 @@ function StudentMessageSettings() {
               )}
 
               <div className={styles.modalActions}>
-                <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
-                  {editTarget ? '수정' : '등록'}
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  onClick={handleSubmit}
+                  disabled={!formContent.trim() || (!editTarget && modalStudentIds.length === 0)}
+                >
+                  {editTarget ? '수정' : `${modalStudentIds.length}명에게 등록`}
                 </button>
                 <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
               </div>

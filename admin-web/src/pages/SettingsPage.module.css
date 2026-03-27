@@ -771,6 +771,50 @@
   font-size: var(--font-size-xs);
 }
 
+/* ── 모달 내 복수 학생 선택 ── */
+.modalStudentPicker {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.modalStudentCheckAll {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-page);
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+}
+
+.modalStudentCheckItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.modalStudentCheckItem:hover {
+  background-color: var(--color-bg-page);
+}
+
+.modalStudentCheckItem:last-child {
+  border-bottom: none;
+}
+
 .msgContent {
   flex: 1;
   min-width: 0;

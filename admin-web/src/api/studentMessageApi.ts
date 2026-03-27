@@ -12,7 +12,7 @@ export interface StudentMessage {
 }
 
 export interface StudentMessageCreateBody {
-  studentId: number;
+  studentIds: number[];
   content: string;
 }
 
@@ -28,9 +28,9 @@ export function getStudentMessages(studentId: number): Promise<StudentMessage[]>
   return apiGet<StudentMessage[]>(`/api/v1/admin/student-messages?studentId=${studentId}`);
 }
 
-/** 학생 메시지 등록 */
-export function createStudentMessage(body: StudentMessageCreateBody): Promise<StudentMessage> {
-  return apiPost<StudentMessage>('/api/v1/admin/student-messages', body as unknown as Record<string, unknown>);
+/** 학생 메시지 등록 (복수 학생 지원) */
+export function createStudentMessage(body: StudentMessageCreateBody): Promise<StudentMessage[]> {
+  return apiPost<StudentMessage[]>('/api/v1/admin/student-messages', body as unknown as Record<string, unknown>);
 }
 
 /** 학생 메시지 수정 */
