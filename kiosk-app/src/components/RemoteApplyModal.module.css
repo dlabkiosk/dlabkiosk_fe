@@ -12,7 +12,7 @@
   position: relative;
   background: var(--color-bg-white);
   border-radius: var(--radius-sm);
-  padding: var(--space-8) var(--space-6) var(--space-7);
+  padding: var(--space-8) var(--space-10) var(--space-7);
   width: 75vw;
 }
 
@@ -34,18 +34,18 @@
 
 .title {
   font-size: var(--font-2xl);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   color: var(--color-text);
   text-align: center;
   margin-top: var(--space-10);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-5);
 }
 
 .subtitle {
   font-size: var(--font-base);
   color: var(--color-text-hint);
   text-align: center;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-10);
 }
 
 .grid {
@@ -60,7 +60,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-5) var(--space-3);
+  padding: var(--space-10) var(--space-3);
   background: var(--color-bg-white);
   border: 3px solid var(--color-border-hover);
   border-radius: var(--radius-xs);
@@ -73,8 +73,8 @@
 }
 
 .actionIcon {
-  width: 1.3rem;
-  height: 1.3rem;
+  width:2.5rem;
+  height: 2.5rem;
   object-fit: contain;
 }
 

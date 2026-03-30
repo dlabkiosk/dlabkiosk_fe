@@ -77,41 +77,69 @@ interface WeeklyMealModalProps {
 
 export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalProps) {
   const today = new Date();
-  const monday = getMonday(today);
+  const thisMonday = getMonday(today);
+
+  // 0 = 이번주, 1 = 다음주
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const monday = addDays(thisMonday, weekOffset * 7);
   const sunday = addDays(monday, 6);
 
   const [meals, setMeals] = useState<WeekMeals>(emptyWeek);
   const [loading, setLoading] = useState(true);
 
-  const fetchMeals = useCallback(async () => {
+  const fetchMeals = useCallback(async (mon: Date) => {
+    setLoading(true);
     try {
-      const res = await getMealMenuWeek(toISODate(monday), storeId);
-      setMeals(apiToWeekMeals(res.days, monday));
+      const res = await getMealMenuWeek(toISODate(mon), storeId);
+      setMeals(apiToWeekMeals(res.days, mon));
     } catch (err) {
       console.error('[식단표 조회 실패]', err);
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [storeId]);
 
   useEffect(() => {
-    fetchMeals();
-  }, [fetchMeals]);
+    fetchMeals(monday);
+  }, [weekOffset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
+          &#x2715;
+        </button>
+
         {/* 헤더 */}
         <div className={styles.header}>
           <h2 className={styles.title}>주간 식단표</h2>
-          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
-            ✕
-          </button>
         </div>
 
         {/* 주간 범위 */}
         <div className={styles.weekRange}>
-          {formatDate(monday)} ~ {formatDate(sunday)}
+          <button
+            type="button"
+            className={styles.weekArrow}
+            onClick={() => setWeekOffset(0)}
+            disabled={weekOffset === 0}
+            aria-label="이전 주"
+          >
+            &#x25C0;
+          </button>
+          <span className={styles.weekLabel}>
+            {formatDate(monday)} ~ {formatDate(sunday)}
+            {/* {weekOffset === 0 ? ' (이번주)' : ' (다음주)'} */}
+          </span>
+          <button
+            type="button"
+            className={styles.weekArrow}
+            onClick={() => setWeekOffset(1)}
+            disabled={weekOffset === 1}
+            aria-label="다음 주"
+          >
+            &#x25B6;
+          </button>
         </div>
 
         {/* 테이블 */}
@@ -123,7 +151,7 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
               <thead>
                 <tr>
                   <th></th>
-                  <th>점심</th>
+                  <th>중식</th>
                   <th>석식</th>
                 </tr>
               </thead>

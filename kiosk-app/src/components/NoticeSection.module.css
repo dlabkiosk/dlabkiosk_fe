@@ -1,7 +1,7 @@
 .container {
   background: var(--color-bg-white);
-  border-radius: var(--radius-xs);
-  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  padding: var(--space-8) var(--space-9);
   flex: 1;
   min-width: 0;
   border: 1px solid var(--color-border);
@@ -17,35 +17,36 @@
 }
 
 .title {
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 
 .moreButton {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: var(--radius-full);
   border: none;
   background: #555555;
-  font-size: 0.75rem;
+  font-size: var(--font-sm);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  padding: 0;
 }
 
 .list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1h);
+  gap: var(--space-2h);
 }
 
 .item {
-  font-size: var(--font-xs);
+  font-size: var(--font-2xs);
   color: var(--color-text-secondary);
   line-height: 1.5;
   padding-left: var(--space-3);
@@ -96,12 +97,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-6) var(--space-7);
   border-bottom: 1px solid var(--color-border);
 }
 
 .modalTitle {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--weight-bold);
   color: var(--color-text);
   flex: 1;
@@ -128,7 +129,7 @@
 }
 
 .modalBody {
-  padding: var(--space-3) var(--space-5) var(--space-5);
+  padding: var(--space-5) var(--space-7) var(--space-7);
   overflow-y: auto;
 }
 
@@ -137,6 +138,76 @@
   color: var(--color-text-hint);
   text-align: center;
   padding: var(--space-4) 0;
+}
+
+/* ── 필터 ── */
+
+.filterRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3);
+}
+
+.filterWrapper {
+  position: relative;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1h) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  font-size: var(--font-2xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-white);
+  cursor: pointer;
+}
+
+.filterArrow {
+  font-size: 0.5rem;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.filterArrowOpen {
+  transform: rotate(180deg);
+}
+
+.filterDropdown {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  min-width: 100%;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.filterOption {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: none;
+  font-size: var(--font-2xs);
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filterOption:hover {
+  background: var(--color-bg-section);
+}
+
+.filterOptionActive {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
 }
 
 /* ── 리스트 모달 ── */
@@ -160,13 +231,18 @@
   display: none;
 }
 
+.modalListItem:nth-child(even) .modalItem {
+  background: var(--color-bg-section, #f7f8fa);
+  border-radius: var(--radius-xs);
+}
+
 .modalItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-3);
   border: none;
   background: none;
   cursor: pointer;
@@ -252,4 +328,24 @@
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.detailFooter {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+.backToListButton {
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: none;
+  font-size: var(--font-2xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.backToListButton:hover {
+  background: var(--color-bg-section, #f7f8fa);
 }

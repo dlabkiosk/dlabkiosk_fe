@@ -3,80 +3,60 @@ import type { Student } from '../data/mockStudents';
 import MealCalendarModal from './MealCalendarModal';
 import styles from './StudentInfoModal.module.css';
 
-/** 급식 신청 내역 */
-interface MealRecord {
-  date: string;
-  lunch: '○' | '✕';
-  dinner: '○' | '✕';
-}
-
-/** 수납 내역 */
-interface PaymentRecord {
-  date: string;
-  description: string;
-  amount: string;
-  category: string;
-}
-
-/** 출결 특이 사항 */
-interface AttendanceNote {
-  date: string;
-  type: string;
-  time: string;
-  reason: string;
-}
-
-/** 비대면 신청 사항 */
-interface RemoteApplyRecord {
-  date: string;
-  type: string;
-  timeOrDate: string;
-  status: string;
-}
-
-/** 상벌점 정보 */
-interface MeritRecord {
-  date: string;
-  type: string;
-  item: string;
-  point: string;
-}
-
-// 목 데이터
-const MOCK_MEALS: MealRecord[] = [
-  { date: '2026-03-04', lunch: '○', dinner: '✕' },
-];
-
-const MOCK_PAYMENTS: PaymentRecord[] = [
-  { date: '2026-03-07', description: '2026 교습비', amount: '350,000원', category: '교습비' },
-  { date: '2026-03-04', description: '3월 독서실 이용료', amount: '120,000원', category: '독서실비' },
-  { date: '2026-03-03', description: '3월 급식비', amount: '90,000원', category: '급식비' },
-];
-
-const MOCK_ATTENDANCE_NOTES: AttendanceNote[] = [
-  { date: '2026-03-07', type: '지각', time: '09:12', reason: '교통 지연' },
-  { date: '2026-03-05', type: '외출', time: '14:20', reason: '병원' },
-  { date: '2026-03-04', type: '조퇴', time: '18:30', reason: '개인 사정' },
-];
-
-const MOCK_REMOTE_APPLIES: RemoteApplyRecord[] = [
-  { date: '2026-03-07', type: '외출', timeOrDate: '14:00', status: '승인' },
-  { date: '2026-03-05', type: '조퇴', timeOrDate: '16:00', status: '승인' },
-  { date: '2026-03-04', type: '결석', timeOrDate: '03/06', status: '대기' },
-];
-
-const MOCK_MERITS: MeritRecord[] = [
-  { date: '2026-03-07', type: '벌점', item: '지각', point: '-1'},
-  { date: '2026-03-05', type: '상점', item: '주말 등원', point: '+1'},
-];
-
 interface StudentInfoModalProps {
   student: Student;
   onClose: () => void;
 }
 
+/** 비대면 신청 구분에 따른 뱃지 스타일 */
+function getSubmissionTypeBadge(type: string) {
+  switch (type) {
+    case '외출': return styles.typeBadgeOuting;
+    case '지각': return styles.typeBadgeLate;
+    case '조퇴': return styles.typeBadgeEarly;
+    case '결석': return styles.typeBadgeAbsence;
+    default: return styles.typeBadgeOuting;
+  }
+}
+
+/** 상태에 따른 뱃지 스타일 */
+function getStatusBadge(status: string) {
+  if (status === 'APPROVED' || status === '승인') return styles.statusApproved;
+  if (status === 'PENDING' || status === '대기') return styles.statusPending;
+  if (status === 'REJECTED' || status === '거절') return styles.statusRejected;
+  return styles.statusPending;
+}
+
+/** 상태 라벨 */
+function getStatusLabel(status: string) {
+  if (status === 'APPROVED') return '승인';
+  if (status === 'PENDING') return '대기';
+  if (status === 'REJECTED') return '거절';
+  return status;
+}
+
+/** 시간 포맷 (ISO → HH:mm) */
+function formatTime(iso: string) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** 날짜 포맷 (yyyy-mm-dd → yyyy-mm-dd 유지 또는 ISO → yyyy-mm-dd) */
+function formatDate(date: string) {
+  if (!date) return '-';
+  return date.slice(0, 10);
+}
+
 export default function StudentInfoModal({ student, onClose }: StudentInfoModalProps) {
   const [showMealCalendar, setShowMealCalendar] = useState(false);
+
+  const meals = student.mealApplications ?? [];
+  const receipts = student.receipts ?? [];
+  const attendance = student.attendanceSummary;
+  const phoneSubmissions = student.phoneSubmissions ?? [];
+  const points = student.points ?? [];
 
   if (showMealCalendar) {
     return (
@@ -96,7 +76,6 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
           <button type="button" className={styles.backButton} onClick={onClose} aria-label="닫기">
             ←
           </button>
-          <span className={styles.headerTitle}>D'Lab</span>
         </div>
 
         {/* 학생 정보 카드 */}
@@ -106,7 +85,10 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
           </div>
           <div className={styles.studentInfo}>
             <p className={styles.studentName}>{student.name}</p>
-            <p className={styles.studentMeta}>좌석: {student.assignedSeatLabel} | 학번: {student.studentNumber}</p>
+            <div className={styles.badgeRow}>
+              <span className={styles.badge}>좌석 {student.assignedSeatLabel}</span>
+              <span className={styles.badge}>학번 {student.studentNumber}</span>
+            </div>
           </div>
         </div>
 
@@ -116,7 +98,7 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h3 className={styles.sectionTitle}>
-                급식 신청 내역 <span className={styles.sectionSub}>(당일 급식 신청 여부)</span>
+                급식 신청 내역 <span className={styles.sectionSub}>(당월 급식 신청 여부)</span>
               </h3>
               <button
                 type="button"
@@ -131,128 +113,174 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
               <thead>
                 <tr>
                   <th></th>
-                  <th>일자</th>
-                  <th>점심 급식</th>
-                  <th>저녁 급식</th>
+                  <th>요일</th>
+                  <th>식사 구분</th>
                 </tr>
               </thead>
               <tbody>
-                {MOCK_MEALS.map((row, i) => (
+                {meals.length > 0 ? meals.map((row, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
-                    <td>{row.date}</td>
-                    <td>{row.lunch}</td>
-                    <td>{row.dinner}</td>
+                    <td>{row.day}</td>
+                    <td>{row.mealType}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={3} className={styles.emptyRow}>내역이 없습니다</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>
 
           {/* 수납 내역 */}
           <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>수납 내역 <span className={styles.sectionSub}>(당일 납부 내역)</span></h3>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>수납내역</h3>
+              <button type="button" className={styles.expandButton} aria-label="수납 상세 보기">+</button>
+            </div>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th></th>
-                  <th>일자</th>
-                  <th>내역</th>
-                  <th>금액</th>
-                  <th>구분</th>
+                  <th>항목</th>
+                  <th>공급가</th>
+                  <th>수납액</th>
+                  <th>미수금</th>
                 </tr>
               </thead>
               <tbody>
-                {MOCK_PAYMENTS.map((row, i) => (
+                {receipts.length > 0 ? receipts.map((row, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
-                    <td>{row.date}</td>
-                    <td>{row.description}</td>
-                    <td>{row.amount}</td>
-                    <td>{row.category}</td>
+                    <td>{row.receiptName}</td>
+                    <td>{row.suppliedAmount}</td>
+                    <td>{row.receivedAmount}</td>
+                    <td>{row.unpaidAmount}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className={styles.emptyRow}>내역이 없습니다</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>
 
-          {/* 출결 특이 사항 */}
+          {/* 출결 사항 */}
           <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>출결 특이 사항</h3>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>일자</th>
-                  <th>구분</th>
-                  <th>시간</th>
-                  <th>사유</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_ATTENDANCE_NOTES.map((row, i) => (
-                  <tr key={i}>
-                    <td>{i + 1}</td>
-                    <td>{row.date}</td>
-                    <td>{row.type}</td>
-                    <td>{row.time}</td>
-                    <td>{row.reason}</td>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>출결사항</h3>
+              <button type="button" className={styles.expandButton} aria-label="출결 상세 보기">+</button>
+            </div>
+            {attendance ? (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>결석</th>
+                    <th>조퇴</th>
+                    <th>외출</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-
-          {/* 비대면 신청 사항 */}
-          <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>비대면 신청 사항 <span className={styles.sectionSub}>(문의는 데스크로 오세요.)</span></h3>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>일자</th>
-                  <th>구분</th>
-                  <th>시간/날짜</th>
-                  <th>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_REMOTE_APPLIES.map((row, i) => (
-                  <tr key={i}>
-                    <td>{i + 1}</td>
-                    <td>{row.date}</td>
-                    <td>{row.type}</td>
-                    <td>{row.timeOrDate}</td>
-                    <td>{row.status}</td>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      {attendance.absenceCount > 0 ? (
+                        <span className={`${styles.typeBadge} ${styles.typeBadgeAbsence}`}>{attendance.absenceCount}회</span>
+                      ) : '0회'}
+                    </td>
+                    <td>
+                      {attendance.earlyLeaveCount > 0 ? (
+                        <span className={`${styles.typeBadge} ${styles.typeBadgeEarly}`}>{attendance.earlyLeaveCount}회</span>
+                      ) : '0회'}
+                    </td>
+                    <td>
+                      {attendance.outingCount > 0 ? (
+                        <span className={`${styles.typeBadge} ${styles.typeBadgeOuting}`}>{attendance.outingCount}회</span>
+                      ) : '0회'}
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            ) : (
+              <p className={styles.emptyText}>내역이 없습니다</p>
+            )}
           </section>
 
           {/* 상벌점 정보 */}
           <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>상벌점 정보</h3>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>
+                상·벌점 정보 <span className={styles.sectionSub}>(당월 누적 정보)</span>
+              </h3>
+            </div>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th></th>
                   <th>일자</th>
-                  <th>구분</th>
-                  <th>항목</th>
+                  <th>사유</th>
                   <th>점수</th>
                 </tr>
               </thead>
               <tbody>
-                {MOCK_MERITS.map((row, i) => (
+                {points.length > 0 ? points.map((row, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
-                    <td>{row.date}</td>
-                    <td>{row.type}</td>
-                    <td>{row.item}</td>
-                    <td>{row.point}</td>
+                    <td>{formatDate(row.pointDate)}</td>
+                    <td>{row.reason}</td>
+                    <td>
+                      <span className={row.point >= 0 ? styles.pointPositive : styles.pointNegative}>
+                        {row.point > 0 ? `+${row.point}` : row.point}
+                      </span>
+                    </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} className={styles.emptyRow}>내역이 없습니다</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+
+          {/* 비대면 신청 현황 */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>비대면 신청 현황</h3>
+            </div>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>일자</th>
+                  <th>신청시간</th>
+                  <th>구분</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {phoneSubmissions.length > 0 ? phoneSubmissions.map((row, i) => (
+                  <tr key={i}>
+                    <td>{i + 1}</td>
+                    <td>{formatDate(row.startDate)}</td>
+                    <td>{formatTime(row.submittedAt)}</td>
+                    <td>
+                      <span className={`${styles.typeBadge} ${getSubmissionTypeBadge(row.submissionType)}`}>
+                        {row.submissionType}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${getStatusBadge(row.memo)}`}>
+                        {getStatusLabel(row.memo) || '-'}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className={styles.emptyRow}>내역이 없습니다</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>

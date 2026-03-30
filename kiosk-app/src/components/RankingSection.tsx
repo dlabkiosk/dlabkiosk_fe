@@ -83,9 +83,7 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
           </li>
         ))
       ) : (
-        <li className={styles.rankItem}>
-          <span className={styles.rankName}>데이터 없음</span>
-        </li>
+        <li className={styles.emptyItem}>랭킹 정보를 준비중입니다</li>
       )}
     </ul>
   );
@@ -108,9 +106,7 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
           </li>
         ))
       ) : (
-        <li className={styles.rankItem}>
-          <span className={styles.rankName}>데이터 없음</span>
-        </li>
+        <li className={styles.emptyItem}>랭킹 정보를 준비중입니다</li>
       )}
     </ul>
   );
@@ -143,7 +139,7 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
             className={`${styles.tab} ${tab === 'all' ? styles.tabActive : ''}`}
             onClick={() => handleTabChange('all')}
           >
-            전지점
+            전체 지점
           </button>
         </div>
 
@@ -185,7 +181,7 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
                 className={`${styles.tab} ${modalTab === 'all' ? styles.tabActive : ''}`}
                 onClick={() => handleModalTabChange('all')}
               >
-                전지점
+                전체 지점
               </button>
             </div>
 

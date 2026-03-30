@@ -200,10 +200,10 @@
   background: transparent;
 }
 
-.keypadEmpty {
-  border: none;
+.keypadClear {
+  color: var(--color-text-muted);
+  font-size: var(--font-xl);
   background: transparent;
-  cursor: default;
 }
 
 /* 입력 완료 버튼 */
@@ -258,8 +258,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.8rem;
+  height: 2.8rem;
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-bg-white);

@@ -2,6 +2,11 @@ import { apiGet } from './client';
 
 export interface SeatChangeRequest {
   id: number;
+  studentId: number;
+  studentName: string;
+  studentNumber: string;
+  storeId: number;
+  storeName: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   currentSeatLabel: string;
   desiredSeat1Label: string;
@@ -12,13 +17,69 @@ export interface SeatChangeRequest {
   processedAt: string | null;
 }
 
+export interface PhoneSubmission {
+  id: number;
+  studentId: number;
+  studentName: string;
+  studentNumber: string;
+  className: string;
+  seatLabel: string;
+  submissionType: string;
+  phoneLast4: string;
+  parentPhoneNumber: string;
+  startDate: string;
+  endDate: string;
+  memo: string;
+  submittedAt: string;
+}
+
+export interface SeatLeave {
+  id: number;
+  studentId: number;
+  studentName: string;
+  seatLabel: string;
+  reasonName: string;
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export interface MealApplication {
+  day: string;
+  mealType: string;
+}
+
+export interface Receipt {
+  receiptName: string;
+  suppliedAmount: string;
+  receivedAmount: string;
+  unpaidAmount: string;
+}
+
+export interface AttendanceSummary {
+  absenceCount: number;
+  earlyLeaveCount: number;
+  outingCount: number;
+}
+
+export interface PointRecord {
+  pointDate: string;
+  reason: string;
+  point: number;
+}
+
 export interface StudentSearchResult {
   id: number;
   name: string;
   studentNumber: string;
   phoneLast4: string;
   assignedSeatLabel: string;
-  seatChangeRequest: SeatChangeRequest | null;
+  phoneSubmissions: PhoneSubmission[];
+  seatChangeRequests: SeatChangeRequest[];
+  seatLeaves: SeatLeave[];
+  mealApplications: MealApplication[];
+  receipts: Receipt[];
+  attendanceSummary: AttendanceSummary | null;
+  points: PointRecord[];
 }
 
 /**

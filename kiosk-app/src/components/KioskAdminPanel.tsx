@@ -52,19 +52,14 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
     }
   };
 
-  const KEYPAD_ROWS = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['clear', '0', 'backspace'],
-  ];
+  const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'];
 
   if (!authenticated) {
     return (
       <div className={styles.overlay}>
         <div className={styles.panel}>
           <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
-            ✕
+            &#x2715;
           </button>
 
           <h2 className={styles.authTitle}>관리자 인증</h2>
@@ -83,20 +78,17 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
             <p className={styles.passwordError}>비밀번호가 일치하지 않습니다</p>
           )}
 
-          <div className={styles.keypad}>
-            {KEYPAD_ROWS.map((row, rowIdx) => (
-              <div key={rowIdx} className={styles.keypadRow}>
-                {row.map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`${styles.keypadButton} ${key === 'clear' || key === 'backspace' ? styles.keypadSpecial : ''}`}
-                    onClick={() => handleKeyPress(key)}
-                  >
-                    {key === 'backspace' ? '⌫' : key === 'clear' ? '−' : key}
-                  </button>
-                ))}
-              </div>
+          <div className={styles.keypadGrid}>
+            {KEYPAD_KEYS.map((key, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`${styles.keypadKey} ${key === 'backspace' ? styles.keypadBackspace : ''} ${key === 'clear' ? styles.keypadClear : ''}`}
+                onClick={() => handleKeyPress(key)}
+                aria-label={key === 'backspace' ? '지우기' : key === 'clear' ? '전체 삭제' : key}
+              >
+                {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+              </button>
             ))}
           </div>
 

@@ -1,7 +1,7 @@
 .container {
   background: var(--color-bg-white);
   border-radius: var(--radius-xs);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-8) var(--space-9);
   flex: 1;
   min-width: 0;
   border: 1px solid var(--color-border);
@@ -17,24 +17,25 @@
 }
 
 .title {
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 
 .moreButton {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: var(--radius-full);
   border: none;
-  background: var(--color-text-dday);
-  font-size: 0.75rem;
+  background: #555555;
+  font-size: var(--font-sm);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  padding: 0;
 }
 
 /* 탭 */
@@ -60,7 +61,6 @@
   background: var(--color-top-section-bg);
   color: var(--color-text-secondary);
   font-weight: var(--weight-semibold);
-  /* border-color: var(--color-text); */
 }
 
 /* 4위 이하 순위 번호 */
@@ -78,7 +78,7 @@
 
 /* 전지점 - 지점명 (이름 옆 인라인) */
 .rankStore {
-  font-size: var(--font-2xs);
+  font-size: var(--font-3xs);
   color: var(--color-text-hint);
   white-space: nowrap;
   margin-left: var(--space-1);
@@ -88,7 +88,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .rankItem {
@@ -108,7 +108,8 @@
 }
 
 .rankName {
-  font-size: var(--font-xs);
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
   flex: 1;
 }
@@ -118,6 +119,13 @@
   color: var(--color-text-hint);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
+}
+
+.emptyItem {
+  font-size: var(--font-2xs);
+  color: var(--color-text-hint);
+  text-align: center;
+  padding: var(--space-4) 0;
 }
 
 .loading {
@@ -152,12 +160,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-6) var(--space-7);
   border-bottom: 1px solid var(--color-border);
 }
 
 .modalTitle {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--weight-bold);
   color: var(--color-text);
 }
@@ -173,11 +181,16 @@
 }
 
 .modalBody {
-  padding: var(--space-3) var(--space-5) var(--space-5);
+  padding: var(--space-5) var(--space-14) var(--space-7);
   overflow-y: auto;
 }
 
 .modal .tabs {
-  padding: var(--space-3) var(--space-5) 0;
+  padding: var(--space-3) var(--space-7) 0;
   margin-bottom: 0;
+}
+
+.modal .tab {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-xs);
 }

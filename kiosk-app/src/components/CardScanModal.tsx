@@ -18,8 +18,8 @@ const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 3000;
 const PENDING_ACTION_DISPLAY_MS = 10000;
 const ERROR_DISPLAY_MS = 2000;
-const SEAT_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'] as const;
-const PHONE_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'] as const;
+const SEAT_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
+const PHONE_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
 
 type KeypadMode = 'seatLabel' | 'phoneLast4' | 'phone';
 
@@ -157,12 +157,19 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     showSuccess({ name: student.name, studentId: student.id });
   }, [onStudentFound, showSuccess]);
 
-  const toStudent = (data: { id: number; name: string; studentNumber: string; assignedSeatLabel: string }, identifier: string): Student => ({
+  const toStudent = (data: import('../api/studentApi').StudentSearchResult, identifier: string): Student => ({
     id: data.id,
     name: data.name,
     studentNumber: data.studentNumber,
     assignedSeatLabel: data.assignedSeatLabel,
     identifier,
+    phoneSubmissions: data.phoneSubmissions,
+    seatChangeRequests: data.seatChangeRequests,
+    seatLeaves: data.seatLeaves,
+    mealApplications: data.mealApplications,
+    receipts: data.receipts,
+    attendanceSummary: data.attendanceSummary,
+    points: data.points,
   });
 
   // 카드/QR 인식 → identifier로 조회
@@ -307,6 +314,10 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
   const handleKeypadPress = useCallback((key: string) => {
     if (key === 'backspace') {
       setInputValue((prev) => prev.slice(0, -1));
+      return;
+    }
+    if (key === 'clear') {
+      setInputValue('');
       return;
     }
     if (key === '') return;
@@ -495,12 +506,11 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
                 <button
                   key={idx}
                   type="button"
-                  className={`${styles.keypadKey} ${key === 'backspace' ? styles.keypadBackspace : ''} ${key === '' ? styles.keypadEmpty : ''}`}
+                  className={`${styles.keypadKey} ${key === 'backspace' ? styles.keypadBackspace : ''} ${key === 'clear' ? styles.keypadClear : ''}`}
                   onClick={() => handleKeypadPress(key)}
-                  disabled={key === ''}
-                  aria-label={key === 'backspace' ? '지우기' : key}
+                  aria-label={key === 'backspace' ? '지우기' : key === 'clear' ? '전체 삭제' : key}
                 >
-                  {key === 'backspace' ? '⌫' : key}
+                  {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
                 </button>
               ))}
             </div>

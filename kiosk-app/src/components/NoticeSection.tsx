@@ -13,6 +13,8 @@ export default function NoticeSection() {
   const [showList, setShowList] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<'all' | 'pinned' | 'normal'>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +30,24 @@ export default function NoticeSection() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const filteredNotices = notices.filter((n) => {
+    if (filter === 'pinned') return n.pinned;
+    if (filter === 'normal') return !n.pinned;
+    return true;
+  });
+
+  const FILTER_LABELS: Record<'all' | 'pinned' | 'normal', string> = {
+    all: '전체',
+    pinned: '고정 공지',
+    normal: '일반 공지',
+  };
+
+  const handleFilterChange = (value: 'all' | 'pinned' | 'normal') => {
+    setFilter(value);
+    setFilterOpen(false);
+    setPage(0);
+  };
 
   const handleNoticeClick = (notice: Notice) => {
     setSelectedNotice(notice);
@@ -52,7 +72,7 @@ export default function NoticeSection() {
           type="button"
           className={styles.moreButton}
           aria-label="공지사항 더보기"
-          onClick={() => { setPage(0); setShowList(true); }}
+          onClick={() => { setPage(0); setFilter('all'); setFilterOpen(false); setShowList(true); }}
         >
           +
         </button>
@@ -88,11 +108,39 @@ export default function NoticeSection() {
               </button>
             </div>
             <div className={styles.modalBody}>
-              {notices.length === 0 ? (
-                <p className={styles.emptyText}>등록된 공지가 없습니다.</p>
+              <div className={styles.filterRow}>
+                <div className={styles.filterWrapper}>
+                  <button
+                    type="button"
+                    className={styles.filterButton}
+                    onClick={() => setFilterOpen((v) => !v)}
+                  >
+                    {FILTER_LABELS[filter]}
+                    <span className={`${styles.filterArrow} ${filterOpen ? styles.filterArrowOpen : ''}`}>
+                      &#x25BC;
+                    </span>
+                  </button>
+                  {filterOpen && (
+                    <div className={styles.filterDropdown}>
+                      {(['all', 'pinned', 'normal'] as const).map((key) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`${styles.filterOption} ${filter === key ? styles.filterOptionActive : ''}`}
+                          onClick={() => handleFilterChange(key)}
+                        >
+                          {FILTER_LABELS[key]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {filteredNotices.length === 0 ? (
+                <p className={styles.emptyText}>해당하는 공지가 없습니다.</p>
               ) : (
                 <ul className={styles.modalList}>
-                  {notices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((notice) => (
+                  {filteredNotices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((notice) => (
                     <li key={notice.id} className={styles.modalListItem}>
                       <button
                         type="button"
@@ -109,7 +157,7 @@ export default function NoticeSection() {
                   ))}
                 </ul>
               )}
-              {notices.length > PAGE_SIZE && (
+              {filteredNotices.length > PAGE_SIZE && (
                 <div className={styles.pagination}>
                   <button
                     type="button"
@@ -120,12 +168,12 @@ export default function NoticeSection() {
                     &#x2039;
                   </button>
                   <span className={styles.pageInfo}>
-                    {page + 1} / {Math.ceil(notices.length / PAGE_SIZE)}
+                    {page + 1} / {Math.ceil(filteredNotices.length / PAGE_SIZE)}
                   </span>
                   <button
                     type="button"
                     className={styles.pageButton}
-                    disabled={(page + 1) * PAGE_SIZE >= notices.length}
+                    disabled={(page + 1) * PAGE_SIZE >= filteredNotices.length}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     &#x203A;
@@ -170,6 +218,15 @@ export default function NoticeSection() {
               </div>
               <div className={styles.detailContent}>
                 {selectedNotice.content}
+              </div>
+              <div className={styles.detailFooter}>
+                <button
+                  type="button"
+                  className={styles.backToListButton}
+                  onClick={handleBackToList}
+                >
+                  목록으로
+                </button>
               </div>
             </div>
           </div>
