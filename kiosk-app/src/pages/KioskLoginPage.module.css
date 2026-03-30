@@ -9,11 +9,12 @@
 .card {
   background: var(--color-bg-white);
   border-radius: var(--radius-md);
-  padding: var(--space-8) var(--space-6) var(--space-6);
+  padding: var(--space-12) var(--space-6) var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: calc(var(--space-5) * 15);
+  width: 70vw;
+  height: auto;
   max-width: 90vw;
   box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.08);
 }
@@ -25,7 +26,7 @@
 }
 
 .title {
-  font-size: var(--font-base);
+  font-size: var(--font-xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
   text-align: center;
@@ -89,6 +90,7 @@
   display: flex;
   justify-content: center;
   gap: var(--space-4);
+  margin-top: var(--space-4);
   margin-bottom: var(--space-6);
 }
 
@@ -109,51 +111,50 @@
   background: var(--color-text);
 }
 
-/* ── 키패드 ── */
+/* ── 키패드 (관리자 패널과 동일) ── */
 
-.keypad {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+.keypadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
   width: 100%;
   margin-bottom: var(--space-4);
 }
 
-.keypadRow {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.keypadButton {
-  flex: 1;
-  height: calc(var(--space-7) * 2);
+.keypadKey {
+  aspect-ratio: 5 / 3;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-white);
   font-size: var(--font-2xl);
   font-weight: var(--weight-medium);
   color: var(--color-text);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: background 0.1s;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.1s;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
-.keypadButton:active {
-  background-color: var(--color-bg-gray);
+.keypadKey:active:not(:disabled) {
+  background: var(--color-border-hover);
 }
 
-.keypadButton:disabled {
+.keypadKey:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.keypadSpecial {
-  font-size: var(--font-xl);
+.keypadBackspace {
   color: var(--color-text-muted);
+  font-size: var(--font-xl);
+  background: transparent;
+}
+
+.keypadClear {
+  color: var(--color-text-muted);
+  font-size: var(--font-xl);
+  background: transparent;
 }
 
 .backLink {
@@ -167,4 +168,106 @@
 
 .backLink:active {
   color: var(--color-text-secondary);
+}
+
+/* ── 온스크린 키보드 (지점 코드 입력) ── */
+
+.inputDisplay {
+  width: 100%;
+  padding: var(--space-8) var(--space-3);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-base);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  letter-spacing: 0.2rem;
+  color: var(--color-text);
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-white);
+}
+
+.inputPlaceholder {
+  color: var(--color-text-placeholder);
+  font-weight: var(--weight-regular);
+  letter-spacing: 0.05rem;
+}
+
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  background: #eef0f3;
+  border-radius: var(--radius-md);
+}
+
+.kbRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.kbKey {
+  flex: 1;
+  max-width: 3.5rem;
+  height: 2.75rem;
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  background: #fff;
+  border: none;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.08s, box-shadow 0.08s, transform 0.08s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kbKey:active:not(:disabled) {
+  background: #e2e5ea;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.kbKey:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kbKeyWide {
+  flex: 1.8;
+  max-width: 6rem;
+  font-size: var(--font-base);
+  color: var(--color-text-muted);
+  background: #dce0e6;
+}
+
+.kbKeyWide:active:not(:disabled) {
+  background: #cdd2d9;
+}
+
+.kbKeyEnter {
+  flex: 1;
+  max-width: 100%;
+  padding: var(--space-8) var(--space-5);
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 2px 6px rgba(74, 108, 247, 0.3);
+}
+
+.kbKeyEnter:active:not(:disabled) {
+  background: var(--color-primary-active);
+  box-shadow: 0 1px 2px rgba(74, 108, 247, 0.2);
+  transform: scale(0.98);
 }

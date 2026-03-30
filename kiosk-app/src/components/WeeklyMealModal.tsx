@@ -36,7 +36,7 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
+const DAY_LABELS = ['월', '화', '수', '목', '금'] as const;
 
 /* ── 타입 ── */
 
@@ -50,7 +50,7 @@ type WeekMeals = Record<number, DayMeal>;
 
 function emptyWeek(): WeekMeals {
   return Object.fromEntries(
-    Array.from({ length: 7 }, (_, i) => [i, { lunch: '', dinner: '', closed: i >= 5 }]),
+    Array.from({ length: 5 }, (_, i) => [i, { lunch: '', dinner: '', closed: false }]),
   );
 }
 
@@ -58,7 +58,7 @@ function apiToWeekMeals(days: MealMenuDay[], monday: Date): WeekMeals {
   const result = emptyWeek();
   for (const item of days) {
     const itemDate = new Date(item.menuDate + 'T00:00:00');
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       if (isSameDay(addDays(monday, i), itemDate)) {
         result[i] = { lunch: item.lunch, dinner: item.dinner, closed: item.closed };
         break;
@@ -83,7 +83,7 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
   const [weekOffset, setWeekOffset] = useState(0);
 
   const monday = addDays(thisMonday, weekOffset * 7);
-  const sunday = addDays(monday, 6);
+  const friday = addDays(monday, 4);
 
   const [meals, setMeals] = useState<WeekMeals>(emptyWeek);
   const [loading, setLoading] = useState(true);
@@ -111,12 +111,7 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
           &#x2715;
         </button>
 
-        {/* 헤더 */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>주간 식단표</h2>
-        </div>
-
-        {/* 주간 범위 */}
+        {/* 주간 범위 뱃지 */}
         <div className={styles.weekRange}>
           <button
             type="button"
@@ -127,9 +122,8 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
           >
             &#x25C0;
           </button>
-          <span className={styles.weekLabel}>
-            {formatDate(monday)} ~ {formatDate(sunday)}
-            {/* {weekOffset === 0 ? ' (이번주)' : ' (다음주)'} */}
+          <span className={styles.weekBadge}>
+            {formatDate(monday)} ~ {formatDate(friday)}
           </span>
           <button
             type="button"
@@ -142,7 +136,10 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
           </button>
         </div>
 
-        {/* 테이블 */}
+        {/* 타이틀 */}
+        <h2 className={styles.title}>주간 식단표</h2>
+
+        {/* 테이블: 가로 배열 (요일 = 컬럼) */}
         <div className={styles.tableWrap}>
           {loading ? (
             <p className={styles.loadingText}>불러오는 중...</p>
@@ -150,50 +147,61 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
             <table className={styles.mealTable}>
               <thead>
                 <tr>
-                  <th></th>
-                  <th>중식</th>
-                  <th>석식</th>
+                  <th className={styles.labelCol}></th>
+                  {DAY_LABELS.map((label, idx) => {
+                    const dayDate = addDays(monday, idx);
+                    const isToday = isSameDay(dayDate, today);
+                    return (
+                      <th key={idx} className={isToday ? styles.todayCol : undefined}>
+                        <span className={styles.dayDate}>
+                          {formatDate(dayDate)} ({label})
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {DAY_LABELS.map((label, idx) => {
-                  const dayDate = addDays(monday, idx);
-                  const isToday = isSameDay(dayDate, today);
-                  const isWeekend = idx >= 5;
-                  const day = meals[idx];
-                  const dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}(${label})`;
-
-                  return (
-                    <tr key={idx} className={isToday ? styles.todayRow : undefined}>
-                      <td className={styles.dayCell}>
-                        {isToday && <span className={styles.todayBadge}>TODAY</span>}
-                        <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
+                {/* 중식 */}
+                <tr>
+                  <td className={styles.mealLabel}>중식</td>
+                  {DAY_LABELS.map((_, idx) => {
+                    const day = meals[idx];
+                    const dayDate = addDays(monday, idx);
+                    const isToday = isSameDay(dayDate, today);
+                    return (
+                      <td key={idx} className={isToday ? styles.todayCell : undefined}>
+                        {day?.closed ? (
+                          <span className={styles.closedText}>휴무</span>
+                        ) : day?.lunch ? (
+                          <div className={styles.menuContent}>{day.lunch}</div>
+                        ) : (
+                          <span className={styles.emptyMenu}>-</span>
+                        )}
                       </td>
-                      {day?.closed ? (
-                        <td colSpan={2} className={styles.holidayCell}>
-                          휴무
-                        </td>
-                      ) : (
-                        <>
-                          <td>
-                            {day?.lunch ? (
-                              <div className={styles.menuContent}>{day.lunch}</div>
-                            ) : (
-                              <span className={styles.emptyMenu}>-</span>
-                            )}
-                          </td>
-                          <td>
-                            {day?.dinner ? (
-                              <div className={styles.menuContent}>{day.dinner}</div>
-                            ) : (
-                              <span className={styles.emptyMenu}>-</span>
-                            )}
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  );
-                })}
+                    );
+                  })}
+                </tr>
+                {/* 석식 */}
+                <tr>
+                  <td className={styles.mealLabel}>석식</td>
+                  {DAY_LABELS.map((_, idx) => {
+                    const day = meals[idx];
+                    const dayDate = addDays(monday, idx);
+                    const isToday = isSameDay(dayDate, today);
+                    return (
+                      <td key={idx} className={isToday ? styles.todayCell : undefined}>
+                        {day?.closed ? (
+                          <span className={styles.closedText}>휴무</span>
+                        ) : day?.dinner ? (
+                          <div className={styles.menuContent}>{day.dinner}</div>
+                        ) : (
+                          <span className={styles.emptyMenu}>-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
               </tbody>
             </table>
           )}

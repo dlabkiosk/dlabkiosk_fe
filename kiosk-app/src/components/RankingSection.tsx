@@ -126,17 +126,18 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
           </button>
         </div>
 
-        <div className={styles.tabs}>
+        <div className={styles.slideToggle}>
+          <div className={`${styles.slideIndicator} ${tab === 'all' ? styles.slideRight : ''}`} />
           <button
             type="button"
-            className={`${styles.tab} ${tab === 'store' ? styles.tabActive : ''}`}
+            className={`${styles.slideTab} ${tab === 'store' ? styles.slideTabActive : ''}`}
             onClick={() => handleTabChange('store')}
           >
             {shortName}
           </button>
           <button
             type="button"
-            className={`${styles.tab} ${tab === 'all' ? styles.tabActive : ''}`}
+            className={`${styles.slideTab} ${tab === 'all' ? styles.slideTabActive : ''}`}
             onClick={() => handleTabChange('all')}
           >
             전체 지점
@@ -168,17 +169,18 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
               </button>
             </div>
 
-            <div className={styles.tabs}>
+            <div className={`${styles.slideToggle} ${styles.slideToggleModal}`}>
+              <div className={`${styles.slideIndicator} ${modalTab === 'all' ? styles.slideRight : ''}`} />
               <button
                 type="button"
-                className={`${styles.tab} ${modalTab === 'store' ? styles.tabActive : ''}`}
+                className={`${styles.slideTab} ${modalTab === 'store' ? styles.slideTabActive : ''}`}
                 onClick={() => handleModalTabChange('store')}
               >
                 {shortName}
               </button>
               <button
                 type="button"
-                className={`${styles.tab} ${modalTab === 'all' ? styles.tabActive : ''}`}
+                className={`${styles.slideTab} ${modalTab === 'all' ? styles.slideTabActive : ''}`}
                 onClick={() => handleModalTabChange('all')}
               >
                 전체 지점

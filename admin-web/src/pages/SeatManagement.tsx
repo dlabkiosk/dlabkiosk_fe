@@ -1357,18 +1357,18 @@ export default function SeatManagement() {
                   </div>
                   <div className={styles.seatChoiceGroup}>
                     {[
-                      { label: '1순위', value: modalItem.desiredSeat1Label },
-                      { label: '2순위', value: modalItem.desiredSeat2Label },
-                      { label: '3순위', value: modalItem.desiredSeat3Label },
-                    ].filter((s) => s.value).map((s) => (
+                      { label: '1순위', display: modalItem.desiredSeat1Label, cd: modalItem.desiredSeat1Cd },
+                      { label: '2순위', display: modalItem.desiredSeat2Label, cd: modalItem.desiredSeat2Cd },
+                      { label: '3순위', display: modalItem.desiredSeat3Label, cd: modalItem.desiredSeat3Cd },
+                    ].filter((s) => s.display && s.cd).map((s) => (
                       <button
                         key={s.label}
                         type="button"
-                        className={`${styles.seatChoiceBtn} ${approvalSeat === s.value ? styles.seatChoiceBtnActive : ''}`}
-                        onClick={() => setApprovalSeat(s.value)}
+                        className={`${styles.seatChoiceBtn} ${approvalSeat === s.cd ? styles.seatChoiceBtnActive : ''}`}
+                        onClick={() => setApprovalSeat(s.cd)}
                       >
                         <span className={styles.seatChoiceLabel}>{s.label}</span>
-                        <span className={styles.seatChoiceValue}>{s.value}</span>
+                        <span className={styles.seatChoiceValue}>{s.display}</span>
                       </button>
                     ))}
                   </div>

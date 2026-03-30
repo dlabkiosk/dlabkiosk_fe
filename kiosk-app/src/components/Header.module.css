@@ -1,7 +1,7 @@
 .header {
   display: flex;
   align-items: center;
-  padding: var(--space-5) var(--space-6) var(--space-5) var(--space-8);
+  padding: var(--space-5) var(--space-12) var(--space-7) var(--space-11);
   gap: var(--space-4);
 }
 
@@ -53,10 +53,10 @@
 .ddayTag {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1h);
-  padding: var(--space-1h) var(--space-3h);
-  border-radius: var(--radius-xs);
-  font-size: var(--font-xs);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-size: var(--font-2xs);
   font-weight: var(--weight-medium);
   color: var(--color-text-dday);
   background-color: var(--color-bg-white);
@@ -71,13 +71,13 @@
 }
 
 .ddayValue {
-  font-size: var(--font-sm);
-  font-weight: var(--weight-semibold);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
   color: var(--color-primary);
 }
 
 .ddayValuePrimary {
-  font-size: var(--font-sm);
+  font-size: var(--font-xs);
   font-weight: var(--weight-semibold);
   color: #fff;
 }

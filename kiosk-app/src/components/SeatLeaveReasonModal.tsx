@@ -17,7 +17,8 @@ const REASON_ICON_MAP: Record<string, string> = {
   강의실: lectureIcon,
 };
 
-function getReasonIcon(reasonName: string): string {
+function getReasonIcon(reasonName: string): string | null {
+  if (reasonName.includes('기타')) return null;
   for (const [keyword, icon] of Object.entries(REASON_ICON_MAP)) {
     if (reasonName.includes(keyword)) return icon;
   }
@@ -63,7 +64,9 @@ export default function SeatLeaveReasonModal({ onClose, onSelect }: SeatLeaveRea
                 className={styles.reasonButton}
                 onClick={() => onSelect(reason.id, reason.reasonName)}
               >
-                <img src={getReasonIcon(reason.reasonName)} alt={reason.reasonName} className={styles.reasonIcon} />
+                {getReasonIcon(reason.reasonName) && (
+                  <img src={getReasonIcon(reason.reasonName)!} alt={reason.reasonName} className={styles.reasonIcon} />
+                )}
                 <span className={styles.reasonLabel}>{reason.reasonName}</span>
               </button>
             ))}

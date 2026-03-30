@@ -9,10 +9,15 @@ export interface SeatChangeRequest {
   storeName: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   currentSeatLabel: string;
+  currentSeatCd: string;
   desiredSeat1Label: string;
+  desiredSeat1Cd: string;
   desiredSeat2Label: string;
+  desiredSeat2Cd: string;
   desiredSeat3Label: string;
+  desiredSeat3Cd: string;
   approvedSeatLabel: string | null;
+  approvedSeatCd: string | null;
   createdAt: string;
   processedAt: string | null;
 }

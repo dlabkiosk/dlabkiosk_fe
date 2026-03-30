@@ -76,12 +76,27 @@ export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
     }
   };
 
-  const KEYPAD_ROWS = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['clear', '0', 'backspace'],
+  /* 온스크린 키보드 (지점 코드용) */
+  const handleKbPress = (key: string) => {
+    if (loading) return;
+    setError('');
+    if (key === 'backspace') {
+      setStoreCode((prev) => prev.slice(0, -1));
+    } else if (key === 'enter') {
+      handleStoreSubmit();
+    } else {
+      setStoreCode((prev) => prev + key);
+    }
+  };
+
+  const KB_ROWS = [
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '-'],
+    ['Z', 'X', 'C', 'V', 'B', 'N', 'M', 'backspace'],
   ];
+
+  const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'];
 
   return (
     <div className={styles.page}>
@@ -93,26 +108,39 @@ export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
             <h2 className={styles.title}>키오스크 로그인</h2>
             <p className={styles.subtitle}>지점 코드를 입력해주세요</p>
 
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="예: DS-001"
-              value={storeCode}
-              onChange={(e) => { setStoreCode(e.target.value); setError(''); }}
-              onKeyDown={(e) => e.key === 'Enter' && handleStoreSubmit()}
-              autoFocus
-            />
+            <div className={styles.inputDisplay}>
+              {storeCode || <span className={styles.inputPlaceholder}>예: DS-001</span>}
+            </div>
 
             {error && <p className={styles.error}>{error}</p>}
 
-            <button
-              className={styles.submitButton}
-              type="button"
-              onClick={handleStoreSubmit}
-              disabled={loading}
-            >
-              {loading ? '확인 중...' : '다음'}
-            </button>
+            <div className={styles.keyboard}>
+              {KB_ROWS.map((row, rowIdx) => (
+                <div key={rowIdx} className={styles.kbRow}>
+                  {row.map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`${styles.kbKey} ${key === 'backspace' ? styles.kbKeyWide : ''}`}
+                      onClick={() => handleKbPress(key)}
+                      disabled={loading}
+                    >
+                      {key === 'backspace' ? '⌫' : key}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              <div className={styles.kbRow}>
+                <button
+                  type="button"
+                  className={`${styles.kbKey} ${styles.kbKeyEnter}`}
+                  onClick={() => handleKbPress('enter')}
+                  disabled={loading}
+                >
+                  {loading ? '확인 중...' : '다음'}
+                </button>
+              </div>
+            </div>
           </>
         ) : (
           <>
@@ -130,21 +158,17 @@ export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
 
             {error && <p className={styles.error}>{error}</p>}
 
-            <div className={styles.keypad}>
-              {KEYPAD_ROWS.map((row, rowIdx) => (
-                <div key={rowIdx} className={styles.keypadRow}>
-                  {row.map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`${styles.keypadButton} ${key === 'clear' || key === 'backspace' ? styles.keypadSpecial : ''}`}
-                      onClick={() => handleKeyPress(key)}
-                      disabled={loading}
-                    >
-                      {key === 'backspace' ? '⌫' : key === 'clear' ? '−' : key}
-                    </button>
-                  ))}
-                </div>
+            <div className={styles.keypadGrid}>
+              {KEYPAD_KEYS.map((key, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`${styles.keypadKey} ${key === 'backspace' ? styles.keypadBackspace : ''} ${key === 'clear' ? styles.keypadClear : ''}`}
+                  onClick={() => handleKeyPress(key)}
+                  disabled={loading}
+                >
+                  {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+                </button>
               ))}
             </div>
 

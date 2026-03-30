@@ -383,3 +383,39 @@
   padding: var(--spacing-xl) !important;
   color: var(--color-text-muted);
 }
+
+/* ── 페이지네이션 ── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs, 0.25rem);
+  padding: var(--spacing-md, 1rem) 0;
+}
+
+.pageBtn {
+  background: none;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-sm, 4px);
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: var(--font-size-sm, 0.875rem);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pageBtnActive {
+  background: var(--color-primary, #1e3a5f);
+  color: #fff;
+  border-color: var(--color-primary, #1e3a5f);
+}

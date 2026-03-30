@@ -12,7 +12,7 @@ const CELL_W = 60;
 const CELL_H = 40;
 
 interface SeatSelection {
-  seatId: number;
+  seatCd: string;
   seatLabel: string;
 }
 
@@ -99,9 +99,9 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
   const isOccupied = (seat: SeatInfo) => seat.state !== 'B' && seat.state !== 'N';
   const isCurrentSeat = (seatNm: string) => seatNm === student.assignedSeatLabel;
 
-  /** 선택된 seatId 목록 (빠른 조회용) */
-  const selectedSeatIds = useMemo(
-    () => selections.map((s) => s?.seatId ?? null),
+  /** 선택된 seatCd 목록 (빠른 조회용) */
+  const selectedSeatCds = useMemo(
+    () => selections.map((s) => s?.seatCd ?? ''),
     [selections],
   );
 
@@ -111,9 +111,9 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
     return [filled[0] ?? null, filled[1] ?? null, filled[2] ?? null];
   };
 
-  const handleSeatToggle = useCallback((seatId: number, seatLabel: string) => {
+  const handleSeatToggle = useCallback((seatCd: string, seatLabel: string) => {
     setSelections((prev) => {
-      const idx = prev.findIndex((s) => s?.seatId === seatId);
+      const idx = prev.findIndex((s) => s?.seatCd === seatCd);
       if (idx !== -1) {
         // 해제 → compact
         const next: Selections = [...prev];
@@ -124,7 +124,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
       const emptyIdx = prev.indexOf(null);
       if (emptyIdx === -1) return prev;
       const next: Selections = [...prev];
-      next[emptyIdx] = { seatId, seatLabel };
+      next[emptyIdx] = { seatCd, seatLabel };
       return next;
     });
     setErrorMessage(null);
@@ -146,9 +146,9 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
       await submitSeatChangeRequest({
         identifier: student.identifier ?? student.studentNumber,
         inputMethod,
-        desiredSeatId1: selections[0].seatId,
-        desiredSeatId2: selections[1]?.seatId,
-        desiredSeatId3: selections[2]?.seatId,
+        desiredSeatCd1: selections[0].seatCd,
+        desiredSeatCd2: selections[1]?.seatCd,
+        desiredSeatCd3: selections[2]?.seatCd,
       });
       setSuccess(true);
       successTimer.current = setTimeout(onClose, SUCCESS_DISPLAY_MS);
@@ -343,9 +343,9 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
               {activeSeats.map((seat: SeatInfo) => {
                 const current = isCurrentSeat(seat.seatNm);
                 const availability = availabilityMap.get(seat.seatNm);
-                const seatId = availability?.seatId;
-                const selected = seatId != null && selectedSeatIds.includes(seatId);
-                const selectionIdx = seatId != null ? selectedSeatIds.indexOf(seatId) : -1;
+                const seatCd = seat.seatCd;
+                const selected = selectedSeatCds.includes(seatCd);
+                const selectionIdx = selectedSeatCds.indexOf(seatCd);
                 const occupied = isOccupied(seat);
 
                 let cellClass = styles.seatCell;
@@ -354,7 +354,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
                 else if (occupied) cellClass += ` ${styles.seatOccupied}`;
                 else cellClass += ` ${styles.seatEmpty}`;
 
-                const canSelect = !current && seatId != null && availability?.available;
+                const canSelect = !current && availability?.available;
 
                 return (
                   <button
@@ -366,7 +366,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
                       left: seat.xPos * CELL_W,
                       top: seat.yPos * CELL_H,
                     }}
-                    onClick={() => canSelect && handleSeatToggle(seatId, seat.seatNm)}
+                    onClick={() => canSelect && handleSeatToggle(seatCd, seat.seatNm)}
                     disabled={!canSelect && !selected}
                   >
                     <span className={styles.seatLabel}>{seat.seatNm}</span>

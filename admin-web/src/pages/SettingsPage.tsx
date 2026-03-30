@@ -45,9 +45,11 @@ import {
   deleteMessageTemplate,
 } from '../api/messageTemplateApi';
 import type { MessageTemplate } from '../api/messageTemplateApi';
+import { syncStudents, syncStores } from '../api/syncApi';
+import type { StudentSyncResult, StoreSyncResult } from '../api/syncApi';
 
 /* ── 탭 목록 ── */
-const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리','지점 정보'] as const;
+const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리', '데이터 관리', '지점 정보'] as const;
 type TabId = typeof TABS[number];
 
 const MEDIA_TYPES = ['IMAGE', 'VIDEO'] as const;
@@ -125,8 +127,158 @@ export default function SettingsPage() {
           <StudentMessageSettings />
         </>
       )}
+      {activeTab === '데이터 관리' && <DataManagement />}
       {activeTab === '지점 정보' && <BranchInfo />}
     </div>
+  );
+}
+
+/* ── 데이터 관리 탭 ── */
+function DataManagement() {
+  const { alert, ConfirmDialog: DataConfirmDialog } = useConfirm();
+  const [syncingStudents, setSyncingStudents] = useState(false);
+  const [syncingStores, setSyncingStores] = useState(false);
+  const [studentResults, setStudentResults] = useState<StudentSyncResult[] | null>(null);
+  const [storeResult, setStoreResult] = useState<StoreSyncResult | null>(null);
+
+  const handleSyncStudents = async () => {
+    if (syncingStudents) return;
+    setSyncingStudents(true);
+    setStudentResults(null);
+    try {
+      const results = await syncStudents();
+      setStudentResults(results);
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '학생 동기화에 실패했습니다.');
+    } finally {
+      setSyncingStudents(false);
+    }
+  };
+
+  const handleSyncStores = async () => {
+    if (syncingStores) return;
+    setSyncingStores(true);
+    setStoreResult(null);
+    try {
+      const result = await syncStores();
+      setStoreResult(result);
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '지점 동기화에 실패했습니다.');
+    } finally {
+      setSyncingStores(false);
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>DSA 데이터 동기화</h3>
+        </div>
+        <div className={styles.sectionBody}>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--spacing-md)' }}>
+            DSA 서버에서 최신 데이터를 가져와 동기화합니다.
+          </p>
+
+          {/* 지점 동기화 */}
+          <div className={styles.syncCard}>
+            <div className={styles.syncCardHeader}>
+              <div>
+                <h4 className={styles.syncCardTitle}>지점 동기화</h4>
+                <p className={styles.syncCardDesc}>DSA에 등록된 지점(학원) 목록을 동기화합니다. 새 지점은 자동 생성되고, 기존 지점은 이름이 업데이트됩니다.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={handleSyncStores}
+                disabled={syncingStores}
+              >
+                {syncingStores ? '동기화 중...' : '지점 동기화'}
+              </button>
+            </div>
+            {storeResult && (
+              <div className={styles.syncResultTable}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th>DSA 전체</th>
+                      <th>신규</th>
+                      <th>업데이트</th>
+                      <th>변경없음</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{storeResult.totalFromDsa}</td>
+                      <td>{storeResult.created}</td>
+                      <td>{storeResult.updated}</td>
+                      <td>{storeResult.unchanged}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                {storeResult.errors.length > 0 && (
+                  <div className={styles.syncErrors}>
+                    {storeResult.errors.map((e, i) => <p key={i}>{e}</p>)}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 학생 동기화 */}
+          <div className={styles.syncCard}>
+            <div className={styles.syncCardHeader}>
+              <div>
+                <h4 className={styles.syncCardTitle}>학생 동기화</h4>
+                <p className={styles.syncCardDesc}>DSA에 등록된 학생 정보를 동기화합니다. 전체 지점의 학생 데이터를 가져옵니다.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={handleSyncStudents}
+                disabled={syncingStudents}
+              >
+                {syncingStudents ? '동기화 중...' : '학생 동기화'}
+              </button>
+            </div>
+            {studentResults && (
+              <div className={styles.syncResultTable}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th>지점명</th>
+                      <th>DSA 전체</th>
+                      <th>신규</th>
+                      <th>업데이트</th>
+                      <th>변경없음</th>
+                      <th>실패</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {studentResults.map((r) => (
+                      <tr key={r.storeId}>
+                        <td>{r.storeName}</td>
+                        <td>{r.totalFromDsa}</td>
+                        <td>{r.created}</td>
+                        <td>{r.updated}</td>
+                        <td>{r.unchanged}</td>
+                        <td style={r.failed > 0 ? { color: '#dc2626', fontWeight: 600 } : undefined}>{r.failed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {studentResults.some((r) => r.errors.length > 0) && (
+                  <div className={styles.syncErrors}>
+                    {studentResults.flatMap((r) => r.errors).map((e, i) => <p key={i}>{e}</p>)}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {DataConfirmDialog}
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   LuClock,
   LuArrowUpDown,
@@ -6,6 +6,9 @@ import {
   LuArrowDown,
 } from 'react-icons/lu';
 import styles from './StudyTimeManagement.module.css';
+import { getStudyTimes } from '../api/studyTimeApi';
+import type { StudentStudyTime } from '../api/studyTimeApi';
+import { getMe } from '../api/authApi';
 
 /* ── 날짜 유틸 ── */
 
@@ -42,19 +45,6 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function timeToMinutes(time: string): number {
-  if (!time || time === '-') return 0;
-  const [h, m] = time.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return 0;
-  return h * 60 + m;
-}
-
-function minutesToTime(mins: number): string {
-  if (mins <= 0) return '-';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
 
 /* ── 캘린더 그리드 생성 ── */
 
@@ -80,10 +70,11 @@ function getCalendarGrid(year: number, month: number): (Date | null)[][] {
 /* ── 타입 ── */
 
 interface StudentStudyRow {
-  id: number;
+  id: string;
   studentNumber: string;
   name: string;
   seat: string;
+  total: string;
   dailyTimes: Record<string, string>;
 }
 
@@ -104,31 +95,29 @@ function compareStudyRows(a: StudentStudyRow, b: StudentStudyRow, field: SortFie
   return dir === 'desc' ? -cmp : cmp;
 }
 
-/* ── 목 데이터 ── */
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
-function generateMockData(monday: Date): StudentStudyRow[] {
-  const mockRows = [
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '21:30' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '21:00' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '16:30' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
-    { name: '김코드', num: '6020', seat: '김코드', baseTime: '' },
-  ];
-
-  return mockRows.map((row, idx) => {
+function toRows(data: StudentStudyTime[], monday: Date): StudentStudyRow[] {
+  return data.map((s, idx) => {
     const dailyTimes: Record<string, string> = {};
     for (let i = 0; i < 7; i++) {
       const d = addDays(monday, i);
-      dailyTimes[formatDateShort(d)] = row.baseTime || '-';
+      const key = formatDateShort(d);
+      const dateKey = formatDateKey(d);
+      const found = s.dailyStudyTimes.find((dt) => dt.date === dateKey);
+      dailyTimes[key] = found ? found.studyTime : '-';
     }
     return {
-      id: idx + 1,
-      studentNumber: row.num,
-      name: row.name,
-      seat: row.seat,
+      id: `${s.studentNumber}-${idx}`,
+      studentNumber: s.studentNumber,
+      name: s.studentName,
+      seat: s.seatLabel || '-',
+      total: s.totalStudyTime,
       dailyTimes,
     };
   });
@@ -146,6 +135,7 @@ export default function StudyTimeManagement() {
   const [calMonth, setCalMonth] = useState(today.getMonth() + 1);
   const [hoverMonday, setHoverMonday] = useState<Date | null>(null);
   const calRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // 필터
   const [filterNumber, setFilterNumber] = useState('');
@@ -153,6 +143,23 @@ export default function StudyTimeManagement() {
 
   // 정렬
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
+
+  // API 데이터
+  const [rows, setRows] = useState<StudentStudyRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [storeId, setStoreId] = useState<number | undefined>(undefined);
+
+  // 페이지네이션
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 15;
+  const prevPageRef = useRef(0);
+
+  useEffect(() => {
+    if (page !== prevPageRef.current) {
+      prevPageRef.current = page;
+      tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [page]);
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -174,15 +181,42 @@ export default function StudyTimeManagement() {
     dayHeaders.push(addDays(startDate, i));
   }
 
-  const mockData = generateMockData(startDate);
+  // 사용자 정보 로드
+  useEffect(() => {
+    getMe().then((me) => setStoreId(me.storeId)).catch(() => {});
+  }, []);
+
+  // API 호출
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getStudyTimes({
+        storeId,
+        startDate: formatDateKey(startDate),
+        endDate: formatDateKey(endDate),
+        studentName: filterName || undefined,
+        studentNumber: filterNumber || undefined,
+      });
+      setRows(toRows(data, startDate));
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId, startDate, endDate, filterName, filterNumber]);
+
+  // 주간 변경 시 자동 조회
+  useEffect(() => {
+    if (storeId != null) fetchData();
+  }, [selectedMonday, storeId]);
 
   const filtered = useMemo(() => {
-    return mockData.filter((row) => {
+    return rows.filter((row) => {
       if (filterNumber && !row.studentNumber.includes(filterNumber)) return false;
       if (filterName && !row.name.includes(filterName)) return false;
       return true;
     });
-  }, [mockData, filterNumber, filterName]);
+  }, [rows, filterNumber, filterName]);
 
   const sortedData = useMemo(() => {
     if (!sort.field) return filtered;
@@ -193,15 +227,26 @@ export default function StudyTimeManagement() {
     setFilterNumber('');
     setFilterName('');
     setSort({ field: null, dir: 'asc' });
+    setPage(0);
   };
 
-  const calcTotal = (dailyTimes: Record<string, string>): string => {
-    let totalMins = 0;
-    for (const val of Object.values(dailyTimes)) {
-      totalMins += timeToMinutes(val);
-    }
-    return minutesToTime(totalMins);
+  const handleSearch = () => {
+    setPage(0);
+    fetchData();
   };
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / PAGE_SIZE));
+  const pagedData = sortedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const current = page + 1;
+    let start = Math.max(1, current - 4);
+    let end = Math.min(totalPages, start + 9);
+    if (end - start < 9) start = Math.max(1, end - 9);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }, [page, totalPages]);
 
   const handleDateClick = (date: Date) => {
     const mon = getMonday(date);
@@ -359,14 +404,14 @@ export default function StudyTimeManagement() {
           </div>
 
           <div className={styles.filterActions}>
-            <button type="button" className={styles.searchButton}>검색</button>
+            <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
             <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
             <button type="button" className={styles.excelButton}>EXCEL</button>
           </div>
         </div>
       </div>
 
-      <div className={styles.contentCard}>
+      <div className={styles.contentCard} ref={tableRef}>
 
         {/* 테이블 */}
         <div className={styles.tableWrap}>
@@ -392,12 +437,16 @@ export default function StudyTimeManagement() {
               </tr>
             </thead>
             <tbody>
-              {sortedData.length === 0 ? (
+              {loading ? (
+                <tr className={styles.emptyRow}>
+                  <td colSpan={5 + dayHeaders.length}>로딩 중...</td>
+                </tr>
+              ) : sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
                   <td colSpan={5 + dayHeaders.length}>데이터가 없습니다.</td>
                 </tr>
               ) : (
-                sortedData.map((row) => (
+                pagedData.map((row) => (
                   <tr key={row.id}>
                     <td className={styles.checkboxCol}>
                       <input type="checkbox" />
@@ -405,7 +454,7 @@ export default function StudyTimeManagement() {
                     <td>{row.name}</td>
                     <td>{row.studentNumber}</td>
                     <td>{row.seat}</td>
-                    <td>{calcTotal(row.dailyTimes)}</td>
+                    <td>{row.total}</td>
                     {dayHeaders.map((d) => {
                       const key = formatDateShort(d);
                       const val = row.dailyTimes[key];
@@ -421,6 +470,37 @@ export default function StudyTimeManagement() {
             </tbody>
           </table>
         </div>
+
+        {sortedData.length > PAGE_SIZE && (
+          <div className={styles.pagination}>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              &lt;
+            </button>
+            {pageNumbers.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.pageBtn} ${page + 1 === p ? styles.pageBtnActive : ''}`}
+                onClick={() => setPage(p - 1)}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={styles.pageBtn}
+              disabled={page + 1 >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              &gt;
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

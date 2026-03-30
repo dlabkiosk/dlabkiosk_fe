@@ -21,7 +21,7 @@
 
 .infoSection {
   display: flex;
-  gap: var(--space-4);
-  padding: 0 var(--space-6);
+  gap: var(--space-5);
+  padding: 0 var(--space-12);
   margin-bottom: var(--space-3);
 }

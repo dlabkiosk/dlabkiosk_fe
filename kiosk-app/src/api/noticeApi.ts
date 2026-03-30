@@ -14,9 +14,25 @@ export interface Notice {
   updatedAt: string;
 }
 
+export interface SubjectNotice {
+  id: number;
+  storeId: number;
+  subjectName: string;
+  title: string;
+  content: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ── API ── */
 
 /** 해당 지점의 활성 공지 목록 조회 (고정 공지 우선, 최신순) */
 export function getNotices(): Promise<Notice[]> {
   return apiGet<Notice[]>('/api/v1/kiosk/notices');
+}
+
+/** 해당 지점의 과목 공지 목록 조회 */
+export function getSubjectNotices(): Promise<SubjectNotice[]> {
+  return apiGet<SubjectNotice[]>('/api/v1/kiosk/notices/subject');
 }

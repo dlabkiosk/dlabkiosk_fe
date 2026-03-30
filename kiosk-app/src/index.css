@@ -5,8 +5,6 @@ html {
 
 :root {
   /* ── Colors ── */
-  --color-primary: #00C4A7;
-  --color-primary-active: #00b098;
   --color-success: #28a745;
   --color-success-bg: #d4edda;
   --color-error: #dc3545;
@@ -14,19 +12,25 @@ html {
   --color-badge-new: #2161AF;
   --color-badge-upcoming: #e5f0fd;
   --color-blue-100: #6AB2E9;
+  --color-primary: #1B4F9D;
+  --color-primary-active: #00b098;
+  --color-top-section-bg: #E6EBF3;
+  --color-primary-700: #2772C1;
+  --color-primary-500: #F1F8FD;
+  --color-primary-300: #E3F1FB;
+  --color-nonactive: #F2F2F2;
 
   /* Text */
   --color-text: #1a1a2e;
   --color-text-secondary: #444;
   --color-text-muted: #666;
   --color-text-hint: #888;
-  --color-text-placeholder: #999;
+  --color-text-placeholder: #999999;
   --color-text-dday: #555;
 
   /* Background */
   --color-bg: #f0f4f8;
   --color-bg-white: #fff;
-  --color-top-section-bg: #F6F7FB;
   --color-page-bg: #fff;
   --color-qm-1: var(--color-bg-white);
   --color-qm-2: var(--color-bg-white);
@@ -99,6 +103,9 @@ html {
   --radius-lg: 0.875rem;  /* 14px */
   --radius-xl: 1rem;      /* 16px */
   --radius-2xl: 1.25rem;  /* 20px */
+  --radius-3xl: 1.5rem;   /* 24px */
+  --radius-4xl: 1.75rem;  /* 28px */
+  --radius-5xl: 2rem;      /* 32px */
   --radius-full: 50%;
 
   /* ── Font Family ── */

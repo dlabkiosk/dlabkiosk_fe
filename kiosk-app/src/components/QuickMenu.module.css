@@ -1,11 +1,11 @@
 .container {
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-12);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .menuButton {
@@ -14,26 +14,14 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  aspect-ratio: 5 / 4;
+  aspect-ratio: 4 / 3.6;
   padding: var(--space-3);
-  background: var(--color-bg-white);
-  border: 3px solid var(--color-border-hover);
-  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: var(--radius-md);
+  box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: background-color 0.15s;
-}
-
-.menuButton:nth-child(1) { background: var(--color-qm-1); }
-.menuButton:nth-child(2) { background: var(--color-qm-2); }
-.menuButton:nth-child(3) { background: var(--color-qm-3); }
-.menuButton:nth-child(4) { background: var(--color-qm-4); }
-.menuButton:nth-child(5) { background: var(--color-qm-5); }
-.menuButton:nth-child(6) { background: var(--color-qm-6); }
-
-:global([data-theme="blue"]) .menuButton,
-:global([data-theme="orange"]) .menuButton {
-  border-color: transparent;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .menuButton:active {
@@ -44,20 +32,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
   background: #fff;
-  border-radius: var(--radius-full);
+  margin-bottom: var(--space-3);
+  /* border-radius: var(--radius-full); */
 }
 
 .iconImg {
-  width: 1.375rem;
-  height: 1.375rem;
+  width: 3rem;
+  height: 3rem;
   object-fit: contain;
 }
 
 .label {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--weight-semibold);
   color: #505050;
 }

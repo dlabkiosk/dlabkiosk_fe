@@ -11,7 +11,7 @@
 .panel {
   position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   padding: var(--space-8) var(--space-10) var(--space-7);
   width: 75vw;
   max-height: 85vh;
@@ -242,46 +242,6 @@
   border: none;
   cursor: default;
 } */
-
-/* ── 테마 설정 ── */
-.themeGroup {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.themeButton {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2);
-  font-size: var(--font-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
-  background: var(--color-bg-gray);
-  border: 2px solid transparent;
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-.themeButton:active {
-  background-color: var(--color-border);
-}
-
-.themeButtonActive {
-  border-color: var(--color-primary);
-  color: var(--color-text);
-  font-weight: var(--weight-semibold);
-}
-
-.themeColorDot {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
 
 .errorText {
   font-size: 0.6875rem;

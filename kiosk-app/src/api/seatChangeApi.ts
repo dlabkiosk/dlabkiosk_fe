@@ -30,9 +30,9 @@ export interface SeatChangeRequestBody {
   studentNumber?: string;
   phoneLast4?: string;
   seatLabel?: string;
-  desiredSeatId1: number;
-  desiredSeatId2?: number;
-  desiredSeatId3?: number;
+  desiredSeatCd1: string;
+  desiredSeatCd2?: string;
+  desiredSeatCd3?: string;
 }
 
 export interface SeatChangeResult {

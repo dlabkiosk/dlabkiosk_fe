@@ -57,11 +57,16 @@ export interface SeatChangeRequest {
   storeId: number;
   storeName: string;
   currentSeatLabel: string;
+  currentSeatCd: string;
   desiredSeat1Label: string;
+  desiredSeat1Cd: string;
   desiredSeat2Label: string;
+  desiredSeat2Cd: string;
   desiredSeat3Label: string;
+  desiredSeat3Cd: string;
   /** 승인된 좌석 (승인 전이면 null) */
   approvedSeatLabel: string | null;
+  approvedSeatCd: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   /** 처리 일시 (승인/거절 시), PENDING이면 null */
@@ -178,9 +183,9 @@ export function getSeatStatus(storeId?: number): Promise<SeatStatusItem[]> {
   return apiGet<SeatStatusItem[]>(`/api/v1/admin/seat-change-requests/seat-status${query}`);
 }
 
-/** 좌석 변경 신청 승인 (seatLabel: 승인할 좌석 라벨) */
-export function approveSeatChangeRequest(requestId: number, seatLabel: string): Promise<SeatChangeRequest> {
-  return apiPut<SeatChangeRequest>(`/api/v1/admin/seat-change-requests/${requestId}/approve?seatLabel=${encodeURIComponent(seatLabel)}`);
+/** 좌석 변경 신청 승인 (seatCd: 승인할 좌석 코드) */
+export function approveSeatChangeRequest(requestId: number, seatCd: string): Promise<SeatChangeRequest> {
+  return apiPut<SeatChangeRequest>(`/api/v1/admin/seat-change-requests/${requestId}/approve?seatCd=${encodeURIComponent(seatCd)}`);
 }
 
 /** 좌석 변경 신청 거절 */

@@ -11,8 +11,8 @@
 .modal {
   position: relative;
   background: var(--color-bg-white);
-  border-radius: var(--radius-sm);
-  padding: var(--space-8) var(--space-10) var(--space-7);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-16) var(--space-10);
   width: 75vw;
 }
 
@@ -51,7 +51,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-10);
 }
 
 .actionButton {
@@ -59,11 +59,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-10) var(--space-3);
-  background: var(--color-bg-white);
-  border: 3px solid var(--color-border-hover);
-  border-radius: var(--radius-xs);
+  gap: var(--space-5);
+  aspect-ratio: 1;
+  padding: var(--space-3);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: var(--radius-md);
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -73,13 +75,13 @@
 }
 
 .actionIcon {
-  width:2.5rem;
-  height: 2.5rem;
+  width:3rem;
+  height: 3rem;
   object-fit: contain;
 }
 
 .actionLabel {
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   font-weight: var(--weight-medium);
   color: var(--color-text);
 }

@@ -12,6 +12,8 @@ const FONT_LABELS = {
 export default function AccessibilityBar() {
   const { ttsEnabled, fontScale, zoom, highContrast, toggleTts, cycleFontScale, toggleZoom, toggleHighContrast, speak } = useAccessibility();
 
+  const hideIcons = fontScale !== 'default';
+
   const bar = (
     <div className={styles.bar}>
       <button
@@ -29,7 +31,7 @@ export default function AccessibilityBar() {
           }
         }}
       >
-        {ttsEnabled ? <LuVolume2 /> : <LuVolumeX />}
+        {!hideIcons && <span className={styles.iconWrap}>{ttsEnabled ? <LuVolume2 /> : <LuVolumeX />}</span>}
         <span>음성안내 {ttsEnabled ? 'ON' : 'OFF'}</span>
       </button>
 
@@ -41,7 +43,7 @@ export default function AccessibilityBar() {
           speak('글씨 크기 변경');
         }}
       >
-        <LuALargeSmall />
+        {!hideIcons && <span className={styles.iconWrap}><LuALargeSmall /></span>}
         <span>글씨 {FONT_LABELS[fontScale]}</span>
       </button>
 
@@ -53,7 +55,7 @@ export default function AccessibilityBar() {
           speak(zoom === 'default' ? '화면 확대' : '화면 원래 크기');
         }}
       >
-        <LuZoomIn />
+        {!hideIcons && <span className={styles.iconWrap}><LuZoomIn /></span>}
         <span>화면확대 {zoom !== 'default' ? 'ON' : 'OFF'}</span>
       </button>
 
@@ -65,7 +67,7 @@ export default function AccessibilityBar() {
           speak(highContrast ? '고대비 모드 해제' : '고대비 모드');
         }}
       >
-        <LuContrast />
+        {!hideIcons && <span className={styles.iconWrap}><LuContrast /></span>}
         <span>고대비 {highContrast ? 'ON' : 'OFF'}</span>
       </button>
     </div>

@@ -1,28 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { LuUtensils, LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
-import { getMealCheckList } from '../api/mealCheckApi';
-import type { MealCheckRow, MealCheckListResponse } from '../api/mealCheckApi';
+import { getMeals } from '../api/mealApi';
+import type { MealRecord } from '../api/mealApi';
+import { getMe } from '../api/authApi';
 import styles from './MealManagement.module.css';
 
-/* ── Mock Data ── */
-
-const MOCK_DATA: MealCheckRow[] = [
-  { id: 1, studentName: '홍길동', studentNumber: '2345', seatLabel: '23', lunchRequested: true, lunchTaggedAt: '12:11', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:00', dinnerNeedsConfirm: false },
-  { id: 2, studentName: '홍길동', studentNumber: '1111', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:05', dinnerNeedsConfirm: false },
-  { id: 3, studentName: '홍길동', studentNumber: '2122', seatLabel: '25', lunchRequested: true, lunchTaggedAt: '12:10', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:09', dinnerNeedsConfirm: true },
-  { id: 4, studentName: '홍길동', studentNumber: '3133', seatLabel: '20', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: true, dinnerTaggedAt: '18:10', dinnerNeedsConfirm: false },
-  { id: 5, studentName: '홍길동', studentNumber: '4544', seatLabel: '55', lunchRequested: false, lunchTaggedAt: '12:11', lunchNeedsConfirm: true, dinnerRequested: false, dinnerTaggedAt: '18:22', dinnerNeedsConfirm: false },
-  { id: 6, studentName: '홍길동', studentNumber: '4444', seatLabel: '32', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: false },
-  { id: 7, studentName: '홍길동', studentNumber: '2222', seatLabel: '44', lunchRequested: true, lunchTaggedAt: '12:12', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: null, dinnerNeedsConfirm: false },
-  { id: 8, studentName: '홍길동', studentNumber: '2323', seatLabel: '33', lunchRequested: true, lunchTaggedAt: '12:15', lunchNeedsConfirm: false, dinnerRequested: false, dinnerTaggedAt: '18:28', dinnerNeedsConfirm: true },
-  { id: 9, studentName: '홍길동', studentNumber: '2122', seatLabel: '22', lunchRequested: false, lunchTaggedAt: null, lunchNeedsConfirm: false, dinnerRequested: true, dinnerTaggedAt: '18:30', dinnerNeedsConfirm: false },
-];
-
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 15;
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'lunchRequested' | 'lunchTaggedAt' | 'dinnerRequested' | 'dinnerTaggedAt';
+type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'lunchApplied' | 'lunchCheckedTime' | 'dinnerApplied' | 'dinnerCheckedTime';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -30,7 +17,7 @@ interface SortState {
   dir: SortDir;
 }
 
-function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, dir: SortDir): number {
+function compareMealRecord(a: MealRecord, b: MealRecord, field: SortField, dir: SortDir): number {
   let va: string | number | boolean | null;
   let vb: string | number | boolean | null;
 
@@ -38,10 +25,10 @@ function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, di
     case 'studentName': va = a.studentName; vb = b.studentName; break;
     case 'studentNumber': va = a.studentNumber; vb = b.studentNumber; break;
     case 'seatLabel': va = a.seatLabel; vb = b.seatLabel; break;
-    case 'lunchRequested': va = a.lunchRequested; vb = b.lunchRequested; break;
-    case 'lunchTaggedAt': va = a.lunchTaggedAt; vb = b.lunchTaggedAt; break;
-    case 'dinnerRequested': va = a.dinnerRequested; vb = b.dinnerRequested; break;
-    case 'dinnerTaggedAt': va = a.dinnerTaggedAt; vb = b.dinnerTaggedAt; break;
+    case 'lunchApplied': va = a.lunchApplied; vb = b.lunchApplied; break;
+    case 'lunchCheckedTime': va = a.lunchCheckedTime; vb = b.lunchCheckedTime; break;
+    case 'dinnerApplied': va = a.dinnerApplied; vb = b.dinnerApplied; break;
+    case 'dinnerCheckedTime': va = a.dinnerCheckedTime; vb = b.dinnerCheckedTime; break;
   }
 
   // null을 맨 뒤로
@@ -61,17 +48,13 @@ function compareMealCheck(a: MealCheckRow, b: MealCheckRow, field: SortField, di
 
 /* ── 엑셀 다운로드 ── */
 
-function downloadCsv(rows: MealCheckRow[], yearMonth: string) {
+function downloadCsv(rows: MealRecord[], dateStr: string) {
   const header = '이름,번호,좌석,점심신청,점심체크,저녁신청,저녁체크';
   const lines = rows.map((r) => {
-    const lunch = r.lunchRequested ? 'O' : '미신청';
-    const lunchCheck = r.lunchTaggedAt
-      ? `O ${r.lunchTaggedAt}${r.lunchNeedsConfirm ? ' *확인필요' : ''}`
-      : '';
-    const dinner = r.dinnerRequested ? 'O' : '미신청';
-    const dinnerCheck = r.dinnerTaggedAt
-      ? `O ${r.dinnerTaggedAt}${r.dinnerNeedsConfirm ? ' *확인필요' : ''}`
-      : '';
+    const lunch = r.lunchApplied ? 'O' : '미신청';
+    const lunchCheck = r.lunchChecked ? `O ${r.lunchCheckedTime ?? ''}` : '';
+    const dinner = r.dinnerApplied ? 'O' : '미신청';
+    const dinnerCheck = r.dinnerChecked ? `O ${r.dinnerCheckedTime ?? ''}` : '';
     return `${r.studentName},${r.studentNumber},${r.seatLabel},${lunch},${lunchCheck},${dinner},${dinnerCheck}`;
   });
 
@@ -81,7 +64,7 @@ function downloadCsv(rows: MealCheckRow[], yearMonth: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `급식명단_${yearMonth}.csv`;
+  link.download = `급식명단_${dateStr}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -101,7 +84,6 @@ export default function MealManagement() {
   const [searchName, setSearchName] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
   const [searchDate, setSearchDate] = useState(today);
-  const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', date: today });
 
   /* 정렬 */
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
@@ -109,19 +91,50 @@ export default function MealManagement() {
   /* 페이지 */
   const [page, setPage] = useState(1);
 
+  /* API 데이터 */
+  const [rows, setRows] = useState<MealRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [storeId, setStoreId] = useState<number | undefined>(undefined);
+
   /* 선택 */
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+  useEffect(() => {
+    getMe().then((me) => setStoreId(me.storeId)).catch(() => {});
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getMeals({
+        storeId,
+        startDate: searchDate,
+        endDate: searchDate,
+        studentName: searchName || undefined,
+        studentNumber: searchNumber || undefined,
+      });
+      setRows(data);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId, searchDate, searchName, searchNumber]);
+
+  // 초기 로드 + 날짜 변경 시 자동 조회
+  useEffect(() => {
+    if (storeId != null) fetchData();
+  }, [storeId, searchDate]);
+
   const handleSearch = () => {
-    setAppliedFilters({ name: searchName, number: searchNumber, date: searchDate });
     setPage(1);
+    fetchData();
   };
 
   const handleReset = () => {
     setSearchName('');
     setSearchNumber('');
     setSearchDate(today);
-    setAppliedFilters({ name: '', number: '', date: today });
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -136,31 +149,31 @@ export default function MealManagement() {
   };
 
   const filteredData = useMemo(() => {
-    let data = [...MOCK_DATA];
+    let data = [...rows];
 
-    if (appliedFilters.name) {
-      data = data.filter((r) => r.studentName.includes(appliedFilters.name));
+    if (searchName) {
+      data = data.filter((r) => r.studentName.includes(searchName));
     }
-    if (appliedFilters.number) {
-      data = data.filter((r) => r.studentNumber.includes(appliedFilters.number));
+    if (searchNumber) {
+      data = data.filter((r) => r.studentNumber.includes(searchNumber));
     }
 
     if (sort.field) {
-      data.sort((a, b) => compareMealCheck(a, b, sort.field!, sort.dir));
+      data.sort((a, b) => compareMealRecord(a, b, sort.field!, sort.dir));
     }
 
     return data;
-  }, [appliedFilters, sort]);
+  }, [rows, searchName, searchNumber, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const pageData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const allSelected = pageData.length > 0 && pageData.every((r) => selectedIds.has(r.id));
+  const allSelected = pageData.length > 0 && pageData.every((r) => selectedIds.has(r.studentId));
   const handleSelectAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(pageData.map((r) => r.id)));
+      setSelectedIds(new Set(pageData.map((r) => r.studentId)));
     }
   };
   const handleSelectRow = (id: number) => {
@@ -181,8 +194,9 @@ export default function MealManagement() {
 
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + 4);
+    let start = Math.max(1, page - 4);
+    let end = Math.min(totalPages, start + 9);
+    if (end - start < 9) start = Math.max(1, end - 9);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   }, [page, totalPages]);
@@ -230,7 +244,7 @@ export default function MealManagement() {
           <div className={styles.filterActions}>
             <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
             <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
-            <button type="button" className={styles.excelButton} onClick={() => downloadCsv(filteredData, appliedFilters.date || today)}>EXCEL</button>
+            <button type="button" className={styles.excelButton} onClick={() => downloadCsv(filteredData, searchDate)}>EXCEL</button>
           </div>
         </div>
       </div>
@@ -253,57 +267,59 @@ export default function MealManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('seatLabel')}>
                 좌석 <SortIcon field="seatLabel" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('lunchRequested')}>
-                점심신청 <SortIcon field="lunchRequested" />
+              <th className={styles.sortableCol} onClick={() => handleSort('lunchApplied')}>
+                점심신청 <SortIcon field="lunchApplied" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('lunchTaggedAt')}>
-                점심체크 <SortIcon field="lunchTaggedAt" />
+              <th className={styles.sortableCol} onClick={() => handleSort('lunchCheckedTime')}>
+                점심체크 <SortIcon field="lunchCheckedTime" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('dinnerRequested')}>
-                저녁신청 <SortIcon field="dinnerRequested" />
+              <th className={styles.sortableCol} onClick={() => handleSort('dinnerApplied')}>
+                저녁신청 <SortIcon field="dinnerApplied" />
               </th>
-              <th className={styles.sortableCol} onClick={() => handleSort('dinnerTaggedAt')}>
-                저녁체크 <SortIcon field="dinnerTaggedAt" />
+              <th className={styles.sortableCol} onClick={() => handleSort('dinnerCheckedTime')}>
+                저녁체크 <SortIcon field="dinnerCheckedTime" />
               </th>
             </tr>
           </thead>
           <tbody>
-            {pageData.length === 0 ? (
+            {loading ? (
+              <tr className={styles.emptyRow}>
+                <td colSpan={8}>로딩 중...</td>
+              </tr>
+            ) : pageData.length === 0 ? (
               <tr className={styles.emptyRow}>
                 <td colSpan={8}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pageData.map((row) => (
-                <tr key={row.id}>
+                <tr key={`${row.studentId}-${row.date}`}>
                   <td className={styles.checkboxCol}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.has(row.id)}
-                      onChange={() => handleSelectRow(row.id)}
+                      checked={selectedIds.has(row.studentId)}
+                      onChange={() => handleSelectRow(row.studentId)}
                     />
                   </td>
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
                   <td>{row.seatLabel}</td>
-                  <td>{row.lunchRequested ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
+                  <td>{row.lunchApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
-                    {row.lunchTaggedAt ? (
+                    {row.lunchChecked ? (
                       <>
                         <span className={styles.tagMark}>O</span>
-                        <span className={styles.tagTime}>{row.lunchTaggedAt}</span>
-                        {row.lunchNeedsConfirm && <span className={styles.needsConfirm}>*확인필요</span>}
+                        {row.lunchCheckedTime && <span className={styles.tagTime}>{row.lunchCheckedTime}</span>}
                       </>
-                    ) : null}
+                    ) : '-'}
                   </td>
-                  <td>{row.dinnerRequested ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
+                  <td>{row.dinnerApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
-                    {row.dinnerTaggedAt ? (
+                    {row.dinnerChecked ? (
                       <>
                         <span className={styles.tagMark}>O</span>
-                        <span className={styles.tagTime}>{row.dinnerTaggedAt}</span>
-                        {row.dinnerNeedsConfirm && <span className={styles.needsConfirm}>*확인필요</span>}
+                        {row.dinnerCheckedTime && <span className={styles.tagTime}>{row.dinnerCheckedTime}</span>}
                       </>
-                    ) : null}
+                    ) : '-'}
                   </td>
                 </tr>
               ))

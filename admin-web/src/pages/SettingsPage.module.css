@@ -861,3 +861,72 @@
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--color-text-secondary, #6b7280);
 }
+
+/* ── 데이터 관리 (동기화) ── */
+
+.syncCard {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-lg, 1.25rem);
+  margin-bottom: var(--spacing-md, 1rem);
+  background: #fafbfc;
+}
+
+.syncCard:last-child {
+  margin-bottom: 0;
+}
+
+.syncCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-lg, 1.25rem);
+}
+
+.syncCardTitle {
+  font-size: var(--font-size-md, 1rem);
+  font-weight: 600;
+  color: var(--color-text-primary, #1f2937);
+  margin: 0 0 var(--spacing-xs, 0.25rem) 0;
+}
+
+.syncCardDesc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #9ca3af);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.syncResult {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md, 1rem);
+  margin-top: var(--spacing-md, 1rem);
+  padding-top: var(--spacing-md, 1rem);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.syncResult strong {
+  color: var(--color-text-primary, #1f2937);
+}
+
+.syncResultTable {
+  margin-top: var(--spacing-md, 1rem);
+  padding-top: var(--spacing-md, 1rem);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.syncErrors {
+  margin-top: var(--spacing-sm, 0.5rem);
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
+  background: #fef2f2;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: #dc2626;
+}
+
+.syncErrors p {
+  margin: var(--spacing-xs, 0.25rem) 0;
+}
