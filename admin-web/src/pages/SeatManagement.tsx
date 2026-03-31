@@ -792,8 +792,15 @@ export default function SeatManagement() {
       await alert('승인할 좌석을 선택해주세요.');
       return;
     }
+    const approvalSeatLabel = modalItem
+      ? [
+          { cd: modalItem.desiredSeat1Cd, label: modalItem.desiredSeat1Label },
+          { cd: modalItem.desiredSeat2Cd, label: modalItem.desiredSeat2Label },
+          { cd: modalItem.desiredSeat3Cd, label: modalItem.desiredSeat3Label },
+        ].find((s) => s.cd === approvalSeat)?.label ?? approvalSeat
+      : approvalSeat;
     const confirmMsg = action === 'APPROVED'
-      ? `${approvalSeat} 좌석으로 승인하시겠습니까?`
+      ? `${approvalSeatLabel} 좌석으로 승인하시겠습니까?`
       : '해당 요청을 거절하시겠습니까?';
     if (!await confirm(confirmMsg)) return;
     try {
@@ -1040,7 +1047,7 @@ export default function SeatManagement() {
                   </tr>
                 ) : (
                   sortedWaiting.map((row) => (
-                    <tr key={row.id} className={styles.clickableRow} onClick={() => { setModalItem(row); setApprovalSeat(row.desiredSeat1Label); }}>
+                    <tr key={row.id} className={styles.clickableRow} onClick={() => { setModalItem(row); setApprovalSeat(row.desiredSeat1Cd); }}>
                       <td className={styles.checkboxCol} onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"

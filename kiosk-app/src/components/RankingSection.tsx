@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getStudyRankings, getAllStoreRankings } from '../api/rankingApi';
 import type { DsaRankingItem, AllStoreRankingItem } from '../api/rankingApi';
+import plusButtonIcon from '../assets/plus-button.png';
 import ranking1stIcon from '../assets/ranking_1st.png';
 import ranking2ndIcon from '../assets/ranking_2nd.png';
 import ranking3rdIcon from '../assets/ranking_3rd.png';
@@ -116,14 +117,14 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
       <section className={styles.container}>
         <div className={styles.header}>
           <h2 className={styles.title}>순공 랭킹</h2>
-          <button
-            type="button"
-            className={styles.moreButton}
-            aria-label="순공 랭킹 더보기"
+          <img
+            src={plusButtonIcon}
+            alt="순공 랭킹 더보기"
+            className={styles.moreIcon}
             onClick={openModal}
-          >
-            +
-          </button>
+            role="button"
+            tabIndex={0}
+          />
         </div>
 
         <div className={styles.slideToggle}>

@@ -8,7 +8,7 @@ import CardScanModal from '../components/CardScanModal';
 import type { ScanActionParams } from '../components/CardScanModal';
 import StudentInfoModal from '../components/StudentInfoModal';
 import RemoteApplyModal from '../components/RemoteApplyModal';
-import NoCardModal from '../components/NoCardModal';
+
 import SeatLeaveReasonModal from '../components/SeatLeaveReasonModal';
 import WeeklyMealModal from '../components/WeeklyMealModal';
 import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
@@ -33,14 +33,14 @@ interface MainPageProps {
 
 export default function MainPage({ session, onLogout }: MainPageProps) {
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showNoCard, setShowNoCard] = useState(false);
+
   const [showRemoteApply, setShowRemoteApply] = useState(false);
   const [showSeatLeaveReason, setShowSeatLeaveReason] = useState(false);
   const [showMealPlan, setShowMealPlan] = useState(false);
   const [showSeatMap, setShowSeatMap] = useState(false);
   const [phoneSubmissionStudent, setPhoneSubmissionStudent] = useState<{ identifier: string; name: string; inputMethod: string } | null>(null);
   const [seatChangeStudent, setSeatChangeStudent] = useState<{ student: Student; inputMethod: string } | null>(null);
-  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number; defaultKeypadMode?: 'seatLabel' | 'phoneLast4' | 'phone'; showPhone8?: boolean } | null>(null);
+  const [scanTarget, setScanTarget] = useState<{ actionId: string; label: string; secureClose?: boolean; keypadOnly?: boolean; reasonId?: number; defaultKeypadMode?: 'phone' } | null>(null);
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
@@ -59,7 +59,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   useQrScanner(handleQrScan);
 
   // 모달이 하나라도 열려 있는지 확인 (auto-tag 판별용)
-  const isAnyModalOpen = !!(scanTarget || showAdmin || showNoCard || showRemoteApply || showSeatLeaveReason || showMealPlan || showSeatMap || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
+  const isAnyModalOpen = !!(scanTarget || showAdmin || showRemoteApply || showSeatLeaveReason || showMealPlan || showSeatMap || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
   const isAnyModalOpenRef = useRef(isAnyModalOpen);
   isAnyModalOpenRef.current = isAnyModalOpen;
 
@@ -85,7 +85,9 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     if (menuId === 'seat-leave') {
       setShowSeatLeaveReason(true);
     } else if (menuId === 'no-card') {
-      setShowNoCard(true);
+      setScanResult(null);
+      setQrResult(null);
+      setScanTarget({ actionId: 'tag', label: '전화번호로 인증', keypadOnly: true, defaultKeypadMode: 'phone' });
     } else if (menuId === 'remote-apply') {
       setShowRemoteApply(true);
     } else if (menuId === 'meal-plan') {
@@ -93,7 +95,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     } else if (menuId === 'student-info') {
       setScanResult(null);
       setQrResult(null);
-      setScanTarget({ actionId: 'student-info', label: '학적 조회', showPhone8: true });
+      setScanTarget({ actionId: 'student-info', label: '학적 조회' });
     } else if (menuId === 'seat-map') {
       setShowSeatMap(true);
     }
@@ -140,15 +142,12 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   // 통합 식별자 추출 (좌석이탈 등 identifier 하나만 받는 API용)
   const resolveIdentifier = useCallback(async (params: ScanActionParams): Promise<string> => {
     if (params.identifier) return params.identifier;
-    if (params.seatLabel) return params.seatLabel;
-    if (params.phoneLast4) return params.phoneLast4;
+    if (params.phone8) return params.phone8;
     throw new Error('학생을 식별할 수 없습니다.');
   }, []);
 
   /** ScanActionParams로부터 입력 방식 판별 — 백엔드 inputMethod 값 기준 */
   const resolveInputMethod = useCallback((params: ScanActionParams): string => {
-    if (params.seatLabel) return 'SEAT_LABEL';
-    if (params.phoneLast4) return 'PHONE_LAST4';
     if (params.phone8) return 'PHONE';
     // 카드/QR 모두 백엔드에서는 RFID로 취급
     return 'RFID';
@@ -157,7 +156,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const handleTagAction = useCallback(async (params: ScanActionParams) => {
     const inputMethod = resolveInputMethod(params);
     // 좌석이탈 복귀 등 identifier 하나만 받는 API용
-    const fallbackIdentifier = params.identifier || params.seatLabel || params.phoneLast4;
+    const fallbackIdentifier = params.identifier || params.phone8;
     if (!fallbackIdentifier) throw new Error('학생을 식별할 수 없습니다.');
     console.log('[handleTagAction] params:', params, '→ inputMethod:', inputMethod);
 
@@ -290,18 +289,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
 
       <AccessibilityBar />
 
-      {showNoCard && (
-        <NoCardModal
-          onClose={() => setShowNoCard(false)}
-          onSelect={(method) => {
-            setShowNoCard(false);
-            setScanResult(null);
-            setQrResult(null);
-            const label = method === 'seatLabel' ? '좌석 번호로 인증' : '휴대폰 뒷자리로 인증';
-            setScanTarget({ actionId: 'tag', label, keypadOnly: true, defaultKeypadMode: method });
-          }}
-        />
-      )}
+      {/* 카드 미소지 → 휴대폰 뒤 8자리 키패드로 바로 진입 */}
 
       {showSeatLeaveReason && (
         <SeatLeaveReasonModal
@@ -330,7 +318,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           secureClose={scanTarget.secureClose}
           keypadOnly={scanTarget.keypadOnly}
           defaultKeypadMode={scanTarget.defaultKeypadMode}
-          showPhone8={scanTarget.showPhone8}
           onClose={handleScanClose}
           onStudentFound={getOnStudentFound()}
           onAction={getScanAction()}

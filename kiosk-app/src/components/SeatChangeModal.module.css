@@ -20,6 +20,18 @@
   padding: var(--space-8) var(--space-5) var(--space-7);
 }
 
+.modalSmall {
+  position: relative;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-lg);
+  width: 75vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--space-8) var(--space-5) var(--space-7);
+}
+
 .closeButton {
   position: absolute;
   top: var(--space-8);
@@ -345,8 +357,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.8rem;
+  height: 2.8rem;
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-bg-white);
@@ -360,4 +372,6 @@
   color: var(--color-text);
   text-align: center;
   line-height: 1.5;
+  white-space: pre-line;
+  word-break: keep-all;
 }

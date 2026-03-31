@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LuPin } from 'react-icons/lu';
 import { getNotices, getSubjectNotices } from '../api/noticeApi';
 import type { Notice, SubjectNotice } from '../api/noticeApi';
+import plusButtonIcon from '../assets/plus-button.png';
 import styles from './NoticeSection.module.css';
 
 const DEFAULT_COUNT = 3;
@@ -126,14 +127,14 @@ export default function NoticeSection() {
     <section className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>공지사항</h2>
-        <button
-          type="button"
-          className={styles.moreButton}
-          aria-label="공지사항 더보기"
+        <img
+          src={plusButtonIcon}
+          alt="공지사항 더보기"
+          className={styles.moreIcon}
           onClick={openModal}
-        >
-          +
-        </button>
+          role="button"
+          tabIndex={0}
+        />
       </div>
       <ul className={styles.list}>
         {loading ? (

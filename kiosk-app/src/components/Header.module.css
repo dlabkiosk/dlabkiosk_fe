@@ -41,6 +41,7 @@
   font-size: var(--font-sm);
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .ddayList {

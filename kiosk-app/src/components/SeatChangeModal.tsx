@@ -182,7 +182,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
   if (success) {
     return (
       <div className={styles.overlay}>
-        <div className={styles.modal}>
+        <div className={styles.modalSmall}>
           <div className={styles.successSection}>
             <span className={styles.successIcon}>&#x2713;</span>
             <p className={styles.successMessage}>
@@ -199,7 +199,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
   if (existingRequest && existingRequest.status === 'PENDING') {
     return (
       <div className={styles.overlay} onClick={onClose}>
-        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalSmall} onClick={(e) => e.stopPropagation()}>
           <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
             &#x2715;
           </button>

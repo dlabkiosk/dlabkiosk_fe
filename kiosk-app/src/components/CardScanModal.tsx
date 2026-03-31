@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import cardAndQrImg from '../assets/card_and_qr.jpg';
-import { searchStudent, getStudentBySeat, getStudentByPhone, getStudentByPhone8 } from '../api/studentApi';
+import { searchStudent, getStudentByPhone8 } from '../api/studentApi';
 import { getStudentMessages } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
 import type { MealInfo } from '../api/tagApi';
@@ -11,22 +11,17 @@ import styles from './CardScanModal.module.css';
 
 const SECURE_CLOSE_TAPS = 5;
 const SECURE_CLOSE_TIMEOUT_MS = 3000;
-const SEAT_LABEL_MAX_LENGTH = 10;
-const PHONE_DIGITS_LENGTH = 4;
 const PHONE_8_DIGITS_LENGTH = 8;
 const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 3000;
 const PENDING_ACTION_DISPLAY_MS = 10000;
 const ERROR_DISPLAY_MS = 2000;
-const SEAT_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
-const PHONE_KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
 
-type KeypadMode = 'seatLabel' | 'phoneLast4' | 'phone';
+type KeypadMode = 'phone';
 
 export interface ScanActionParams {
   identifier?: string;
-  seatLabel?: string;
-  phoneLast4?: string;
   phone8?: string;
 }
 
@@ -57,8 +52,6 @@ interface CardScanModalProps {
   keypadOnly?: boolean;
   /** keypadOnly 시 초기 키패드 모드 지정 */
   defaultKeypadMode?: KeypadMode;
-  /** true이면 전화번호 뒤 8자리 입력 옵션 표시 (학적 조회용) */
-  showPhone8?: boolean;
   onClose: () => void;
   onStudentFound?: (student: Student, inputMethod: string) => void;
   onAction?: (params: ScanActionParams) => Promise<ScanActionResult>;
@@ -68,7 +61,7 @@ interface CardScanModalProps {
   onMealConfirm?: (params: { identifier: string; inputMethod: string }) => Promise<ScanActionResult>;
 }
 
-export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, showPhone8 = false, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm }: CardScanModalProps) {
+export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm }: CardScanModalProps) {
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(defaultKeypadMode ?? null);
@@ -186,35 +179,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }
   }, [onAction, handleStudentFound, showSuccess, showError]);
 
-  // 좌석번호로 조회
-  const handleSeatLabel = useCallback((seatLabel: string) => {
-    setSearching(true);
-    if (onAction) {
-      onAction({ seatLabel })
-        .then((result) => showSuccess(result))
-        .catch((err) => { setSearching(false); showError(err?.message); });
-    } else {
-      getStudentBySeat(seatLabel)
-        .then((data) => handleStudentFound(toStudent(data, seatLabel), 'SEAT_LABEL'))
-        .catch(() => { setSearching(false); showError('해당 좌석에 배정된 학생이 없습니다.'); });
-    }
-  }, [onAction, handleStudentFound, showSuccess, showError]);
-
-  // 전번 뒷자리로 조회
-  const handlePhoneLast4 = useCallback((phoneLast4: string) => {
-    setSearching(true);
-    if (onAction) {
-      onAction({ phoneLast4 })
-        .then((result) => showSuccess(result))
-        .catch((err) => { setSearching(false); showError(err?.message); });
-    } else {
-      getStudentByPhone(phoneLast4)
-        .then((data) => handleStudentFound(toStudent(data, phoneLast4), 'PHONE_LAST4'))
-        .catch(() => { setSearching(false); showError('일치하는 학생이 없습니다.'); });
-    }
-  }, [onAction, handleStudentFound, showSuccess, showError]);
-
-  // 전화번호 뒤 8자리로 조회 (학적 조회 전용)
+  // 전화번호 뒤 8자리로 조회
   const handlePhone8 = useCallback((phone8: string) => {
     setSearching(true);
     if (onAction) {
@@ -308,8 +273,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }, SECURE_CLOSE_TIMEOUT_MS);
   }, [secureClose, closeTapCount, onClose]);
 
-  const maxLength = keypadMode === 'seatLabel' ? SEAT_LABEL_MAX_LENGTH : keypadMode === 'phone' ? PHONE_8_DIGITS_LENGTH : PHONE_DIGITS_LENGTH;
-  const keypadKeys = keypadMode === 'seatLabel' ? SEAT_KEYPAD : PHONE_KEYPAD;
+  const maxLength = PHONE_8_DIGITS_LENGTH;
 
   const handleKeypadPress = useCallback((key: string) => {
     if (key === 'backspace') {
@@ -327,30 +291,15 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     });
   }, [maxLength]);
 
-  const isInputValid = keypadMode === 'phoneLast4'
-    ? inputValue.length === PHONE_DIGITS_LENGTH
-    : keypadMode === 'phone'
-      ? inputValue.length === PHONE_8_DIGITS_LENGTH
-      : inputValue.length > 0;
+  const isInputValid = inputValue.length === PHONE_8_DIGITS_LENGTH;
 
   const handleKeypadSubmit = useCallback(() => {
-    if (keypadMode === 'phoneLast4' && inputValue.length !== PHONE_DIGITS_LENGTH) {
-      showError('휴대폰 뒷자리 4자리를 입력해주세요.');
+    if (inputValue.length !== PHONE_8_DIGITS_LENGTH) {
+      showError('전화번호 뒤 8자리를 입력해주세요.');
       return;
     }
-    if (keypadMode === 'phone' && inputValue.length !== PHONE_8_DIGITS_LENGTH) {
-      showError('전화번호를 입력해주세요.');
-      return;
-    }
-    if (inputValue.length === 0) return;
-    if (keypadMode === 'seatLabel') {
-      handleSeatLabel(inputValue);
-    } else if (keypadMode === 'phone') {
-      handlePhone8(inputValue);
-    } else {
-      handlePhoneLast4(inputValue);
-    }
-  }, [inputValue, keypadMode, handleSeatLabel, handlePhoneLast4, handlePhone8, showError]);
+    handlePhone8(inputValue);
+  }, [inputValue, handlePhone8, showError]);
 
   const handleBackToScan = useCallback(() => {
     setKeypadMode(null);
@@ -465,35 +414,18 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
             <div className={styles.fallbackButtons}>
               <button
                 type="button"
-                className={styles.seatButton}
-                onClick={() => openKeypad('seatLabel')}
+                className={styles.phoneButton}
+                onClick={() => openKeypad('phone')}
               >
-                좌석 번호로 인증
+                전화번호로 인증
               </button>
-              {showPhone8 ? (
-                <button
-                  type="button"
-                  className={styles.phoneButton}
-                  onClick={() => openKeypad('phone')}
-                >
-                  전화번호로 조회
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.phoneButton}
-                  onClick={() => openKeypad('phoneLast4')}
-                >
-                  휴대폰 뒷자리로 인증
-                </button>
-              )}
             </div>
           </>
         ) : (
           <div className={styles.keypadSection}>
             <div className={styles.studentIdDisplay}>
               <span className={inputValue ? styles.studentIdValue : styles.studentIdPlaceholder}>
-                {inputValue || (keypadMode === 'seatLabel' ? '좌석 번호' : keypadMode === 'phone' ? '전화번호' : '휴대폰 뒷자리')}
+                {inputValue || '전화번호 뒤 8자리'}
               </span>
             </div>
 
@@ -502,7 +434,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
             )}
 
             <div className={styles.keypadGrid}>
-              {keypadKeys.map((key, idx) => (
+              {KEYPAD_KEYS.map((key, idx) => (
                 <button
                   key={idx}
                   type="button"
