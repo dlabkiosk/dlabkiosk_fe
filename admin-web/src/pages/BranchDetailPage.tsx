@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LuSettings, LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft } from 'react-icons/lu';
+import settingIcon from '../assets/setting_active.png';
 import { getStore, updateStore, deleteStore } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
@@ -98,7 +99,7 @@ export default function BranchDetailPage() {
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageTitleGroup}>
-            <LuSettings className={styles.pageTitleIcon} />
+            <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
             <h2 className={styles.pageTitle}>설정</h2>
           </div>
         </div>
@@ -116,7 +117,7 @@ export default function BranchDetailPage() {
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageTitleGroup}>
-            <LuSettings className={styles.pageTitleIcon} />
+            <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
             <h2 className={styles.pageTitle}>설정</h2>
           </div>
         </div>
@@ -135,7 +136,7 @@ export default function BranchDetailPage() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuSettings className={styles.pageTitleIcon} />
+          <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>설정</h2>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuMegaphone, LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft } from 'react-icons/lu';
+import noticeIcon from '../assets/notice_active.png';
 import { createNotice } from '../api/noticeApi';
 import { ApiError } from '../api/client';
 import styles from './NoticeCreate.module.css';
@@ -65,7 +66,7 @@ export default function NoticeCreate() {
           <LuArrowLeft />
         </button>
         <div className={styles.pageTitleGroup}>
-          <LuMegaphone className={styles.pageTitleIcon} />
+          <img src={noticeIcon} alt="" className={styles.pageTitleIcon} />
           <h1 className={styles.pageTitle}>공지사항 등록</h1>
         </div>
       </div>

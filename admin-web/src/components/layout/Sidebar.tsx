@@ -1,49 +1,46 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LuLayoutDashboard,
-  LuUsers,
-  LuClock,
-  LuCalendarCheck,
-  LuUtensils,
-  LuArmchair,
-  LuSmartphone,
-  LuDoorOpen,
-  LuStar,
-  LuWallet,
-  LuMegaphone,
-  LuSettings,
-} from 'react-icons/lu';
+import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
 import type { MenuItem } from '../../types/menu';
-import logoImg from '../../assets/logo.png';
 import styles from './Sidebar.module.css';
 
+import dashboardActive from '../../assets/dashboard_active.png';
+import dashboardDisable from '../../assets/dashboard_disable.png';
+import attendanceActive from '../../assets/attendance_active.png';
+import attendanceDisable from '../../assets/attendance_disable.png';
+import mealActive from '../../assets/meal_active.png';
+import mealDisable from '../../assets/meal_disable.png';
+import phoneActive from '../../assets/phone_active.png';
+import phoneDisable from '../../assets/phone_disable.png';
+import seatleaveActive from '../../assets/seatleave_active.png';
+import seatleaveDisable from '../../assets/seatleave_disable.png';
+import seatActive from '../../assets/seat_active.png';
+import seatDisable from '../../assets/seat_disable.png';
+import studyActive from '../../assets/study_active.png';
+import studyDisable from '../../assets/study_disable.png';
+import noticeActive from '../../assets/notice_active.png';
+import noticeDisable from '../../assets/notice_disable.png';
+import settingActive from '../../assets/setting_active.png';
+import settingDisable from '../../assets/setting_disable.png';
+
 const MENU_ITEMS: MenuItem[] = [
-  { label: '대시보드', path: '/', icon: LuLayoutDashboard },
-  // { label: '학생관리', path: '/students', icon: LuUsers, children: [] },
-  {
-    label: '출결 관리',
-    path: '/attendance',
-    icon: LuCalendarCheck,
-    children: [],
-  },
-  { label: '식사 신청 및 체크명단', path: '/meals', icon: LuUtensils },
-  { label: '휴대폰 미소지 관리', path: '/phones', icon: LuSmartphone },
-  { label: '좌석 이탈 관리', path: '/seat-leaves', icon: LuDoorOpen },
-  { label: '좌석 관리', path: '/seats', icon: LuArmchair, children: [] },
-  { label: '순공 관리', path: '/study-time', icon: LuClock, children: [] },
-  // {
-  //   label: '상·벌점관리',
-  //   path: '/points',
-  //   icon: LuStar,
-  //   children: [],
-  // },
-  // { label: '수납관리', path: '/billing', icon: LuWallet, children: [] },
-  { label: '공지 관리', path: '/notices', icon: LuMegaphone, children: [] },
-  { label: '설정', path: '/settings', icon: LuSettings, children: [] },
+  { label: '대시보드', path: '/', icon: dashboardDisable, activeIcon: dashboardActive },
+  { label: '출결 관리', path: '/attendance', icon: attendanceDisable, activeIcon: attendanceActive, children: [] },
+  { label: '식사 신청 및 체크명단', path: '/meals', icon: mealDisable, activeIcon: mealActive },
+  { label: '휴대폰 미소지 관리', path: '/phones', icon: phoneDisable, activeIcon: phoneActive },
+  { label: '좌석 이탈 관리', path: '/seat-leaves', icon: seatleaveDisable, activeIcon: seatleaveActive },
+  { label: '좌석 관리', path: '/seats', icon: seatDisable, activeIcon: seatActive, children: [] },
+  { label: '순공 관리', path: '/study-time', icon: studyDisable, activeIcon: studyActive, children: [] },
+  { label: '공지 관리', path: '/notices', icon: noticeDisable, activeIcon: noticeActive, children: [] },
+  { label: '설정', path: '/settings', icon: settingDisable, activeIcon: settingActive, children: [] },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<Set<string>>(new Set());
 
@@ -63,15 +60,15 @@ export default function Sidebar() {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.logo}>
-        <img src={logoImg} alt="D'Lab" className={styles.logoImage} />
-        <span className={styles.storeName}>{(sessionStorage.getItem('storeName') ?? '').replace(/^D'?LAB\s*/i, '')}</span>
-      </div>
+    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+      <button className={styles.toggleButton} type="button" onClick={onToggle} title={collapsed ? '사이드바 열기' : '사이드바 닫기'}>
+        {collapsed ? <LuChevronRight /> : <LuChevronLeft />}
+      </button>
 
       <nav className={styles.nav}>
         {MENU_ITEMS.map((item) => {
-          const Icon = item.icon;
+          const active = isActive(item.path);
+          const iconSrc = active ? item.activeIcon : item.icon;
           const hasChildren = item.children && item.children.length > 0;
           const isOpen = openMenus.has(item.path);
 
@@ -79,21 +76,22 @@ export default function Sidebar() {
             return (
               <div key={item.path} className={styles.menuGroup}>
                 <button
-                  className={`${styles.menuItem} ${isActive(item.path) ? styles.active : ''}`}
+                  className={`${styles.menuItem} ${active ? styles.active : ''}`}
                   onClick={() => toggleMenu(item.path)}
                   type="button"
+                  title={collapsed ? item.label : undefined}
                 >
-                  <Icon className={styles.menuIcon} />
-                  <span className={styles.menuLabel}>{item.label}</span>
+                  <img src={iconSrc} alt="" className={styles.menuIcon} />
+                  {!collapsed && <span className={styles.menuLabel}>{item.label}</span>}
                 </button>
-                {isOpen && (
+                {isOpen && !collapsed && (
                   <div className={styles.subMenu}>
                     {item.children!.map((child) => (
                       <NavLink
                         key={child.path}
                         to={child.path}
-                        className={({ isActive: active }) =>
-                          `${styles.subMenuItem} ${active ? styles.active : ''}`
+                        className={({ isActive: a }) =>
+                          `${styles.subMenuItem} ${a ? styles.active : ''}`
                         }
                       >
                         {child.label}
@@ -109,11 +107,14 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              className={`${styles.menuItem} ${item.children ? '' : ''} ${isActive(item.path) ? styles.active : ''}`}
+              end={item.path === '/'}
+              className={() =>
+                `${styles.menuItem} ${active ? styles.active : ''}`
+              }
+              title={collapsed ? item.label : undefined}
             >
-              <Icon className={styles.menuIcon} />
-              <span className={styles.menuLabel}>{item.label}</span>
-              {item.children !== undefined }
+              <img src={iconSrc} alt="" className={styles.menuIcon} />
+              {!collapsed && <span className={styles.menuLabel}>{item.label}</span>}
             </NavLink>
           );
         })}

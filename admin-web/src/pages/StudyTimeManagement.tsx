@@ -1,11 +1,19 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ko } from 'date-fns/locale/ko';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
-  LuClock,
   LuArrowUpDown,
   LuArrowUp,
   LuArrowDown,
 } from 'react-icons/lu';
+import studyIcon from '../assets/study_active.png';
+import downloadIcon from '../assets/download.png';
 import styles from './StudyTimeManagement.module.css';
+import f from '../styles/filter.module.css';
+import dp from '../components/FilterDatePicker.module.css';
+
+registerLocale('ko', ko);
 import { getStudyTimes } from '../api/studyTimeApi';
 import type { StudentStudyTime } from '../api/studyTimeApi';
 import { getMe } from '../api/authApi';
@@ -43,28 +51,6 @@ function formatDateShort(date: Date): string {
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-
-/* ── 캘린더 그리드 생성 ── */
-
-function getCalendarGrid(year: number, month: number): (Date | null)[][] {
-  const firstDay = new Date(year, month - 1, 1);
-  const startDay = firstDay.getDay(); // 0=일 ~ 6=토
-  // 월요일 시작으로 변환: 0(일)→6, 1(월)→0, ..., 6(토)→5
-  const offset = startDay === 0 ? 6 : startDay - 1;
-  const daysInMonth = new Date(year, month, 0).getDate();
-
-  const cells: (Date | null)[] = [];
-  for (let i = 0; i < offset; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month - 1, d));
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const weeks: (Date | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(cells.slice(i, i + 7));
-  }
-  return weeks;
 }
 
 /* ── 타입 ── */
@@ -130,11 +116,7 @@ export default function StudyTimeManagement() {
   today.setHours(0, 0, 0, 0);
 
   const [selectedMonday, setSelectedMonday] = useState(() => getMonday(today));
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calYear, setCalYear] = useState(today.getFullYear());
-  const [calMonth, setCalMonth] = useState(today.getMonth() + 1);
-  const [hoverMonday, setHoverMonday] = useState<Date | null>(null);
-  const calRef = useRef<HTMLDivElement>(null);
+  const weekPickerRef = useRef<DatePicker>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
   // 필터
@@ -161,23 +143,12 @@ export default function StudyTimeManagement() {
     }
   }, [page]);
 
-  // 외부 클릭 시 닫기
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (calRef.current && !calRef.current.contains(e.target as Node)) {
-        setCalendarOpen(false);
-      }
-    };
-    if (calendarOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [calendarOpen]);
-
   const startDate = selectedMonday;
   const endDate = addDays(startDate, 6);
 
-  // 7일 날짜 헤더 (최신이 왼쪽)
+  // 7일 날짜 헤더 (월요일부터)
   const dayHeaders: Date[] = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 0; i < 7; i++) {
     dayHeaders.push(addDays(startDate, i));
   }
 
@@ -212,8 +183,8 @@ export default function StudyTimeManagement() {
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
-      if (filterNumber && !row.studentNumber.includes(filterNumber)) return false;
-      if (filterName && !row.name.includes(filterName)) return false;
+      if (filterNumber && !(row.studentNumber ?? '').includes(filterNumber)) return false;
+      if (filterName && !(row.name ?? '').includes(filterName)) return false;
       return true;
     });
   }, [rows, filterNumber, filterName]);
@@ -248,52 +219,8 @@ export default function StudyTimeManagement() {
     return pages;
   }, [page, totalPages]);
 
-  const handleDateClick = (date: Date) => {
-    const mon = getMonday(date);
-    setSelectedMonday(mon);
-    setCalendarOpen(false);
-  };
-
-  const handlePrevMonth = () => {
-    if (calMonth === 1) { setCalMonth(12); setCalYear(calYear - 1); }
-    else setCalMonth(calMonth - 1);
-  };
-
-  const handleNextMonth = () => {
-    if (calMonth === 12) { setCalMonth(1); setCalYear(calYear + 1); }
-    else setCalMonth(calMonth + 1);
-  };
-
-  const toggleCalendar = () => {
-    if (!calendarOpen) {
-      setCalYear(selectedMonday.getFullYear());
-      setCalMonth(selectedMonday.getMonth() + 1);
-    }
-    setCalendarOpen(!calendarOpen);
-  };
-
-  const calendarGrid = getCalendarGrid(calYear, calMonth);
-  const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
-
-  // 날짜가 선택된 주 범위 안에 있는지
-  const isInSelectedWeek = (date: Date): boolean => {
-    return date >= selectedMonday && date <= endDate;
-  };
-
-  // hover 중인 주 범위 안에 있는지
-  const isInHoverWeek = (date: Date): boolean => {
-    if (!hoverMonday) return false;
-    const hoverEnd = addDays(hoverMonday, 6);
-    return date >= hoverMonday && date <= hoverEnd;
-  };
-
-  // 날짜가 주 범위의 시작인지 끝인지
-  const getWeekPosition = (date: Date, monday: Date): 'start' | 'end' | 'mid' | null => {
-    const sun = addDays(monday, 6);
-    if (date < monday || date > sun) return null;
-    if (isSameDay(date, monday)) return 'start';
-    if (isSameDay(date, sun)) return 'end';
-    return 'mid';
+  const handleWeekChange = (date: Date | null) => {
+    if (date) setSelectedMonday(getMonday(date));
   };
 
   const handleSort = (field: SortField) => {
@@ -316,102 +243,72 @@ export default function StudyTimeManagement() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuClock className={styles.pageTitleIcon} />
+          <img src={studyIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>순공 관리</h2>
         </div>
       </div>
 
       {/* 필터 */}
-      <div className={styles.filterCard}>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>학생명</label>
+      <div className={f.filterCard}>
+        <div className={f.filterRow}>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>학생명</label>
             <input
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학생명"
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>학번</label>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>학번</label>
             <input
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학번"
               value={filterNumber}
               onChange={(e) => setFilterNumber(e.target.value)}
             />
           </div>
-          <div className={styles.datePickerWrap} ref={calRef}>
-            <button type="button" className={styles.datePickerButton} onClick={toggleCalendar}>
-              {formatDateDot(startDate)} ~ {formatDateDot(endDate)}
-              <span className={styles.calendarIcon}>&#x25BC;</span>
-            </button>
-            {calendarOpen && (
-              <div className={styles.calendarDropdown}>
-                <div className={styles.calendarHeader}>
-                  <button type="button" className={styles.calNavBtn} onClick={handlePrevMonth}>&lt;</button>
-                  <span className={styles.calMonthLabel}>{calYear}년 {String(calMonth).padStart(2, '0')}월</span>
-                  <button type="button" className={styles.calNavBtn} onClick={handleNextMonth}>&gt;</button>
-                </div>
-                <table className={styles.calendarTable}>
-                  <thead>
-                    <tr>
-                      {DAY_LABELS.map((d) => (
-                        <th key={d}>{d}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {calendarGrid.map((week, wi) => (
-                      <tr key={wi}>
-                        {week.map((date, di) => {
-                          if (!date) return <td key={di} />;
-
-                          const selected = isInSelectedWeek(date);
-                          const hovered = !selected && isInHoverWeek(date);
-                          const pos = selected
-                            ? getWeekPosition(date, selectedMonday)
-                            : hovered && hoverMonday
-                              ? getWeekPosition(date, hoverMonday)
-                              : null;
-                          const isToday = isSameDay(date, today);
-
-                          const classNames = [styles.calDay];
-                          if (isToday) classNames.push(styles.calDayToday);
-                          if (selected) classNames.push(styles.calDaySelected);
-                          if (hovered) classNames.push(styles.calDayHover);
-                          if (pos === 'start') classNames.push(styles.calDayStart);
-                          if (pos === 'end') classNames.push(styles.calDayEnd);
-                          if (pos === 'today') classNames.push(styles.calDayToday);
-
-                          return (
-                            <td
-                              key={di}
-                              className={classNames.join(' ')}
-                              onClick={() => handleDateClick(date)}
-                              onMouseEnter={() => setHoverMonday(getMonday(date))}
-                              onMouseLeave={() => setHoverMonday(null)}
-                            >
-                              {date.getDate()}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>기간</label>
+            <div className={styles.datePickerWrap} onClick={() => weekPickerRef.current?.setOpen(true)}>
+              <DatePicker
+                ref={weekPickerRef}
+                locale="ko"
+                selected={selectedMonday}
+                onChange={handleWeekChange}
+                showWeekPicker
+                showWeekNumbers={false}
+                calendarStartDay={1}
+                dateFormat="yyyy-MM-dd"
+                className={dp.input}
+                calendarClassName={`${dp.calendar} ${styles.weekCalendar}`}
+                dayClassName={() => dp.day}
+                popperClassName={dp.popper}
+                showPopperArrow={false}
+                customInput={
+                  <button type="button" className={styles.datePickerButton}>
+                    {formatDateKey(startDate)} ~ {formatDateKey(endDate)}
+                    <svg className={styles.calendarIcon} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                }
+              />
+            </div>
           </div>
 
-          <div className={styles.filterActions}>
-            <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
-            <button type="button" className={styles.excelButton}>EXCEL</button>
+          <div className={f.filterActions}>
+            <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
           </div>
         </div>
       </div>
 
       <div className={styles.contentCard} ref={tableRef}>
+        <div className={styles.tableActions}>
+          <button type="button" className={f.excelButton}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+        </div>
 
         {/* 테이블 */}
         <div className={styles.tableWrap}>
@@ -472,10 +369,10 @@ export default function StudyTimeManagement() {
         </div>
 
         {sortedData.length > PAGE_SIZE && (
-          <div className={styles.pagination}>
+          <div className={f.pagination}>
             <button
               type="button"
-              className={styles.pageBtn}
+              className={f.pageBtn}
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
             >
@@ -485,7 +382,7 @@ export default function StudyTimeManagement() {
               <button
                 key={p}
                 type="button"
-                className={`${styles.pageBtn} ${page + 1 === p ? styles.pageBtnActive : ''}`}
+                className={`${f.pageBtn} ${page + 1 === p ? f.pageBtnActive : ''}`}
                 onClick={() => setPage(p - 1)}
               >
                 {p}
@@ -493,7 +390,7 @@ export default function StudyTimeManagement() {
             ))}
             <button
               type="button"
-              className={styles.pageBtn}
+              className={f.pageBtn}
               disabled={page + 1 >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

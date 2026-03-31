@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  LuDoorOpen,
   LuArrowUpDown,
   LuArrowUp,
   LuArrowDown,
 } from 'react-icons/lu';
+import seatleaveIcon from '../assets/seatleave_active.png';
+import downloadIcon from '../assets/download.png';
 import {
   getSeatLeaves,
   forceReturnSeatLeave,
@@ -12,7 +13,9 @@ import {
 import type { SeatLeaveRecord } from '../api/seatLeaveApi';
 import { getStudents } from '../api/studentApi';
 import useConfirm from '../hooks/useConfirm';
+import FilterDatePicker from '../components/FilterDatePicker';
 import styles from './SeatLeaveManagement.module.css';
+import f from '../styles/filter.module.css';
 
 /* ── 정렬 ── */
 
@@ -257,67 +260,55 @@ export default function SeatLeaveManagement() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuDoorOpen className={styles.pageTitleIcon} />
+          <img src={seatleaveIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>좌석 이탈 관리</h2>
         </div>
       </div>
 
       {/* 필터 */}
-      <div className={styles.filterCard}>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="sl-name">학생명</label>
+      <div className={f.filterCard}>
+        <div className={f.filterRow}>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel} htmlFor="sl-name">학생명</label>
             <input
               id="sl-name"
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학생명"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="sl-number">학번</label>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel} htmlFor="sl-number">학번</label>
             <input
               id="sl-number"
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학번"
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="sl-start">시작일</label>
-            <input
-              id="sl-start"
-              type="date"
-              className={styles.filterDateInput}
-              value={searchStartDate}
-              onChange={(e) => setSearchStartDate(e.target.value)}
-            />
-          </div>
-          <span className={styles.dateSeparator}>~</span>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="sl-end">종료일</label>
-            <input
-              id="sl-end"
-              type="date"
-              className={styles.filterDateInput}
-              value={searchEndDate}
-              onChange={(e) => setSearchEndDate(e.target.value)}
-            />
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel} htmlFor="sl-start">기간</label>
+            <FilterDatePicker id="sl-start" value={searchStartDate} onChange={setSearchStartDate} maxDate={searchEndDate} />
+            <span className={f.dateSeparator}>~</span>
+            <FilterDatePicker id="sl-end" value={searchEndDate} onChange={setSearchEndDate} minDate={searchStartDate} />
           </div>
 
-          <div className={styles.filterActions}>
-            <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
-            <button type="button" className={styles.refreshButton} onClick={fetchData}>새로고침</button>
-            <button type="button" className={styles.excelButton} onClick={handleExcel}>EXCEL</button>
+          <div className={f.filterActions}>
+            <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
           </div>
         </div>
       </div>
 
       {/* 테이블 */}
       <div className={styles.contentCard}>
+        <div className={styles.tableActions}>
+          <button type="button" className={f.excelButton} onClick={handleExcel}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+        </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
@@ -400,10 +391,10 @@ export default function SeatLeaveManagement() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className={styles.pagination}>
+        <div className={f.pagination}>
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
@@ -413,7 +404,7 @@ export default function SeatLeaveManagement() {
             <button
               key={p}
               type="button"
-              className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`}
+              className={`${f.pageBtn} ${page === p ? f.pageBtnActive : ''}`}
               onClick={() => setPage(p)}
             >
               {p}
@@ -421,7 +412,7 @@ export default function SeatLeaveManagement() {
           ))}
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
           >

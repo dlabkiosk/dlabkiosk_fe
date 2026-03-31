@@ -1,7 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* ── Page Header ── */
@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0;
 }
 
 .backButton {
@@ -35,13 +36,19 @@
 }
 
 .pageTitleIcon {
-  font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: content-box;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
 }
 
 .pageTitle {
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 

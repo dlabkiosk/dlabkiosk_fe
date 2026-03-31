@@ -34,7 +34,7 @@
 .cancelBtn {
   padding: var(--spacing-sm) var(--spacing-md-lg);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: #fff;
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
@@ -49,10 +49,10 @@
 .confirmBtn {
   padding: var(--spacing-sm) var(--spacing-md-lg);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--color-text-primary);
   font-size: var(--font-size-md);
-  font-weight: 600;
+  font-weight: 400;
   color: #fff;
   cursor: pointer;
   transition: opacity 0.15s;

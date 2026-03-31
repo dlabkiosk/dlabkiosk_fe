@@ -1,38 +1,68 @@
 /* Sidebar styles */
 .sidebar {
   position: fixed;
-  top: 0;
+  top: var(--navbar-height);
   left: 0;
   width: var(--sidebar-width, 260px);
-  height: 100vh;
+  height: calc(100vh - var(--navbar-height));
   background: var(--color-sidebar-bg);
-  /* border-right: 1px solid var(--color-border); */
   display: flex;
   flex-direction: column;
   z-index: 10;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  transition: width 0.25s ease;
+  overflow: visible;
 }
 
-.logo {
+/* ── Collapsed ── */
+.sidebar.collapsed {
+  width: 72px;
+}
+
+.sidebar.collapsed .menuItem {
+  width: calc(100% - 16px);
+  margin: 0 auto;
+  padding: var(--spacing-sm-md) 0;
+  justify-content: center;
+}
+
+.sidebar.collapsed .menuIcon {
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+}
+
+/* ── Toggle button (사이드바 오른쪽 가장자리 탭) ── */
+.toggleButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -16px;
   display: flex;
-  align-items: flex-end;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md-lg) var(--spacing-lg);
-  /* border-bottom: 1px solid var(--color-border); */
-}
-
-.logoImage {
-  height: var(--size-logo);
-}
-
-.storeName {
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 40px;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  background: var(--color-sidebar-bg);
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-sidebar-sub-text);
+  cursor: pointer;
+  z-index: 11;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+  transition: background 0.15s, color 0.15s;
 }
 
+.toggleButton:hover {
+  background: var(--color-sidebar-hover);
+  color: var(--color-text-primary);
+}
+
+/* ── Nav ── */
 .nav {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.25em 0;
 }
 
@@ -44,15 +74,18 @@
   display: flex;
   align-items: center;
   gap: var(--size-badge-padding-h);
-  width: 100%;
-  padding: var(--spacing-sm-md) var(--spacing-lg);
+  width: calc(100% - var(--spacing-md) * 2);
+  margin: 0 0 0 var(--spacing-md);
+  padding: var(--spacing-sm-md) var(--spacing-md);
   border: none;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--color-sidebar-text);
   font-size: var(--font-size-sm);
   cursor: pointer;
   text-decoration: none;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 
 .menuItem:hover {
@@ -66,8 +99,10 @@
 }
 
 .menuIcon {
-  font-size: var(--font-size-xl);
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .menuLabel {

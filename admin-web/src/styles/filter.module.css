@@ -1,0 +1,186 @@
+/* ── 공통 필터 카드 ── */
+
+.filterCard {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.filterInput {
+  padding: 0 var(--spacing-sm);
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+  width: var(--size-filter-input);
+  /* text-align: left; */
+}
+
+.filterInput::placeholder {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.filterInput:focus {
+  border-color: var(--color-primary);
+}
+
+.dateSeparator {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  padding: 0 var(--spacing-xs);
+}
+
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.searchButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-text-primary);
+  color: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  transition: opacity 0.15s;
+}
+
+.searchButton:hover {
+  opacity: 0.85;
+}
+
+.resetButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  transition: background-color 0.15s;
+}
+
+.resetButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.refreshButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  transition: background-color 0.15s;
+}
+
+.refreshButton:hover {
+  background-color: var(--color-bg-page);
+}
+
+.excelButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-excel);
+  color: var(--color-excel);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.excelButton:hover {
+  opacity: 0.85;
+}
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md) 0;
+}
+
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  color: var(--color-text-primary);
+}
+
+.pageBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pageBtnActive {
+  background-color: var(--color-text-primary);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+
+.pageBtnActive:hover {
+  background-color: var(--color-text-primary);
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+.pageInfo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Print ── */
+@media print {
+  .filterCard {
+    display: none !important;
+  }
+}

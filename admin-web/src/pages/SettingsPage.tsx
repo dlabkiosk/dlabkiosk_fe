@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { LuSettings, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import settingIcon from '../assets/setting_active.png';
+import editIcon from '../assets/edit.png';
+import trashIcon from '../assets/trash.png';
 import styles from './SettingsPage.module.css';
+import f from '../styles/filter.module.css';
 import {
   getExamSchedules,
   createExamSchedule,
@@ -18,6 +22,7 @@ import {
 } from '../api/advertisementApi';
 import type { Advertisement, CropParams } from '../api/advertisementApi';
 import MealScheduleSettings from '../components/MealScheduleSettings';
+import FilterDatePicker from '../components/FilterDatePicker';
 import {
   getSeatLeaveReasons,
   createSeatLeaveReason,
@@ -89,6 +94,26 @@ export default function SettingsPage() {
     tabParam && (TABS as readonly string[]).includes(tabParam) ? tabParam : '배너 관리',
   );
 
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  const [sliderStyle, setSliderStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  const updateSlider = useCallback(() => {
+    if (!tabBarRef.current) return;
+    const idx = TABS.indexOf(activeTab);
+    const buttons = tabBarRef.current.querySelectorAll('button');
+    const btn = buttons[idx];
+    if (!btn) return;
+    const barRect = tabBarRef.current.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    setSliderStyle({ left: btnRect.left - barRect.left, width: btnRect.width });
+  }, [activeTab]);
+
+  useEffect(() => {
+    updateSlider();
+    window.addEventListener('resize', updateSlider);
+    return () => window.removeEventListener('resize', updateSlider);
+  }, [updateSlider]);
+
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
     setSearchParams({ tab }, { replace: true });
@@ -98,12 +123,19 @@ export default function SettingsPage() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuSettings className={styles.pageTitleIcon} />
+          <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>설정</h2>
         </div>
       </div>
 
-      <div className={styles.tabBar}>
+      <div className={styles.tabBar} ref={tabBarRef}>
+        <div
+          className={styles.tabSlider}
+          style={{
+            left: sliderStyle.left,
+            width: sliderStyle.width,
+          }}
+        />
         {TABS.map((tab) => (
           <button
             key={tab}
@@ -298,12 +330,13 @@ function BasicSettings() {
 
 /* ── 배너관리 탭 ── */
 function BannerManagement() {
-  const { alert, ConfirmDialog } = useConfirm();
+  const { alert, confirm, ConfirmDialog } = useConfirm();
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(false);
   const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
   const [fetchError, setFetchError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   /* 폼 상태 */
   const [editTarget, setEditTarget] = useState<Advertisement | null>(null);
@@ -397,6 +430,7 @@ function BannerManagement() {
     setDisplaySeconds(ad.displaySeconds);
     setActive(ad.active);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   /* 드래그로 잘림 조정 */
@@ -486,6 +520,8 @@ function BannerManagement() {
   };
 
   const handleDelete = async (id: number) => {
+    const ok = await confirm('정말 삭제하시겠습니까?');
+    if (!ok) return;
     try {
       await deleteAdvertisement(id);
       if (editTarget?.id === id) resetForm();
@@ -530,7 +566,7 @@ function BannerManagement() {
   return (
     <>
       {/* 등록 / 수정 폼 */}
-      <div className={styles.section}>
+      <div className={styles.section} ref={formRef}>
         <div className={styles.sectionHeader}>
           <h3 className={styles.sectionTitle}>{editTarget ? '배너 수정' : '배너 등록'}</h3>
           {editTarget && (
@@ -695,11 +731,20 @@ function BannerManagement() {
                     <td>
                       <div className={styles.bannerInfo}>
                         {ad.imageUrl ? (
-                          <img
-                            src={ad.imageUrl}
-                            alt="배너"
-                            className={styles.bannerThumb}
-                          />
+                          ad.mediaType === 'VIDEO' ? (
+                            <video
+                              src={ad.imageUrl}
+                              className={styles.bannerThumb}
+                              muted
+                              preload="metadata"
+                            />
+                          ) : (
+                            <img
+                              src={ad.imageUrl}
+                              alt="배너"
+                              className={styles.bannerThumb}
+                            />
+                          )
                         ) : (
                           <div className={styles.bannerThumb} />
                         )}
@@ -709,20 +754,19 @@ function BannerManagement() {
                     <td>{ad.mediaType === 'IMAGE' ? '이미지' : '영상'}</td>
                     <td>{ad.displaySeconds}초</td>
                     <td>
-                      <span className={`${styles.statusBadge} ${ad.active ? '' : styles.statusInactive}`}>
+                      <span className={`${styles.statusBadge} ${ad.active ? styles.statusActive : styles.statusInactive}`}>
                         {ad.active ? '노출중' : '비활성'}
                       </span>
                     </td>
                     <td>
-                      <button type="button" className={styles.editBtn} onClick={() => openEdit(ad)}>&#x270E;</button>
-                      <button
-                        type="button"
-                        className={styles.editBtn}
-                        style={{ color: '#dc2626', marginLeft: 4 }}
-                        onClick={() => handleDelete(ad.id)}
-                      >
-                        &#x2715;
-                      </button>
+                      <div className={styles.actionBtns}>
+                        <button type="button" className={styles.iconBtn} onClick={() => openEdit(ad)}>
+                          <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                        </button>
+                        <button type="button" className={styles.iconBtn} onClick={() => handleDelete(ad.id)}>
+                          <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -1088,12 +1132,7 @@ function ExamSchedule() {
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>날짜</label>
-                <input
-                  type="date"
-                  className={styles.formInput}
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
-                />
+                <FilterDatePicker value={formDate} onChange={setFormDate} />
               </div>
             </div>
 
@@ -1881,19 +1920,19 @@ function MessageTemplateSettings() {
                 </tbody>
               </table>
               {templates.length > TPL_PER_PAGE && (
-                <div className={styles.pagination}>
+                <div className={f.pagination}>
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                    className={f.pageBtn}
                     disabled={tplPage <= 1}
                     onClick={() => setTplPage((p) => p - 1)}
                   >
                     &lsaquo;
                   </button>
-                  <span className={styles.pageInfo}>{tplPage} / {Math.ceil(templates.length / TPL_PER_PAGE)}</span>
+                  <span className={f.pageInfo}>{tplPage} / {Math.ceil(templates.length / TPL_PER_PAGE)}</span>
                   <button
                     type="button"
-                    className={styles.pageBtn}
+                    className={f.pageBtn}
                     disabled={tplPage >= Math.ceil(templates.length / TPL_PER_PAGE)}
                     onClick={() => setTplPage((p) => p + 1)}
                   >

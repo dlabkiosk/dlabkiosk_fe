@@ -1,7 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* ── Page Header ── */
@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: var(--spacing-sm) 0;
 }
 
 .pageTitleGroup {
@@ -18,13 +19,19 @@
 }
 
 .pageTitleIcon {
-  font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: content-box;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
 }
 
 .pageTitle {
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -33,21 +40,31 @@
   position: relative;
 }
 
+.datePickerWrap :global(.react-datepicker-wrapper),
+.datePickerWrap :global(.react-datepicker__input-container) {
+  width: auto;
+  display: inline-block;
+}
+
 .datePickerButton {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: 0 var(--size-btn-padding-h);
+  justify-content: center;
+  padding: 0 var(--spacing-xl) 0 var(--spacing-sm);
   height: var(--size-input-height);
   box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
-  font-family: inherit;
-  font-weight: 500;
+  font-family: var(--font-family);
+  font-weight: 400;
   color: var(--color-text-primary);
-  background: var(--color-bg-card);
+  background-color: #ffffff;
   cursor: pointer;
+  white-space: nowrap;
+  min-width: 240px;
+  transition: border-color 0.15s;
 }
 
 .datePickerButton:hover {
@@ -55,230 +72,74 @@
 }
 
 .calendarIcon {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-/* ── Calendar Dropdown ── */
-.calendarDropdown {
   position: absolute;
-  top: calc(100% + var(--spacing-xs-sm));
-  left: 0;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: var(--size-badge-padding-h);
-  z-index: 100;
-  min-width: var(--size-calendar-width);
-}
-
-.calendarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-sm-md);
-}
-
-.calNavBtn {
-  width: var(--size-close-btn);
-  height: var(--size-close-btn);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: #fff;
-  cursor: pointer;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.calNavBtn:hover {
-  background: var(--color-bg-page);
-}
-
-.calMonthLabel {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.calendarTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.calendarTable th {
-  padding: var(--spacing-xs-sm) 0;
-  font-size: 12px;
-  font-weight: 500;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--color-text-muted);
-  text-align: center;
+  pointer-events: none;
 }
 
-.calendarTable td {
-  padding: 0;
-  text-align: center;
+/* ── Week picker: 주간 선택 스타일 ── */
+.weekCalendar :global(.react-datepicker__month) :global(.react-datepicker__day.react-datepicker__day--selected) {
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-text-primary) !important;
+  border-radius: 0 !important;
+  font-weight: 400 !important;
+  margin: 1px 0 !important;
+  width: calc(2rem + 2px) !important;
 }
 
-/* ── Calendar Day Cells ── */
-.calDay {
-  padding: 7px 4px;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: background 0.1s;
-  user-select: none;
+.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:first-child) {
+  background: linear-gradient(to right, transparent 50%, var(--color-primary-light) 50%) !important;
+  position: relative !important;
+  z-index: 0 !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
 }
 
-.calDay:hover {
-  /* hover handled by calDayHover */
+.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:first-child)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  z-index: -1;
 }
 
-/* 선택된 주 (파란 배경) */
-.calDaySelected {
-  background-color: #dbeafe;
-  color: var(--color-primary);
-  font-weight: 600;
+.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:last-child) {
+  background: linear-gradient(to left, transparent 50%, var(--color-primary-light) 50%) !important;
+  position: relative !important;
+  z-index: 0 !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
 }
 
-.calDaySelected.calDayStart {
-  border-radius: 6px 0 0 6px;
+.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:last-child)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  z-index: -1;
 }
 
-.calDaySelected.calDayEnd {
-  border-radius: 0 6px 6px 0;
+/* hover: 주 행 전체 하이라이트 */
+.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected)) {
+  background-color: var(--color-bg-page) !important;
+  border-radius: 0 !important;
+  margin: 1px 0 !important;
+  width: calc(2rem + 2px) !important;
 }
 
-/* hover 주 (연한 회색) */
-.calDayHover {
-  background-color: #f3f4f6;
+.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected):first-child) {
+  border-radius: 50% 0 0 50% !important;
 }
 
-.calDayHover.calDayStart {
-  border-radius: 6px 0 0 6px;
-}
-
-.calDayHover.calDayEnd {
-  border-radius: 0 6px 6px 0;
-}
-
-/* 오늘 표시 */
-.calDayToday {
-  font-weight: 700;
-}
-
-/* ── Filter Card ── */
-.filterCard {
-  background-color: var(--color-bg-card);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border: 1px solid var(--color-border-light);
-}
-
-.filterRow {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.filterGroup {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.filterLabel {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  padding: 0 var(--size-badge-padding-h);
-  height: var(--size-input-height);
-  line-height: var(--size-input-height);
-  box-sizing: border-box;
-  background-color: var(--color-bg-page);
-  border: 1px solid var(--color-border);
-  border-right: none;
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-
-.filterInput {
-  padding: 0 var(--size-badge-padding-h);
-  height: var(--size-input-height);
-  box-sizing: border-box;
-  border: 1px solid var(--color-border);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-card);
-  outline: none;
-  transition: border-color 0.15s;
-  width: var(--size-filter-input);
-}
-
-.filterInputShort {
-  composes: filterInput;
-  width: var(--size-filter-input-sm);
-}
-
-.filterInput:focus,
-.filterInputShort:focus {
-  border-color: var(--color-primary);
-}
-
-.filterActions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-left: auto;
-}
-
-.searchButton {
-  padding: 0 var(--spacing-lg);
-  height: var(--size-input-height);
-  background-color: var(--color-text-primary);
-  color: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 500;
-  transition: opacity 0.15s;
-}
-
-.searchButton:hover {
-  opacity: 0.85;
-}
-
-.resetButton {
-  padding: 0 var(--spacing-md);
-  height: var(--size-input-height);
-  background-color: var(--color-bg-card);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  transition: background-color 0.15s;
-}
-
-.resetButton:hover {
-  background-color: var(--color-bg-page);
-}
-
-.excelButton {
-  padding: 0 var(--spacing-md);
-  height: var(--size-input-height);
-  background-color: #217346;
-  color: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 500;
-  transition: opacity 0.15s;
-}
-
-.excelButton:hover {
-  opacity: 0.85;
+.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected):last-child) {
+  border-radius: 0 50% 50% 0 !important;
 }
 
 /* ── Content Card ── */
@@ -293,6 +154,19 @@
 }
 
 /* ── Table ── */
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.downloadIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
 .tableWrap {
   overflow: hidden;
 }
@@ -308,7 +182,7 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  background-color: var(--color-bg-page);
+  background-color: var(--color-bg-muted);
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
@@ -384,38 +258,3 @@
   color: var(--color-text-muted);
 }
 
-/* ── 페이지네이션 ── */
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs, 0.25rem);
-  padding: var(--spacing-md, 1rem) 0;
-}
-
-.pageBtn {
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-sm, 4px);
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 0.5rem;
-  font-size: var(--font-size-sm, 0.875rem);
-  cursor: pointer;
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pageBtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.pageBtnActive {
-  background: var(--color-primary, #1e3a5f);
-  color: #fff;
-  border-color: var(--color-primary, #1e3a5f);
-}

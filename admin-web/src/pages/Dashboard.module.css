@@ -1,13 +1,14 @@
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* ── Page Header ── */
 .pageHeader {
   display: flex;
   align-items: center;
+  padding: var(--spacing-sm) 0;
 }
 
 .pageTitleGroup {
@@ -17,13 +18,19 @@
 }
 
 .pageTitleIcon {
-  font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: content-box;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
 }
 
 .pageTitle {
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -39,8 +46,10 @@
   background-color: var(--color-bg-card);
   border-radius: var(--radius-sm);
   padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  /* box-shadow: var(--shadow-sm); */
+  /* border: 1px solid var(--color-border-light); */
 }
 
 .cardHeader {
@@ -81,19 +90,25 @@
 .cardIcon {
   display: flex;
   align-items: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
+}
+
+.cardIconImg {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .cardTitle {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-size: var(--font-size-md-lg);
+  font-weight: 500;
   color: var(--color-text-primary);
 }
 
 .cardBody {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 /* Stat rows (key-value) */
@@ -123,6 +138,7 @@
 /* Table */
 .table {
   width: 100%;
+  table-layout: fixed;
 }
 
 .table th {
@@ -131,7 +147,8 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-muted);
+  /* border-bottom: 1px solid var(--color-border); */
 }
 
 .table td {
@@ -150,6 +167,18 @@
 .table th.textLeft,
 .table td.textLeft {
   text-align: left;
+}
+
+.table th:first-child,
+.table td:first-child {
+  white-space: nowrap;
+}
+
+.truncateCell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── 좌석 대기 현황 ── */

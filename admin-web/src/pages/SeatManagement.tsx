@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  LuArmchair,
   LuArrowUpDown,
   LuArrowUp,
   LuArrowDown,
@@ -14,6 +13,7 @@ import {
   LuSave,
   LuGripVertical,
 } from 'react-icons/lu';
+import seatIcon from '../assets/seat_active.png';
 import { getStudents } from '../api/studentApi';
 import {
   getSeats,
@@ -33,6 +33,8 @@ import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
 import { getMe } from '../api/authApi';
 import useConfirm from '../hooks/useConfirm';
 import styles from './SeatManagement.module.css';
+import f from '../styles/filter.module.css';
+import FilterSelect from '../components/FilterSelect';
 
 /* ── 배치도용 합성 타입 ── */
 
@@ -106,6 +108,7 @@ export default function SeatManagement() {
   const [placingMode, setPlacingMode] = useState<PlacingTarget>(null);
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const editSeatRef = useRef<SeatWithStatus | null>(null);
 
   /* ── 좌석 편집 모드 (일괄 저장) ── */
@@ -136,6 +139,48 @@ export default function SeatManagement() {
   /* ── 드래그 상태 ── */
   const [draggingSeatId, setDraggingSeatId] = useState<number | string | null>(null);
   const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+
+  /* ── 캔버스 드래그-패닝 (비편집 모드) ── */
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const panMovedRef = useRef(false);
+
+  const handlePanStart = useCallback((e: React.MouseEvent) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    isPanningRef.current = true;
+    panMovedRef.current = false;
+    panStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: container.scrollLeft,
+      scrollTop: container.scrollTop,
+    };
+    container.style.cursor = 'grabbing';
+    container.style.userSelect = 'none';
+  }, []);
+
+  const handlePanMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanningRef.current) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMovedRef.current = true;
+    container.scrollLeft = panStartRef.current.scrollLeft - dx;
+    container.scrollTop = panStartRef.current.scrollTop - dy;
+  }, []);
+
+  const handlePanEnd = useCallback(() => {
+    if (!isPanningRef.current) return;
+    isPanningRef.current = false;
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.style.cursor = '';
+      container.style.userSelect = '';
+    }
+  }, []);
 
   /* ── 좌석 추가 폼 ── */
   const [showAddForm, setShowAddForm] = useState(false);
@@ -743,8 +788,8 @@ export default function SeatManagement() {
   /* ── 대기 리스트: 클라이언트 필터 + 정렬 ── */
   const filteredWaiting = useMemo(() => {
     return waitingData.filter((row) => {
-      if (wAppliedFilters.name && !row.studentName.includes(wAppliedFilters.name)) return false;
-      if (wAppliedFilters.number && !row.studentNumber.includes(wAppliedFilters.number)) return false;
+      if (wAppliedFilters.name && !(row.studentName ?? '').includes(wAppliedFilters.name)) return false;
+      if (wAppliedFilters.number && !(row.studentNumber ?? '').includes(wAppliedFilters.number)) return false;
       return true;
     });
   }, [waitingData, wAppliedFilters]);
@@ -851,7 +896,7 @@ export default function SeatManagement() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuArmchair className={styles.pageTitleIcon} />
+          <img src={seatIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>좌석 관리</h2>
         </div>
         <div className={styles.headerActions}>
@@ -878,8 +923,8 @@ export default function SeatManagement() {
       {view === 'layout' && (
         <>
           {/* 필터 */}
-          <div className={styles.filterCard}>
-            <div className={styles.filterRow}>
+          <div className={f.filterCard}>
+            <div className={f.filterRow}>
               {areas.length > 0 && (
                 <div className={styles.areaTabs}>
                   {areas.map((a) => (
@@ -894,12 +939,13 @@ export default function SeatManagement() {
                   ))}
                 </div>
               )}
-              <div className={styles.filterActions}>
+              <div className={f.filterActions}>
                 <input
-                  className={styles.searchInput}
+                  className={f.filterInput}
                   value={searchSeat}
                   onChange={(e) => setSearchSeat(e.target.value)}
                   placeholder="좌석 또는 학생명 검색"
+                  style={{ textAlign: 'center' }}
                 />
               </div>
             </div>
@@ -908,7 +954,14 @@ export default function SeatManagement() {
           {/* 배치/편집 모드 배너 제거 — DSA 기준 조회만 사용 */}
 
           {/* 배치도 */}
-          <div className={styles.contentCard}>
+          <div
+            ref={scrollContainerRef}
+            className={`${styles.contentCard} ${styles.pannable}`}
+            onMouseDown={handlePanStart}
+            onMouseMove={handlePanMove}
+            onMouseUp={handlePanEnd}
+            onMouseLeave={handlePanEnd}
+          >
             <div className={styles.areaTitle}>
               배정인원 : {occupiedCount}명
               <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
@@ -941,6 +994,7 @@ export default function SeatManagement() {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (panMovedRef.current) return;
                         openSeatDetail(seat);
                       }}
                     >
@@ -970,44 +1024,44 @@ export default function SeatManagement() {
       {view === 'waiting' && (
         <>
         {/* 필터 */}
-        <div className={styles.filterCard}>
-          <div className={styles.filterRow}>
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel} htmlFor="sw-name">학생명</label>
+        <div className={f.filterCard}>
+          <div className={f.filterRow}>
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel} htmlFor="sw-name">학생명</label>
               <input
                 id="sw-name"
-                className={styles.filterInput}
+                className={f.filterInput}
+                placeholder="학생명"
                 value={wSearchName}
                 onChange={(e) => setWSearchName(e.target.value)}
                 onKeyDown={handleWaitingKeyDown}
               />
             </div>
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel} htmlFor="sw-number">학번</label>
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel} htmlFor="sw-number">학번</label>
               <input
                 id="sw-number"
-                className={styles.filterInput}
+                className={f.filterInput}
+                placeholder="학번"
                 value={wSearchNumber}
                 onChange={(e) => setWSearchNumber(e.target.value)}
                 onKeyDown={handleWaitingKeyDown}
               />
             </div>
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>상태</label>
-              <select
-                className={styles.filterSelect}
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel}>상태</label>
+              <FilterSelect
                 value={statusFilter}
-                onChange={(e) => handleStatusFilter(e.target.value as StatusFilter)}
-              >
-                <option value="ALL">전체</option>
-                <option value="PENDING">대기중</option>
-                <option value="APPROVED">승인</option>
-                <option value="REJECTED">거절</option>
-              </select>
+                options={['ALL', 'PENDING', 'APPROVED', 'REJECTED']}
+                labelMap={{ ALL: '전체', PENDING: '대기중', APPROVED: '승인', REJECTED: '거절' }}
+                placeholder="전체"
+                defaultValue="ALL"
+                onChange={(v) => handleStatusFilter(v as StatusFilter)}
+              />
             </div>
-            <div className={styles.filterActions}>
-              <button type="button" className={styles.searchButton} onClick={handleWaitingSearch}>검색</button>
-              <button type="button" className={styles.resetButton} onClick={handleWaitingReset}>초기화</button>
+            <div className={f.filterActions}>
+              <button type="button" className={f.searchButton} onClick={handleWaitingSearch}>검색</button>
+              <button type="button" className={f.resetButton} onClick={handleWaitingReset}>초기화</button>
             </div>
           </div>
         </div>
@@ -1071,10 +1125,10 @@ export default function SeatManagement() {
           </div>
 
           {/* 페이지네이션 */}
-          <div className={styles.pagination}>
+          <div className={f.pagination}>
             <button
               type="button"
-              className={styles.pageBtn}
+              className={f.pageBtn}
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
@@ -1084,7 +1138,7 @@ export default function SeatManagement() {
               <button
                 key={p}
                 type="button"
-                className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`}
+                className={`${f.pageBtn} ${page === p ? f.pageBtnActive : ''}`}
                 onClick={() => setPage(p)}
               >
                 {p}
@@ -1092,7 +1146,7 @@ export default function SeatManagement() {
             ))}
             <button
               type="button"
-              className={styles.pageBtn}
+              className={f.pageBtn}
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
             >

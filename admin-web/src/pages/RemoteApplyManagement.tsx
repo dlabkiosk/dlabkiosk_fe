@@ -4,6 +4,7 @@ import { getPhoneSubmissions } from '../api/phoneSubmissionApi';
 import type { PhoneSubmission, PageResponse } from '../api/phoneSubmissionApi';
 import type { SeatLeaveRecord } from '../api/seatLeaveApi';
 import styles from './RemoteApplyManagement.module.css';
+import f from '../styles/filter.module.css';
 
 /* ── 상수 ── */
 
@@ -251,10 +252,10 @@ export default function RemoteApplyManagement() {
     const pages: number[] = [];
     for (let i = 0; i < totalPages; i++) pages.push(i);
     return (
-      <div className={styles.pagination}>
+      <div className={f.pagination}>
         <button
           type="button"
-          className={styles.pageBtn}
+          className={f.pageBtn}
           disabled={currentPage === 0}
           onClick={() => onPageChange(currentPage - 1)}
         >
@@ -264,7 +265,7 @@ export default function RemoteApplyManagement() {
           <button
             key={p}
             type="button"
-            className={`${styles.pageBtn} ${p === currentPage ? styles.pageBtnActive : ''}`}
+            className={`${f.pageBtn} ${p === currentPage ? f.pageBtnActive : ''}`}
             onClick={() => onPageChange(p)}
           >
             {p + 1}
@@ -272,7 +273,7 @@ export default function RemoteApplyManagement() {
         ))}
         <button
           type="button"
-          className={styles.pageBtn}
+          className={f.pageBtn}
           disabled={currentPage === totalPages - 1}
           onClick={() => onPageChange(currentPage + 1)}
         >

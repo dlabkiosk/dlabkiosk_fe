@@ -1,14 +1,16 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  LuCalendarCheck,
   LuArrowUpDown,
   LuArrowUp,
   LuArrowDown,
 } from 'react-icons/lu';
+import attendanceIcon from '../assets/attendance_active.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getMe } from '../api/authApi';
 import styles from './AttendanceManagement.module.css';
+import f from '../styles/filter.module.css';
+import FilterSelect from '../components/FilterSelect';
 
 /* ── 출결 상태 ── */
 
@@ -114,10 +116,10 @@ export default function AttendanceManagement() {
     let data = [...rows];
 
     if (searchName) {
-      data = data.filter((r) => r.studentName.includes(searchName));
+      data = data.filter((r) => (r.studentName ?? '').includes(searchName));
     }
     if (searchStudentNumber) {
-      data = data.filter((r) => r.studentNumber.includes(searchStudentNumber));
+      data = data.filter((r) => (r.studentNumber ?? '').includes(searchStudentNumber));
     }
     if (filterStatus !== '전체') {
       data = data.filter((r) => r.attendanceStatus === filterStatus);
@@ -196,71 +198,68 @@ export default function AttendanceManagement() {
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuCalendarCheck className={styles.pageTitleIcon} />
+          <img src={attendanceIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>출결 관리</h2>
         </div>
       </div>
 
       {/* Filter Row */}
-      <div className={styles.filterCard}>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="att-name">학생명</label>
+      <div className={f.filterCard}>
+        <div className={f.filterRow}>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel} htmlFor="att-name">학생명</label>
             <input
               id="att-name"
-              className={styles.filterInput}
+              className={f.filterInput}
               type="text"
+              placeholder="학생명"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </div>
 
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel} htmlFor="att-sid">학번</label>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel} htmlFor="att-sid">학번</label>
             <input
               id="att-sid"
-              className={styles.filterInput}
+              className={f.filterInput}
               type="text"
+              placeholder="학번"
               value={searchStudentNumber}
               onChange={(e) => setSearchStudentNumber(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </div>
 
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>구분</label>
-            <select
-              className={styles.filterSelect}
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>출결 현황</label>
+            <FilterSelect
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt === '전체' ? '외출/등원/하원' : opt}</option>
-              ))}
-            </select>
+              options={STATUS_OPTIONS}
+              placeholder="전체"
+              onChange={setFilterStatus}
+            />
           </div>
 
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>휴대폰 미소지 여부</label>
-            <select
-              className={styles.filterSelect}
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>휴대폰 미소지 여부</label>
+            <FilterSelect
               value={filterPhone}
-              onChange={(e) => setFilterPhone(e.target.value)}
-            >
-              {PHONE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt === '전체' ? 'O/X' : opt}</option>
-              ))}
-            </select>
+              options={PHONE_OPTIONS}
+              placeholder="전체"
+              onChange={setFilterPhone}
+            />
           </div>
 
-          <button className={styles.searchButton} type="button" onClick={handleSearch}>
-            검색
-          </button>
-
-          <button className={styles.resetButton} type="button" onClick={handleReset}>
-            새로고침
-          </button>
+          <div className={f.filterActions}>
+            <button className={f.searchButton} type="button" onClick={handleSearch}>
+              검색
+            </button>
+            <button className={f.resetButton} type="button" onClick={handleReset}>
+              초기화
+            </button>
+          </div>
         </div>
       </div>
 
@@ -330,10 +329,10 @@ export default function AttendanceManagement() {
         </div>
 
         {/* Pagination */}
-        <div className={styles.pagination}>
+        <div className={f.pagination}>
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
@@ -343,7 +342,7 @@ export default function AttendanceManagement() {
             <button
               key={p}
               type="button"
-              className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`}
+              className={`${f.pageBtn} ${page === p ? f.pageBtnActive : ''}`}
               onClick={() => setPage(p)}
             >
               {p}
@@ -351,7 +350,7 @@ export default function AttendanceManagement() {
           ))}
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
           >

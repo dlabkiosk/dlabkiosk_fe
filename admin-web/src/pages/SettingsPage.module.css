@@ -1,13 +1,14 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* ── Page Header ── */
 .pageHeader {
   display: flex;
   align-items: center;
+  padding: var(--spacing-sm) 0;
 }
 
 .pageTitleGroup {
@@ -17,35 +18,60 @@
 }
 
 .pageTitleIcon {
-  font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: content-box;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
 }
 
 .pageTitle {
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
 /* ── Tab Bar ── */
 .tabBar {
+  position: relative;
   display: flex;
-  gap: 0;
+  align-items: center;
+  background-color: var(--color-bg-tab);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  border: 1px solid var(--color-border-light);
+}
+
+.tabSlider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .tabBtn {
-  padding: var(--size-badge-padding-h) var(--spacing-lg);
-  font-size: var(--font-size-md);
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding: 13px var(--spacing-md);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   font-weight: 500;
   color: var(--color-text-muted);
-  background-color: #ffffff;
-  border: 1px solid #eeeeee;
-  border-bottom: none;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
-  margin-right: -1px;
+  transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .tabBtn:hover {
@@ -55,8 +81,6 @@
 .tabBtnActive {
   color: var(--color-text-primary);
   font-weight: 600;
-  background-color: #dce3eb;
-  border-color: #eeeeee;
 }
 
 /* ── Section ── */
@@ -261,12 +285,6 @@
   color: var(--color-text-muted);
 }
 
-.statusInactive {
-  background-color: #fff;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-
 /* ── Drag & Drop ── */
 .dragHandle {
   cursor: grab;
@@ -339,9 +357,9 @@
   background-color: var(--color-text-primary);
   color: #fff;
   border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 600;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
   font-family: inherit;
   cursor: pointer;
 }
@@ -355,9 +373,9 @@
   background-color: #fff;
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: 500;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
   font-family: inherit;
   cursor: pointer;
 }
@@ -425,20 +443,45 @@
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  background-color: #dbeafe;
-  color: #2563eb;
 }
 
-.editBtn {
+.statusActive {
+  background-color: #E6F8E8;
+  color: #048F11;
+}
+
+.statusInactive {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-muted);
+}
+
+.actionBtns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.iconBtn {
   border: none;
   background: none;
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
   cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s;
 }
 
-.editBtn:hover {
-  color: var(--color-text-primary);
+.iconBtn:hover {
+  background-color: var(--color-bg-page);
+}
+
+.actionIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 /* ── Exam Calendar ── */
@@ -552,11 +595,6 @@
 .statusDone {
   background-color: #fee2e2;
   color: #dc2626;
-}
-
-.statusActive {
-  background-color: #dbeafe;
-  color: #2563eb;
 }
 
 .statusPending {
@@ -831,35 +869,6 @@
   font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--color-text-primary);
-}
-
-/* ── 페이지네이션 ── */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.pageBtn {
-  background: none;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 1rem;
-  cursor: pointer;
-  color: var(--color-text-primary);
-}
-
-.pageBtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.pageInfo {
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-text-secondary, #6b7280);
 }
 
 /* ── 데이터 관리 (동기화) ── */

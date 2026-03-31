@@ -13,6 +13,12 @@ export interface MealTagSummary {
   dinnerCount: number;
 }
 
+export interface MealTagRecord {
+  studentName: string;
+  mealType: string;
+  taggedAt: string;
+}
+
 export interface AttendanceSummary {
   present: number;
   earlyLeave: number;
@@ -63,6 +69,7 @@ export interface SeatChangeRequest {
 export interface DashboardData {
   dailyOperation: DailyOperation;
   mealTagSummary: MealTagSummary;
+  mealTagRecords: MealTagRecord[];
   attendanceSummary: AttendanceSummary;
   seatLeaveSummary: SeatLeaveSummary;
   // studyRanking: StudyRanking;

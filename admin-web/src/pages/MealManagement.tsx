@@ -1,9 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { LuUtensils, LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import mealIcon from '../assets/meal_active.png';
+import downloadIcon from '../assets/download.png';
 import { getMeals } from '../api/mealApi';
 import type { MealRecord } from '../api/mealApi';
 import { getMe } from '../api/authApi';
+import FilterDatePicker from '../components/FilterDatePicker';
 import styles from './MealManagement.module.css';
+import f from '../styles/filter.module.css';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -67,12 +71,6 @@ function downloadCsv(rows: MealRecord[], dateStr: string) {
   link.download = `급식명단_${dateStr}.csv`;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-/* ── 인쇄 ── */
-
-function printTable() {
-  window.print();
 }
 
 /* ── Page ── */
@@ -152,10 +150,10 @@ export default function MealManagement() {
     let data = [...rows];
 
     if (searchName) {
-      data = data.filter((r) => r.studentName.includes(searchName));
+      data = data.filter((r) => (r.studentName ?? '').includes(searchName));
     }
     if (searchNumber) {
-      data = data.filter((r) => r.studentNumber.includes(searchNumber));
+      data = data.filter((r) => (r.studentNumber ?? '').includes(searchNumber));
     }
 
     if (sort.field) {
@@ -205,52 +203,51 @@ export default function MealManagement() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuUtensils className={styles.pageTitleIcon} />
+          <img src={mealIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>급식 신청 및 체크명단</h2>
         </div>
       </div>
 
       {/* 필터 */}
-      <div className={styles.filterCard}>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>학생명</span>
+      <div className={f.filterCard}>
+        <div className={f.filterRow}>
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>학생명</span>
             <input
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학생명"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>학번</span>
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>학번</span>
             <input
-              className={styles.filterInput}
+              className={f.filterInput}
+              placeholder="학번"
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>날짜</span>
-            <input
-              type="date"
-              className={styles.filterDateInput}
-              value={searchDate}
-              onChange={(e) => setSearchDate(e.target.value)}
-            />
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>기간</span>
+            <FilterDatePicker value={searchDate} onChange={setSearchDate} />
           </div>
 
-          <div className={styles.filterActions}>
-            <button type="button" className={styles.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={styles.resetButton} onClick={handleReset}>초기화</button>
-            <button type="button" className={styles.excelButton} onClick={() => downloadCsv(filteredData, searchDate)}>EXCEL</button>
+          <div className={f.filterActions}>
+            <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
           </div>
         </div>
       </div>
 
       {/* 테이블 */}
       <div className={styles.contentCard}>
+        <div className={styles.tableActions}>
+          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData, searchDate)}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+        </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
@@ -329,10 +326,10 @@ export default function MealManagement() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className={styles.pagination}>
+        <div className={f.pagination}>
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
@@ -342,7 +339,7 @@ export default function MealManagement() {
             <button
               key={p}
               type="button"
-              className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`}
+              className={`${f.pageBtn} ${page === p ? f.pageBtnActive : ''}`}
               onClick={() => setPage(p)}
             >
               {p}
@@ -350,7 +347,7 @@ export default function MealManagement() {
           ))}
           <button
             type="button"
-            className={styles.pageBtn}
+            className={f.pageBtn}
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
           >

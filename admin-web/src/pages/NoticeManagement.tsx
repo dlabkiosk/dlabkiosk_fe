@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuMegaphone, LuSearch, LuPlus } from 'react-icons/lu';
+import { LuSearch, LuPlus } from 'react-icons/lu';
+import noticeIcon from '../assets/notice_active.png';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import styles from './NoticeManagement.module.css';
+import f from '../styles/filter.module.css';
+import FilterSelect from '../components/FilterSelect';
 
 const CATEGORY_OPTIONS = ['전체공지', '일반공지', '긴급공지'];
 const ITEMS_PER_PAGE = 10;
@@ -70,52 +73,54 @@ export default function NoticeManagement() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
-          <LuMegaphone className={styles.pageTitleIcon} />
+          <img src={noticeIcon} alt="" className={styles.pageTitleIcon} />
           <h1 className={styles.pageTitle}>공지 관리</h1>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div className={f.filterCard}>
+        <div className={f.filterRow}>
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>구분</span>
+            <FilterSelect
+              value={category}
+              options={CATEGORY_OPTIONS}
+              placeholder="전체"
+              onChange={setCategory}
+            />
+          </div>
+
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>공지명</span>
+            <input
+              type="text"
+              className={f.filterInput}
+              style={{ width: 280 }}
+              placeholder="제목으로 검색하세요."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          <div className={f.filterActions}>
+            <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
+            <button type="button" className={f.resetButton} onClick={() => { setCategory('전체공지'); setSearchText(''); }}>초기화</button>
+            <button
+              type="button"
+              className={styles.newButton}
+              onClick={() => navigate('/notices/new')}
+            >
+              <LuPlus />
+              <span>새 공지 작성</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Content Card */}
       <div className={styles.contentCard}>
-        {/* Filter Row */}
-        <div className={styles.filterRow}>
-          <button
-            type="button"
-            className={styles.newButton}
-            onClick={() => navigate('/notices/new')}
-          >
-            <LuPlus />
-            <span>새 공지 작성</span>
-          </button>
-
-          <select
-            className={styles.categorySelect}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-
-          <div className={styles.searchBox}>
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="검색어를 입력해주세요"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <button
-              type="button"
-              className={styles.searchButton}
-              onClick={handleSearch}
-            >
-              <LuSearch />
-            </button>
-          </div>
-        </div>
 
         {/* Table */}
         {loading ? (
@@ -172,12 +177,12 @@ export default function NoticeManagement() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className={styles.pagination}>
+          <div className={f.pagination}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 type="button"
-                className={`${styles.pageButton} ${page === currentPage ? styles.pageButtonActive : ''}`}
+                className={`${f.pageBtn} ${page === currentPage ? f.pageBtnActive : ''}`}
                 onClick={() => setCurrentPage(page)}
               >
                 {page}
