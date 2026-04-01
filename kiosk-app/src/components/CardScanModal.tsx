@@ -9,12 +9,10 @@ import type { CardScanResult } from '../hooks/useCardScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
-  VOICE_SCAN_PROMPT,
   VOICE_KEYPAD_PHONE,
   VOICE_KEYPAD_AUTH_FAIL,
   VOICE_SCAN_AUTH_FAIL,
   VOICE_KEYPAD_NUMBER,
-  VOICE_TIMEOUT,
 } from '../constants/voiceGuide';
 import styles from './CardScanModal.module.css';
 
