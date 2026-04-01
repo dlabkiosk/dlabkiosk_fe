@@ -175,7 +175,7 @@
   transition: color 0.15s;
 }
 
-.pageBtn:hover:not(:disabled) {
+.pageBtn:hover:not(:disabled):not(.pageBtnActive) {
   color: var(--color-text-primary);
 }
 
@@ -184,17 +184,13 @@
   cursor: default;
 }
 
-.pageBtnActive {
-  background-color: var(--color-text-primary);
-  color: #ffffff;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-}
-
+.pageBtnActive,
 .pageBtnActive:hover {
   background-color: var(--color-text-primary);
   color: #ffffff;
-  opacity: 0.85;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: default;
 }
 
 .pageInfo {
