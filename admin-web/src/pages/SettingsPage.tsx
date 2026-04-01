@@ -94,6 +94,12 @@ export default function SettingsPage() {
     tabParam && (TABS as readonly string[]).includes(tabParam) ? tabParam : '배너 관리',
   );
 
+  useEffect(() => {
+    if (tabParam && (TABS as readonly string[]).includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const tabBarRef = useRef<HTMLDivElement>(null);
   const [sliderStyle, setSliderStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
@@ -111,7 +117,9 @@ export default function SettingsPage() {
   useEffect(() => {
     updateSlider();
     window.addEventListener('resize', updateSlider);
-    return () => window.removeEventListener('resize', updateSlider);
+    const ro = new ResizeObserver(updateSlider);
+    if (tabBarRef.current) ro.observe(tabBarRef.current);
+    return () => { window.removeEventListener('resize', updateSlider); ro.disconnect(); };
   }, [updateSlider]);
 
   const handleTabChange = (tab: TabId) => {
