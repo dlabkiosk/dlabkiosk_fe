@@ -50,3 +50,19 @@
   font-weight: var(--weight-semibold);
   color: #505050;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .menuButton {
+  background: #111;
+  border-color: #555;
+  box-shadow: none;
+}
+:global(html.high-contrast) .menuButton:active {
+  background-color: #222;
+}
+:global(html.high-contrast) .iconWrap {
+  background: #111;
+}
+:global(html.high-contrast) .label {
+  color: #ffff00;
+}

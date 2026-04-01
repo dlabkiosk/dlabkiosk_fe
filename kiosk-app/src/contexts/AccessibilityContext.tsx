@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { TTS_TIMEOUT_MULTIPLIER } from '../constants/voiceGuide';
 
 type FontScale = 'default' | 'large' | 'xlarge';
 type ZoomScale = 'default' | 'zoomed';
@@ -17,6 +18,8 @@ interface AccessibilityActions {
   toggleHighContrast: () => void;
   reset: () => void;
   speak: (text: string) => void;
+  /** TTS 모드일 때 타임아웃에 적용할 배율 (꺼져 있으면 1) */
+  timeoutMultiplier: number;
 }
 
 type AccessibilityContextValue = AccessibilityState & AccessibilityActions;
@@ -103,8 +106,10 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setState(DEFAULT_STATE);
   }, [applyStyles]);
 
+  const timeoutMultiplier = useMemo(() => (state.ttsEnabled ? TTS_TIMEOUT_MULTIPLIER : 1), [state.ttsEnabled]);
+
   return (
-    <AccessibilityContext.Provider value={{ ...state, toggleTts, cycleFontScale, toggleZoom, toggleHighContrast, reset, speak }}>
+    <AccessibilityContext.Provider value={{ ...state, toggleTts, cycleFontScale, toggleZoom, toggleHighContrast, reset, speak, timeoutMultiplier }}>
       {children}
     </AccessibilityContext.Provider>
   );

@@ -400,3 +400,24 @@
 .optionActions .submitButton {
   flex: 1;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .dayCellInRange {
+  background: rgba(0, 204, 255, 0.2);
+}
+:global(html.high-contrast) .dayCellEndpoint {
+  color: #000;
+}
+:global(html.high-contrast) .noPhoneSelected {
+  color: #000;
+}
+:global(html.high-contrast) .submitButton,
+:global(html.high-contrast) .noPhoneBtnSelected {
+  color: #000;
+}
+:global(html.high-contrast) .successIcon {
+  color: #000;
+}

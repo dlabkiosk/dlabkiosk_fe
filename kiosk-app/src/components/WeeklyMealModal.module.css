@@ -179,3 +179,26 @@
   color: var(--color-text-muted);
   font-size: var(--font-sm);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .mealTable th,
+:global(html.high-contrast) .labelCol,
+:global(html.high-contrast) .mealLabel {
+  background-color: #111;
+}
+:global(html.high-contrast) .mealTable .todayCol,
+:global(html.high-contrast) .mealTable .todayCell {
+  background-color: #1a1a2e;
+}
+:global(html.high-contrast) .mealTable td {
+  border-color: #333;
+}
+:global(html.high-contrast) .mealTable th {
+  border-top-color: #00ccff;
+}
+:global(html.high-contrast) .weekBadge {
+  color: #000;
+}

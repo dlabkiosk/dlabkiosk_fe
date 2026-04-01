@@ -411,3 +411,32 @@
   padding: var(--space-2h) 0;
 }
 
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .seatButton:active {
+  background: #222;
+}
+:global(html.high-contrast) .keypadKey {
+  border: 1px solid #333;
+}
+:global(html.high-contrast) .keypadKey:active:not(:disabled) {
+  background: #333;
+}
+:global(html.high-contrast) .successIcon {
+  color: #000;
+}
+:global(html.high-contrast) .submitButton,
+:global(html.high-contrast) .phoneButton,
+:global(html.high-contrast) .pendingConfirmButton,
+:global(html.high-contrast) .closeSuccessButton {
+  color: #000;
+}
+:global(html.high-contrast) .studentMessageBubble {
+  border: 1px solid #333;
+}
+:global(html.high-contrast) .mealInfoSection {
+  border: 1px solid #333;
+}
+

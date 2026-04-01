@@ -213,3 +213,55 @@
   color: var(--color-text-muted);
   font-size: var(--font-sm);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .areaTabActive {
+  color: #000;
+}
+:global(html.high-contrast) .seatOccupied {
+  background-color: #003344;
+  border-color: #00ccff;
+}
+:global(html.high-contrast) .seatEmpty {
+  background-color: #111;
+  border-color: #444;
+}
+:global(html.high-contrast) .dotStudying {
+  background-color: #003344;
+  border-color: #00ccff;
+}
+:global(html.high-contrast) .dotOuting {
+  background-color: #332200;
+  border-color: #ffaa00;
+}
+:global(html.high-contrast) .dotLeave {
+  background-color: #330000;
+  border-color: #ff4444;
+}
+:global(html.high-contrast) .dotEmpty {
+  background-color: #111;
+  border-color: #444;
+}
+:global(html.high-contrast) .statusStudying {
+  color: #66ff66;
+  background-color: #003300;
+}
+:global(html.high-contrast) .statusOuting {
+  color: #ffaa00;
+  background-color: #332200;
+}
+:global(html.high-contrast) .statusEarlyLeave {
+  color: #cc66ff;
+  background-color: #220033;
+}
+:global(html.high-contrast) .statusCheckedOut {
+  color: #999;
+  background-color: #111;
+}
+:global(html.high-contrast) .statusSeatLeave {
+  color: #ff6666;
+  background-color: #330000;
+}

@@ -1,6 +1,14 @@
 import { createPortal } from 'react-dom';
 import { LuVolume2, LuVolumeX, LuZoomIn, LuALargeSmall, LuContrast } from 'react-icons/lu';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import {
+  VOICE_TTS_ON,
+  VOICE_FONT_SCALE,
+  VOICE_ZOOM_ON,
+  VOICE_ZOOM_OFF,
+  VOICE_HIGH_CONTRAST_ON,
+  VOICE_HIGH_CONTRAST_OFF,
+} from '../constants/voiceGuide';
 import styles from './AccessibilityBar.module.css';
 
 const FONT_LABELS = {
@@ -23,7 +31,7 @@ export default function AccessibilityBar() {
           toggleTts();
           if (!ttsEnabled) {
             setTimeout(() => {
-              const utterance = new SpeechSynthesisUtterance('음성 안내가 시작됩니다.');
+              const utterance = new SpeechSynthesisUtterance(VOICE_TTS_ON);
               utterance.lang = 'ko-KR';
               utterance.rate = 0.9;
               speechSynthesis.speak(utterance);
@@ -39,8 +47,10 @@ export default function AccessibilityBar() {
         type="button"
         className={`${styles.btn} ${fontScale !== 'default' ? styles.active : ''}`}
         onClick={() => {
+          const order = ['default', 'large', 'xlarge'] as const;
+          const nextIdx = (order.indexOf(fontScale) + 1) % order.length;
           cycleFontScale();
-          speak('글씨 크기 변경');
+          speak(VOICE_FONT_SCALE[order[nextIdx]]);
         }}
       >
         {!hideIcons && <span className={styles.iconWrap}><LuALargeSmall /></span>}
@@ -52,7 +62,7 @@ export default function AccessibilityBar() {
         className={`${styles.btn} ${zoom !== 'default' ? styles.active : ''}`}
         onClick={() => {
           toggleZoom();
-          speak(zoom === 'default' ? '화면 확대' : '화면 원래 크기');
+          speak(zoom === 'default' ? VOICE_ZOOM_ON : VOICE_ZOOM_OFF);
         }}
       >
         {!hideIcons && <span className={styles.iconWrap}><LuZoomIn /></span>}
@@ -64,7 +74,7 @@ export default function AccessibilityBar() {
         className={`${styles.btn} ${highContrast ? styles.active : ''}`}
         onClick={() => {
           toggleHighContrast();
-          speak(highContrast ? '고대비 모드 해제' : '고대비 모드');
+          speak(highContrast ? VOICE_HIGH_CONTRAST_OFF : VOICE_HIGH_CONTRAST_ON);
         }}
       >
         {!hideIcons && <span className={styles.iconWrap}><LuContrast /></span>}

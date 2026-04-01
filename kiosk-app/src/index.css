@@ -160,3 +160,134 @@ html.a11y-zoomed #root {
   min-height: 100vh;
   overflow: visible;
 }
+
+/* ══════════════════════════════════════
+   고대비 모드 (High Contrast)
+   검정 배경 + 노란 텍스트
+   ══════════════════════════════════════ */
+
+html.high-contrast {
+  --color-success: #00ff00;
+  --color-success-bg: #003300;
+  --color-error: #ff4444;
+  --color-overlay: rgba(0, 0, 0, 0.85);
+  --color-badge-new: #00ccff;
+  --color-badge-upcoming: #003344;
+  --color-blue-100: #00ccff;
+  --color-primary: #00ccff;
+  --color-primary-active: #00ffcc;
+  --color-top-section-bg: #111;
+  --color-primary-700: #00ccff;
+  --color-primary-500: #111;
+  --color-primary-300: #1a1a2e;
+  --color-nonactive: #222;
+
+  /* Text */
+  --color-text: #ffff00;
+  --color-text-secondary: #ffff00;
+  --color-text-muted: #cccc00;
+  --color-text-hint: #cccc00;
+  --color-text-placeholder: #999900;
+  --color-text-dday: #ffff00;
+
+  /* Background */
+  --color-bg: #000;
+  --color-bg-white: #000;
+  --color-page-bg: #000;
+  --color-qm-1: #111;
+  --color-qm-2: #111;
+  --color-qm-3: #111;
+  --color-qm-4: #111;
+  --color-qm-5: #111;
+  --color-qm-6: #111;
+  --color-bg-gray: #111;
+  --color-bg-light: #111;
+
+  /* Border */
+  --color-border: #555;
+  --color-border-medium: #666;
+  --color-border-dark: #555;
+  --color-border-hover: #333;
+}
+
+/* 전역 텍스트/배경 강제 적용 */
+html.high-contrast body {
+  background-color: #000;
+  color: #ffff00;
+}
+
+/* 버튼/인풋 등 인라인 색상이 하드코딩된 요소 재정의 */
+html.high-contrast button,
+html.high-contrast input,
+html.high-contrast select,
+html.high-contrast textarea {
+  color: #ffff00;
+  border-color: #555;
+}
+
+/* 흰색이 하드코딩된 배경 재정의 */
+html.high-contrast [style*="background"] {
+  /* CSS specificity로 처리하되 인라인은 !important 필요 */
+}
+
+/* 모달 / 카드 배경 (#fff 하드코딩) */
+html.high-contrast .reasonButton,
+html.high-contrast .actionButton,
+html.high-contrast .menuButton {
+  background: #111 !important;
+  border-color: #555 !important;
+  box-shadow: none !important;
+}
+
+/* :active 상태 하드코딩 색상 */
+html.high-contrast button:active {
+  background-color: #222 !important;
+}
+
+/* 랭킹 슬라이드 토글 배경 */
+html.high-contrast .slideToggle {
+  background: #222 !important;
+}
+
+/* D-day 태그 흰색 텍스트 */
+html.high-contrast .ddayTagPrimary {
+  color: #000 !important;
+  background-color: #00ccff !important;
+}
+
+/* 성공 아이콘 */
+html.high-contrast .successIcon {
+  background: #00ccff;
+  color: #000;
+}
+
+/* 광고 배너 */
+html.high-contrast .dot {
+  background: rgba(255, 255, 0, 0.4);
+}
+html.high-contrast .dotActive {
+  background: rgba(255, 255, 0, 0.95);
+}
+
+/* 접근성 바 active 상태 */
+html.high-contrast .btn.active {
+  background: #1a1a2e;
+  color: #00ccff;
+  border: 1px solid #00ccff;
+}
+html.high-contrast .btn.active .iconWrap {
+  background: #00ccff;
+  color: #000;
+}
+
+/* 스크롤바 */
+html.high-contrast ::-webkit-scrollbar {
+  width: 8px;
+}
+html.high-contrast ::-webkit-scrollbar-track {
+  background: #111;
+}
+html.high-contrast ::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}

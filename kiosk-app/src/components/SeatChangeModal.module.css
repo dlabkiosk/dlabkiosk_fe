@@ -375,3 +375,48 @@
   white-space: pre-line;
   word-break: keep-all;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal,
+:global(html.high-contrast) .modalSmall {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .seatEmpty {
+  background-color: #111;
+  border-color: #444;
+}
+:global(html.high-contrast) .seatOccupied {
+  background-color: #003344;
+  border-color: #00ccff;
+}
+:global(html.high-contrast) .seatCurrent {
+  background-color: #332200;
+  border-color: #ffaa00;
+}
+:global(html.high-contrast) .seatSelected {
+  color: #000;
+}
+:global(html.high-contrast) .seatSelected .seatLabel {
+  color: #000;
+}
+:global(html.high-contrast) .areaTabActive {
+  color: #000;
+}
+:global(html.high-contrast) .statusBadge {
+  color: #ffaa00;
+  background-color: #332200;
+}
+:global(html.high-contrast) .selectionBadge {
+  color: #000;
+}
+:global(html.high-contrast) .existingStatusBadge {
+  color: #ffaa00;
+  background-color: #332200;
+}
+:global(html.high-contrast) .submitButton,
+:global(html.high-contrast) .cancelButton {
+  color: #000;
+}
+:global(html.high-contrast) .successIcon {
+  color: #000;
+}

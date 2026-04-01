@@ -24,6 +24,19 @@ import type { CardScanResult } from '../hooks/useCardScanner';
 import { useQrScanner } from '../hooks/useQrScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
 import AccessibilityBar from '../components/AccessibilityBar';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import {
+  VOICE_MENU_NO_CARD,
+  VOICE_MENU_SEAT_LEAVE,
+  VOICE_MENU_REMOTE_APPLY,
+  VOICE_MENU_STUDENT_INFO,
+  VOICE_MENU_MEAL_PLAN,
+  VOICE_MENU_SEAT_MAP,
+  VOICE_BACK_TO_MAIN,
+  VOICE_SEAT_LEAVE_REASON_SELECTED,
+  VOICE_REMOTE_NO_PHONE,
+  VOICE_REMOTE_SEAT_CHANGE,
+} from '../constants/voiceGuide';
 import styles from './MainPage.module.css';
 
 interface MainPageProps {
@@ -32,6 +45,7 @@ interface MainPageProps {
 }
 
 export default function MainPage({ session, onLogout }: MainPageProps) {
+  const { speak } = useAccessibility();
   const [showAdmin, setShowAdmin] = useState(false);
 
   const [showRemoteApply, setShowRemoteApply] = useState(false);
@@ -84,20 +98,26 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const handleMenuClick = (menuId: string) => {
     if (menuId === 'seat-leave') {
       setShowSeatLeaveReason(true);
+      speak(VOICE_MENU_SEAT_LEAVE);
     } else if (menuId === 'no-card') {
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId: 'tag', label: '전화번호로 인증', keypadOnly: true, defaultKeypadMode: 'phone' });
+      speak(VOICE_MENU_NO_CARD);
     } else if (menuId === 'remote-apply') {
       setShowRemoteApply(true);
+      speak(VOICE_MENU_REMOTE_APPLY);
     } else if (menuId === 'meal-plan') {
       setShowMealPlan(true);
+      speak(VOICE_MENU_MEAL_PLAN);
     } else if (menuId === 'student-info') {
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId: 'student-info', label: '학적 조회' });
+      speak(VOICE_MENU_STUDENT_INFO);
     } else if (menuId === 'seat-map') {
       setShowSeatMap(true);
+      speak(VOICE_MENU_SEAT_MAP);
     }
   };
 
@@ -131,12 +151,14 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     setScanResult(null);
     setQrResult(null);
     setScanTarget({ actionId: 'leave-seat', label: `좌석 이탈 (${reasonLabel})`, reasonId });
+    speak(VOICE_SEAT_LEAVE_REASON_SELECTED(reasonLabel));
   };
 
   const handleScanClose = () => {
     setScanTarget(null);
     setScanResult(null);
     setQrResult(null);
+    speak(VOICE_BACK_TO_MAIN);
   };
 
   // 통합 식별자 추출 (좌석이탈 등 identifier 하나만 받는 API용)
@@ -255,16 +277,17 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const handleRemoteSelect = (actionId: string, label: string) => {
     setShowRemoteApply(false);
     if (actionId === 'no-phone') {
-      // 휴대폰 미소지 → 먼저 CardScanModal로 학생 식별
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId: 'no-phone', label: '휴대폰 미소지' });
+      speak(VOICE_REMOTE_NO_PHONE);
       return;
     }
     if (actionId === 'seat-change') {
       setScanResult(null);
       setQrResult(null);
       setScanTarget({ actionId: 'seat-change', label: '좌석 변경' });
+      speak(VOICE_REMOTE_SEAT_CHANGE);
       return;
     }
     setScanResult(null);
@@ -293,18 +316,18 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
 
       {showSeatLeaveReason && (
         <SeatLeaveReasonModal
-          onClose={() => setShowSeatLeaveReason(false)}
+          onClose={() => { setShowSeatLeaveReason(false); speak(VOICE_BACK_TO_MAIN); }}
           onSelect={handleSeatLeaveReasonSelect}
         />
       )}
 
       {showMealPlan && (
-        <WeeklyMealModal storeId={session.storeId} onClose={() => setShowMealPlan(false)} />
+        <WeeklyMealModal storeId={session.storeId} onClose={() => { setShowMealPlan(false); speak(VOICE_BACK_TO_MAIN); }} />
       )}
 
       {showRemoteApply && (
         <RemoteApplyModal
-          onClose={() => setShowRemoteApply(false)}
+          onClose={() => { setShowRemoteApply(false); speak(VOICE_BACK_TO_MAIN); }}
           onSelect={handleRemoteSelect}
         />
       )}
@@ -332,7 +355,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           identifier={phoneSubmissionStudent.identifier}
           inputMethod={phoneSubmissionStudent.inputMethod}
           studentName={phoneSubmissionStudent.name}
-          onClose={() => setPhoneSubmissionStudent(null)}
+          onClose={() => { setPhoneSubmissionStudent(null); speak(VOICE_BACK_TO_MAIN); }}
         />
       )}
 
@@ -341,19 +364,19 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
         <SeatChangeModal
           student={seatChangeStudent.student}
           inputMethod={seatChangeStudent.inputMethod}
-          onClose={() => setSeatChangeStudent(null)}
+          onClose={() => { setSeatChangeStudent(null); speak(VOICE_BACK_TO_MAIN); }}
         />
       )}
 
       {studentInfoTarget && (
         <StudentInfoModal
           student={studentInfoTarget}
-          onClose={() => setStudentInfoTarget(null)}
+          onClose={() => { setStudentInfoTarget(null); speak(VOICE_BACK_TO_MAIN); }}
         />
       )}
 
       {showSeatMap && (
-        <SeatMapModal onClose={() => setShowSeatMap(false)} />
+        <SeatMapModal onClose={() => { setShowSeatMap(false); speak(VOICE_BACK_TO_MAIN); }} />
       )}
 
       {showAdmin && (

@@ -125,3 +125,19 @@
 .returnButton:active {
   opacity: 0.85;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .reasonButton {
+  background: #111;
+  border-color: #555;
+  box-shadow: none;
+}
+:global(html.high-contrast) .reasonButton:active {
+  background-color: #222;
+}
+:global(html.high-contrast) .returnButton {
+  color: #000;
+}

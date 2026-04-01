@@ -59,3 +59,14 @@
   color: var(--color-badge-new);
   border: none;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .btn {
+  border: 1px solid #333;
+}
+:global(html.high-contrast) .btn.active {
+  border-color: #00ccff;
+}
+:global(html.high-contrast) .btn.active .iconWrap {
+  color: #000;
+}

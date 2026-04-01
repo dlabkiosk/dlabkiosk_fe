@@ -82,3 +82,15 @@
   font-weight: var(--weight-semibold);
   color: #fff;
 }
+
+/* 고대비 */
+:global(html.high-contrast) .ddayTagPrimary {
+  color: #000;
+  background-color: #00ccff;
+}
+:global(html.high-contrast) .ddayValuePrimary {
+  color: #000;
+}
+:global(html.high-contrast) .ddayTag {
+  border: 1px solid #555;
+}

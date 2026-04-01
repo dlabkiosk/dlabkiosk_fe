@@ -7,6 +7,15 @@ import type { MealInfo } from '../api/tagApi';
 import type { Student } from '../data/mockStudents';
 import type { CardScanResult } from '../hooks/useCardScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import {
+  VOICE_SCAN_PROMPT,
+  VOICE_KEYPAD_PHONE,
+  VOICE_KEYPAD_AUTH_FAIL,
+  VOICE_SCAN_AUTH_FAIL,
+  VOICE_KEYPAD_NUMBER,
+  VOICE_TIMEOUT,
+} from '../constants/voiceGuide';
 import styles from './CardScanModal.module.css';
 
 const SECURE_CLOSE_TAPS = 5;
@@ -62,6 +71,7 @@ interface CardScanModalProps {
 }
 
 export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm }: CardScanModalProps) {
+  const { speak, timeoutMultiplier } = useAccessibility();
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(defaultKeypadMode ?? null);
@@ -82,11 +92,13 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
   const showError = useCallback((msg = '없는 학생입니다.') => {
     setErrorMessage(msg);
+    // TTS: 키패드 모드에 따라 다른 실패 음성
+    speak(keypadMode ? VOICE_KEYPAD_AUTH_FAIL : VOICE_SCAN_AUTH_FAIL);
     if (errorTimer.current) clearTimeout(errorTimer.current);
     errorTimer.current = setTimeout(() => {
       setErrorMessage(null);
-    }, ERROR_DISPLAY_MS);
-  }, []);
+    }, ERROR_DISPLAY_MS * timeoutMultiplier);
+  }, [speak, keypadMode, timeoutMultiplier]);
 
   const startSuccessTimer = useCallback((ms: number) => {
     if (successTimer.current) clearTimeout(successTimer.current);
@@ -94,13 +106,16 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       setSuccessInfo(null);
       setStudentMessages([]);
       onClose();
-    }, ms);
-  }, [onClose]);
+    }, ms * timeoutMultiplier);
+  }, [onClose, timeoutMultiplier]);
 
   const showSuccess = useCallback((result: ScanActionResult) => {
     setSearching(false);
     setConfirming(false);
-    setSuccessInfo({ name: result.name, action: result.message || '출결 처리 되었습니다.' });
+    const actionText = result.message || '출결 처리 되었습니다.';
+    setSuccessInfo({ name: result.name, action: actionText });
+    // TTS: 성공 메시지 읽기
+    speak(`${result.name} 학생, ${actionText}`);
 
     const pending = result.pendingActions ?? [];
     const meal = result.mealInfo ?? null;
@@ -285,11 +300,13 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
     if (key === '') return;
+    // TTS: 숫자 읽기
+    speak(VOICE_KEYPAD_NUMBER(key));
     setInputValue((prev) => {
       if (prev.length >= maxLength) return prev;
       return prev + key;
     });
-  }, [maxLength]);
+  }, [maxLength, speak]);
 
   const isInputValid = inputValue.length === PHONE_8_DIGITS_LENGTH;
 
@@ -310,6 +327,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setKeypadMode(mode);
     setInputValue('');
     setErrorMessage(null);
+    speak(VOICE_KEYPAD_PHONE);
   };
 
   // 성공 화면

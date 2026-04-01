@@ -277,3 +277,51 @@
   color: #dc2626;
   font-weight: var(--weight-bold);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .table th {
+  background: #111;
+}
+:global(html.high-contrast) .badge {
+  color: #000;
+}
+:global(html.high-contrast) .typeBadgeOuting {
+  color: #66b3ff;
+  background: #112244;
+}
+:global(html.high-contrast) .typeBadgeLate {
+  color: #ffaa55;
+  background: #332200;
+}
+:global(html.high-contrast) .typeBadgeEarly {
+  color: #66ff66;
+  background: #003300;
+}
+:global(html.high-contrast) .typeBadgeAbsence {
+  color: #ff6666;
+  background: #330000;
+}
+:global(html.high-contrast) .statusApproved {
+  color: #66ff66;
+  background: #003300;
+}
+:global(html.high-contrast) .statusPending {
+  color: #66b3ff;
+  background: #112244;
+}
+:global(html.high-contrast) .statusRejected {
+  color: #ff6666;
+  background: #330000;
+}
+:global(html.high-contrast) .pointPositive {
+  color: #66b3ff;
+}
+:global(html.high-contrast) .pointNegative {
+  color: #ff6666;
+}
+:global(html.high-contrast) .markX {
+  color: #ff6666;
+}

@@ -85,3 +85,16 @@
   font-weight: var(--weight-medium);
   color: var(--color-text);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .actionButton {
+  background: #111;
+  border-color: #555;
+  box-shadow: none;
+}
+:global(html.high-contrast) .actionButton:active {
+  background-color: #222;
+}

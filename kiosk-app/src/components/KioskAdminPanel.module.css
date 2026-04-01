@@ -294,3 +294,21 @@
 .logoutButton:active {
   background: var(--color-primary-active);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .panel {
+  border: 1px solid #555;
+}
+:global(html.high-contrast) .keypadKey {
+  border: 1px solid #333;
+}
+:global(html.high-contrast) .keypadKey:active:not(:disabled) {
+  background: #333;
+}
+:global(html.high-contrast) .submitButton,
+:global(html.high-contrast) .logoutButton {
+  color: #000;
+}
+:global(html.high-contrast) .infoBadgeButton:active {
+  background: #222;
+}

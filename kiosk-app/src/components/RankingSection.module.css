@@ -214,3 +214,17 @@
 .modalBody .rankName {
   font-size: var(--font-xs);
 }
+
+/* 고대비 */
+:global(html.high-contrast) .slideToggle {
+  background: #222;
+}
+:global(html.high-contrast) .slideTabActive {
+  color: #000;
+}
+:global(html.high-contrast) .modalOverlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+:global(html.high-contrast) .modal {
+  border: 1px solid #555;
+}
