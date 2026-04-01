@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import cardAndQrImg from '../assets/card_and_qr.jpg';
+import blackCardAndQrImg from '../assets/black_card_and_qr.png';
 import { searchStudent, getStudentByPhone8 } from '../api/studentApi';
 import { getStudentMessages } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
@@ -69,7 +70,7 @@ interface CardScanModalProps {
 }
 
 export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm }: CardScanModalProps) {
-  const { speak, timeoutMultiplier } = useAccessibility();
+  const { speak, timeoutMultiplier, highContrast } = useAccessibility();
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [keypadMode, setKeypadMode] = useState<KeypadMode | null>(defaultKeypadMode ?? null);
@@ -298,8 +299,8 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
     if (key === '') return;
-    // TTS: 숫자 읽기
-    speak(VOICE_KEYPAD_NUMBER(key));
+    // TTS: 숫자 읽기 (cancel 없이 큐잉하여 자연스럽게 이어 읽기)
+    speak(VOICE_KEYPAD_NUMBER(key), false);
     setInputValue((prev) => {
       if (prev.length >= maxLength) return prev;
       return prev + key;
@@ -421,7 +422,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
               {searching ? '학생 조회 중...' : '카드 태그 및 QR을 스캔해주세요'}
             </p>
 
-            <img src={cardAndQrImg} alt="카드 태그 및 QR 스캔" className={styles.cardImage} />
+            <img src={highContrast ? blackCardAndQrImg : cardAndQrImg} alt="카드 태그 및 QR 스캔" className={styles.cardImage} />
 
             {errorMessage && (
               <p className={styles.errorMessage}>{errorMessage}</p>

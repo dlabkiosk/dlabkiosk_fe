@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { getStoreByCode, kioskLogin } from '../api/kioskAuthApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import logoImg from '../assets/logo.png';
+import blackLogoImg from '../assets/black_logo.png';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import styles from './KioskLoginPage.module.css';
 
 interface KioskLoginPageProps {
@@ -11,6 +13,7 @@ interface KioskLoginPageProps {
 const PIN_LENGTH = 4;
 
 export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
+  const { highContrast } = useAccessibility();
   const [step, setStep] = useState<'storeCode' | 'pin'>('storeCode');
   const [storeCode, setStoreCode] = useState('');
   const [storeName, setStoreName] = useState('');
@@ -101,7 +104,7 @@ export default function KioskLoginPage({ onLogin }: KioskLoginPageProps) {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <img src={logoImg} alt="Logo" className={styles.logo} />
+        <img src={highContrast ? blackLogoImg : logoImg} alt="Logo" className={styles.logo} />
 
         {step === 'storeCode' ? (
           <>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import logoImg from '../assets/logo.png';
+import blackLogoImg from '../assets/black_logo.png';
 import { useSecretTap } from '../hooks/useSecretTap';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { getExamSchedules } from '../api/examScheduleApi';
 import type { ExamSchedule } from '../api/examScheduleApi';
 import styles from './Header.module.css';
@@ -44,6 +46,7 @@ interface HeaderProps {
 }
 
 export default function Header({ storeName, onAdminAccess }: HeaderProps) {
+  const { highContrast } = useAccessibility();
   const [ddays, setDdays] = useState<DdayItem[]>([]);
   const [now, setNow] = useState(() => new Date());
 
@@ -84,7 +87,7 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
     <header className={styles.header}>
       <div className={styles.logoSection}>
         <img
-          src={logoImg}
+          src={highContrast ? blackLogoImg : logoImg}
           alt="D'Lab"
           className={styles.logo}
           onClick={handleLogoTap}

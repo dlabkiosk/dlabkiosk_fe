@@ -17,7 +17,8 @@ interface AccessibilityActions {
   toggleZoom: () => void;
   toggleHighContrast: () => void;
   reset: () => void;
-  speak: (text: string) => void;
+  /** cancelBefore=false 이면 이전 발화를 취소하지 않고 큐에 추가 (숫자 키패드 등) */
+  speak: (text: string, cancelBefore?: boolean) => void;
   /** TTS 모드일 때 타임아웃에 적용할 배율 (꺼져 있으면 1) */
   timeoutMultiplier: number;
 }
@@ -55,9 +56,9 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     root.classList.toggle('a11y-zoomed', zoom !== 'default');
   }, []);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, cancelBefore = true) => {
     if (!state.ttsEnabled) return;
-    speechSynthesis.cancel();
+    if (cancelBefore) speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
     utterance.rate = 0.9;

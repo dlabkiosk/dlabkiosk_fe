@@ -14,8 +14,8 @@
 }
 
 .logo {
-  height: 100%;
-  max-height: 5rem;
+  width: 10rem;
+  height: 3rem;
   object-fit: contain;
 }
 

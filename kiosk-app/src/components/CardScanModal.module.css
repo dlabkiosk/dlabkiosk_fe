@@ -412,8 +412,10 @@
 }
 
 /* 고대비 */
-:global(html.high-contrast) .modal {
-  border: 1px solid #555;
+:global(html.high-contrast) .cardImage {
+  border: 2px solid var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
 }
 :global(html.high-contrast) .seatButton:active {
   background: #222;
