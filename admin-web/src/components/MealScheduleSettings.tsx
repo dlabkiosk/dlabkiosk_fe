@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getMealMenuWeek,
   saveMealMenu,
@@ -6,6 +6,9 @@ import {
   type MealMenuDay,
 } from '../api/mealScheduleApi';
 import { getMe } from '../api/authApi';
+import useConfirm from '../hooks/useConfirm';
+import editIcon from '../assets/edit.png';
+import trashIcon from '../assets/trash.png';
 import styles from './MealScheduleSettings.module.css';
 
 /* ── 날짜 유틸 ── */
@@ -91,10 +94,46 @@ function WeekMealCard({ title, monday, meals, onRegister, onEdit, onDelete }: We
   const sunday = addDays(monday, 6);
   const weekRange = `${formatDate(monday)}~${formatDate(sunday)}`;
   const isEmpty = Object.values(meals).every((d) => !d.lunch && !d.dinner);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   return (
     <div className={styles.mealCard}>
-      <h3 className={styles.cardTitle}>{title}</h3>
+      <div className={styles.cardHeader}>
+        <h3 className={styles.cardTitle}>{title}</h3>
+        {!isEmpty && (
+          <div className={styles.cardActions} ref={menuRef}>
+            <button type="button" className={styles.kebabBtn} onClick={() => setMenuOpen(!menuOpen)}>
+              <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor">
+                <circle cx="2" cy="2" r="2" />
+                <circle cx="2" cy="8" r="2" />
+                <circle cx="2" cy="14" r="2" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className={styles.dropdownMenu}>
+                <button type="button" className={styles.dropdownItem} onClick={() => { setMenuOpen(false); onEdit(); }}>
+                  <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                  수정
+                </button>
+                <button type="button" className={styles.dropdownItem} onClick={() => { setMenuOpen(false); onDelete(); }}>
+                  <img src={trashIcon} alt="" className={styles.dropdownIcon} />
+                  삭제
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <div className={styles.weekNav}>
         <span className={styles.weekRange}>{weekRange}</span>
       </div>
@@ -104,61 +143,53 @@ function WeekMealCard({ title, monday, meals, onRegister, onEdit, onDelete }: We
           식단표 등록
         </button>
       ) : (
-        <>
-          <table className={styles.mealTable}>
-            <thead>
-              <tr>
-                <th></th>
-                <th>점심</th>
-                <th>석식</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DAY_LABELS.map((label, idx) => {
-                const dayDate = addDays(monday, idx);
-                const isToday = isSameDay(dayDate, today);
-                const isWeekend = idx >= 5;
-                const day = meals[idx];
-                const dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}(${label})`;
+        <table className={styles.mealTable}>
+          <thead>
+            <tr>
+              <th></th>
+              <th>점심</th>
+              <th>석식</th>
+            </tr>
+          </thead>
+          <tbody>
+            {DAY_LABELS.map((label, idx) => {
+              const dayDate = addDays(monday, idx);
+              const isToday = isSameDay(dayDate, today);
+              const isWeekend = idx >= 5;
+              const day = meals[idx];
+              const dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}(${label})`;
 
-                return (
-                  <tr key={idx}>
-                    <td className={styles.dayCell}>
-                      {isToday && <span className={styles.todayBadge}>TODAY</span>}
-                      <br />
-                      <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
-                    </td>
-                    {day?.closed ? (
-                      <td colSpan={2} className={styles.holidayCell}>휴무</td>
-                    ) : (
-                      <>
-                        <td>
-                          {day?.lunch ? (
-                            <div className={styles.menuContent}>{day.lunch}</div>
-                          ) : (
-                            <span className={styles.emptyMenu}>-</span>
-                          )}
-                        </td>
-                        <td>
-                          {day?.dinner ? (
-                            <div className={styles.menuContent}>{day.dinner}</div>
-                          ) : (
-                            <span className={styles.emptyMenu}>-</span>
-                          )}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className={styles.cardFooter}>
-            <button type="button" className={styles.cardEditButton} onClick={onEdit}>수정</button>
-            <button type="button" className={styles.cardDeleteButton} onClick={onDelete}>삭제</button>
-          </div>
-        </>
+              return (
+                <tr key={idx}>
+                  <td className={styles.dayCell}>
+                    {isToday && <><span className={styles.todayBadge}>TODAY</span><br /></>}
+                    <span className={isWeekend ? styles.weekendDay : undefined}>{dateStr}</span>
+                  </td>
+                  {day?.closed ? (
+                    <td colSpan={2} className={styles.holidayCell}>휴무</td>
+                  ) : (
+                    <>
+                      <td>
+                        {day?.lunch ? (
+                          <div className={styles.menuContent}>{day.lunch}</div>
+                        ) : (
+                          <span className={styles.emptyMenu}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        {day?.dinner ? (
+                          <div className={styles.menuContent}>{day.dinner}</div>
+                        ) : (
+                          <span className={styles.emptyMenu}>-</span>
+                        )}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
     </div>
   );
@@ -304,6 +335,7 @@ function MealScheduleModal({ title, monday, initialMeals, storeId, onClose, onSa
 /* ── 식단표 관리 탭 ── */
 
 export default function MealScheduleSettings() {
+  const { alert, confirm, ConfirmDialog } = useConfirm();
   const today = new Date();
   const thisMonday = getMonday(today);
   const nextMonday = addDays(thisMonday, 7);
@@ -334,13 +366,13 @@ export default function MealScheduleSettings() {
   }, [fetchWeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async (monday: Date) => {
-    if (!window.confirm('해당 주 식단을 삭제하시겠습니까?')) return;
+    if (!(await confirm('해당 주 식단을 삭제하시겠습니까?'))) return;
     try {
       await deleteMealMenu(toISODate(monday), myStoreId);
       fetchWeek(thisMonday, setThisWeekMeals);
       fetchWeek(nextMonday, setNextWeekMeals);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
+      void alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
     }
   };
 
@@ -390,6 +422,7 @@ export default function MealScheduleSettings() {
           onSaved={handleModalSaved}
         />
       )}
+      {ConfirmDialog}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import styles from './NoticeManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
 
-const CATEGORY_OPTIONS = ['전체공지', '일반공지', '긴급공지'];
+const SUBJECT_OPTIONS = ['전체', '국어', '수학', '과학', '사회', '한국사'];
 const ITEMS_PER_PAGE = 10;
 
 export default function NoticeManagement() {
@@ -17,7 +17,7 @@ export default function NoticeManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [category, setCategory] = useState('전체공지');
+  const [category, setCategory] = useState('전체');
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,6 +41,10 @@ export default function NoticeManagement() {
 
   const filteredNotices = notices
     .filter((n) => {
+      if (category !== '전체') {
+        const prefix = `[${category}]`;
+        if (!n.title.startsWith(prefix)) return false;
+      }
       if (appliedSearch.trim()) {
         if (!n.title.toLowerCase().includes(appliedSearch.toLowerCase())) return false;
       }
@@ -85,7 +89,7 @@ export default function NoticeManagement() {
             <span className={f.filterLabel}>구분</span>
             <FilterSelect
               value={category}
-              options={CATEGORY_OPTIONS}
+              options={SUBJECT_OPTIONS}
               placeholder="전체"
               onChange={setCategory}
             />
@@ -106,7 +110,7 @@ export default function NoticeManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={() => { setCategory('전체공지'); setSearchText(''); }}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={() => { setCategory('전체'); setSearchText(''); setAppliedSearch(''); }}>초기화</button>
             <button
               type="button"
               className={styles.newButton}

@@ -5,6 +5,7 @@ import {
   LuArrowDown,
 } from 'react-icons/lu';
 import attendanceIcon from '../assets/attendance_active.png';
+import downloadIcon from '../assets/download.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getMe } from '../api/authApi';
@@ -43,6 +44,27 @@ function compareRows(a: AttendanceRecord, b: AttendanceRecord, field: SortField,
 
   const cmp = va.localeCompare(vb);
   return dir === 'desc' ? -cmp : cmp;
+}
+
+/* ── CSV 다운로드 ── */
+
+function downloadCsv(rows: AttendanceRecord[]) {
+  const header = '이름,학번,좌석,출결현황,휴대폰 미소지';
+  const lines = rows.map((r) => {
+    const phone = r.phoneSubmitted ? 'O' : 'X';
+    return `${r.studentName},${r.studentNumber},${r.seatLabel ?? ''},${r.attendanceStatus ?? ''},${phone}`;
+  });
+
+  const bom = '\uFEFF';
+  const csv = bom + [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  link.download = `출결관리_${today}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 /* ── Page ── */
@@ -265,6 +287,9 @@ export default function AttendanceManagement() {
 
       {/* Table */}
       <div className={styles.contentCard}>
+        <div className={styles.tableActions}>
+          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData)}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+        </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>

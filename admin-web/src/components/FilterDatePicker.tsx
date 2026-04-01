@@ -47,6 +47,7 @@ export default function FilterDatePicker({ value, onChange, id, minDate, maxDate
         showPopperArrow={false}
         minDate={toDate(minDate ?? '') ?? undefined}
         maxDate={toDate(maxDate ?? '') ?? undefined}
+        popperProps={{ strategy: 'fixed' }}
       />
       <svg className={s.arrow} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="6 9 12 15 18 9" />

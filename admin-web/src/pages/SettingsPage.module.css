@@ -48,7 +48,8 @@
 .tabSlider {
   position: absolute;
   top: 4px;
-  bottom: 4px;
+  left: 4px;
+  height: calc(100% - 8px);
   border-radius: var(--radius-md);
   background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -121,7 +122,7 @@
 .viewToggle {
   padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: #fff;
   font-size: var(--font-size-sm);
   font-family: inherit;
@@ -148,6 +149,7 @@
 
 .formInput {
   width: 100%;
+  height: var(--size-input-height);
   padding: var(--size-input-padding-v-sm) var(--size-badge-padding-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -165,6 +167,39 @@
   border-color: var(--color-primary);
 }
 
+.formSelect {
+  width: 100%;
+  height: var(--size-input-height);
+  padding: 0 var(--spacing-sm);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-sm) center;
+  padding-right: var(--spacing-xl);
+}
+
+.formSelect:focus {
+  border-color: var(--color-primary);
+}
+
+.charCount {
+  display: block;
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+}
+
 .formValue {
   margin: 0;
   padding: var(--size-input-padding-v-sm) 0;
@@ -175,11 +210,12 @@
 .formInputSm {
   padding: var(--size-btn-padding-v-md) var(--spacing-sm-md);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-md);
   font-family: inherit;
   color: var(--color-text-primary);
   outline: none;
+  width: 80px;
 }
 
 .formInputSm:focus {
@@ -200,6 +236,46 @@
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   cursor: pointer;
+}
+
+.radioLabelDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Media Type Segmented Control ── */
+.mediaTypeGroup {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.mediaTypeBtn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  border: none;
+  background-color: #ffffff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.mediaTypeBtn:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.mediaTypeBtnActive {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.mediaTypeBtnDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── Upload ── */
@@ -285,6 +361,12 @@
   color: var(--color-text-muted);
 }
 
+.statusInactive {
+  background-color: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
 /* ── Drag & Drop ── */
 .dragHandle {
   cursor: grab;
@@ -358,7 +440,7 @@
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 400;
   font-family: inherit;
   cursor: pointer;
@@ -396,7 +478,7 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  background-color: var(--color-bg-page);
+  background-color: var(--color-bg-muted);
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
@@ -597,17 +679,22 @@
   color: #dc2626;
 }
 
+.statusActive {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
 .statusPending {
-  background-color: #ffedd5;
-  color: #ea580c;
+  background-color: #FFF7E6;
+  color: #F27D08;
 }
 
 .examStatusBadge {
   display: inline-block;
-  padding: var(--size-badge-padding-v) var(--spacing-sm-md);
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ── Section Header Actions ── */
@@ -631,10 +718,10 @@
   background-color: var(--color-text-primary);
   color: #fff;
   border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   font-family: inherit;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -725,9 +812,9 @@
 
 /* ── Toggle Button (키오스크 활성화) ── */
 .toggleBtn {
-  padding: var(--spacing-xs) var(--size-btn-padding-h);
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: #fff;
   font-size: var(--font-size-sm);
   font-family: inherit;
@@ -742,9 +829,9 @@
 }
 
 .toggleBtnActive {
-  background-color: #2563eb;
+  background-color: #2772C1;
   color: #fff;
-  border-color: #2563eb;
+  border-color: #2772C1;
 }
 
 .toggleBtnActive:hover {

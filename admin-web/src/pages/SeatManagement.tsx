@@ -14,6 +14,7 @@ import {
   LuGripVertical,
 } from 'react-icons/lu';
 import seatIcon from '../assets/seat_active.png';
+import printerIcon from '../assets/printer.png';
 import { getStudents } from '../api/studentApi';
 import {
   getSeats,
@@ -962,9 +963,18 @@ export default function SeatManagement() {
             onMouseUp={handlePanEnd}
             onMouseLeave={handlePanEnd}
           >
-            <div className={styles.areaTitle}>
-              배정인원 : {occupiedCount}명
-              <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
+            <div className={styles.layoutHeader}>
+              <div className={styles.areaTitle}>
+                배정인원 : {occupiedCount}명
+                <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
+              </div>
+              <button
+                type="button"
+                className={styles.printBtn}
+                onClick={() => window.print()}
+              >
+                인쇄 <img src={printerIcon} alt="" className={styles.printerIcon} />
+              </button>
             </div>
 
             {layoutLoading ? (

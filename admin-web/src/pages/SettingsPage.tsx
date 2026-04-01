@@ -637,16 +637,22 @@ function BannerManagement() {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>미디어 타입</label>
             <div className={styles.radioGroup}>
-              {MEDIA_TYPES.map((mt) => (
-                <label key={mt} className={styles.radioLabel}>
-                  <input
-                    type="radio"
-                    checked={mediaType === mt}
-                    onChange={() => setMediaType(mt)}
-                  />{' '}
-                  {mt === 'IMAGE' ? '이미지' : '영상'}
-                </label>
-              ))}
+              {MEDIA_TYPES.map((mt) => {
+                const isFileAttached = !!file;
+                const fileIsVideo = file?.type.startsWith('video/');
+                const disabled = isFileAttached && (mt === 'VIDEO' ? !fileIsVideo : fileIsVideo);
+                return (
+                  <label key={mt} className={`${styles.radioLabel} ${disabled ? styles.radioLabelDisabled : ''}`}>
+                    <input
+                      type="radio"
+                      checked={mediaType === mt}
+                      onChange={() => setMediaType(mt)}
+                      disabled={disabled}
+                    />{' '}
+                    {mt === 'IMAGE' ? '이미지' : '영상'}
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -654,7 +660,7 @@ function BannerManagement() {
             <label className={styles.formLabel}>노출 시간 (초)</label>
             <input
               type="number"
-              className={styles.formInput}
+              className={styles.formInputSm}
               min={1}
               value={displaySeconds}
               onChange={(e) => setDisplaySeconds(Number(e.target.value))}
@@ -871,7 +877,10 @@ function ExamSchedule() {
       if (editTarget) {
         await updateExamSchedule(editTarget.id, { examName: formName, examDate: formDate });
       } else {
-        await createExamSchedule({ examName: formName, examDate: formDate, active: false });
+        const created = await createExamSchedule({ examName: formName, examDate: formDate, active: false });
+        if (created.active) {
+          await toggleExamScheduleActive(created.id);
+        }
       }
       setShowAddModal(false);
       resetForm();
@@ -1030,24 +1039,30 @@ function ExamSchedule() {
         ) : (
           <div className={styles.sectionBody}>
             <div className={styles.tableToolbar}>
-              <input
-                className={styles.formInputSm}
-                placeholder="시험명 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ marginRight: 'auto', width: 200 }}
-              />
-              {selectedIds.size > 0 && (
-                <button
-                  type="button"
-                  className={styles.addBtn}
-                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
-                  onClick={handleBulkDelete}
-                >
-                  선택 삭제 ({selectedIds.size})
-                </button>
-              )}
-              <button type="button" className={styles.addBtn} onClick={openAddModal}>+ 시험 추가</button>
+              <div className={f.filterGroup}>
+                {/* <span className={f.filterLabel}>시험명</span> */}
+                <input
+                  type="text"
+                  className={f.filterInput}
+                  style={{ width: 280 }}
+                  placeholder="시험명을 검색하세요."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--spacing-sm)' }}>
+                {selectedIds.size > 0 && (
+                  <button
+                    type="button"
+                    className={styles.addBtn}
+                    style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                    onClick={handleBulkDelete}
+                  >
+                    선택 삭제 ({selectedIds.size})
+                  </button>
+                )}
+                <button type="button" className={styles.addBtn} onClick={openAddModal}>+ 시험 추가</button>
+              </div>
             </div>
             <table className={styles.dataTable}>
               <thead>
@@ -1066,7 +1081,7 @@ function ExamSchedule() {
                   <th>지점</th>
                   <th>상태</th>
                   <th>키오스크 <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>(최대 2개)</span></th>
-                  <th style={{ width: 50 }}>구분</th>
+                  <th style={{ width: 50 }}>관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -1101,7 +1116,7 @@ function ExamSchedule() {
                             {exam.active ? 'ON' : 'OFF'}
                           </button>
                         </td>
-                        <td><button type="button" className={styles.editBtn} onClick={() => openEditModal(exam)}>&#x270E;</button></td>
+                        <td><button type="button" className={styles.editBtn} onClick={() => openEditModal(exam)}><img src={editIcon} alt="편집" className={styles.actionIcon} /></button></td>
                       </tr>
                     );
                   })
@@ -1333,20 +1348,19 @@ function SeatLeaveReasonSettings() {
                     <td>{reason.displayOrder}</td>
                     <td>{reason.reasonName}</td>
                     <td>
-                      <span className={`${styles.statusBadge} ${reason.active ? '' : styles.statusInactive}`}>
+                      <span className={`${styles.statusBadge} ${reason.active ? styles.statusActive : styles.statusInactive}`}>
                         {reason.active ? '활성' : '비활성'}
                       </span>
                     </td>
                     <td>
-                      <button type="button" className={styles.editBtn} onClick={() => openEdit(reason)}>&#x270E;</button>
-                      <button
-                        type="button"
-                        className={styles.editBtn}
-                        style={{ color: '#dc2626', marginLeft: 4 }}
-                        onClick={() => handleDelete(reason.id)}
-                      >
-                        &#x2715;
-                      </button>
+                      <div className={styles.actionBtns}>
+                        <button type="button" className={styles.iconBtn} onClick={() => openEdit(reason)}>
+                          <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                        </button>
+                        <button type="button" className={styles.iconBtn} onClick={() => handleDelete(reason.id)}>
+                          <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -1636,14 +1650,14 @@ function BranchInfo() {
             <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} /> 활성
           </label>
         ) : (
-          <span className={`${styles.statusBadge} ${store.active ? '' : styles.statusInactive}`}>
+          <span className={`${styles.statusBadge} ${store.active ? styles.statusActive : styles.statusInactive}`}>
             {store.active ? '활성' : '비활성'}
           </span>
         )}
       </div>
       <div className={styles.formGroup}>
         <label className={styles.formLabel}>DSA 연결</label>
-        <span className={`${styles.statusBadge} ${store.dsaConnected ? '' : styles.statusInactive}`}>
+        <span className={`${styles.statusBadge} ${store.dsaConnected ? styles.statusActive : styles.statusInactive}`}>
           {store.dsaConnected ? '연결됨' : '미연결'}
         </span>
       </div>
@@ -1744,12 +1758,12 @@ function BranchInfo() {
                   <td>{store.address || '-'}</td>
                   <td>{store.phone || '-'}</td>
                   <td>
-                    <span className={`${styles.statusBadge} ${store.active ? '' : styles.statusInactive}`}>
+                    <span className={`${styles.statusBadge} ${store.active ? styles.statusActive : styles.statusInactive}`}>
                       {store.active ? '활성' : '비활성'}
                     </span>
                   </td>
                   <td>
-                    <span className={`${styles.statusBadge} ${store.dsaConnected ? '' : styles.statusInactive}`}>
+                    <span className={`${styles.statusBadge} ${store.dsaConnected ? styles.statusActive : styles.statusInactive}`}>
                       {store.dsaConnected ? '연결' : '미연결'}
                     </span>
                   </td>
@@ -1825,7 +1839,7 @@ function MessageTemplateSettings() {
   const [formContent, setFormContent] = useState('');
   const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
   const [tplPage, setTplPage] = useState(1);
-  const TPL_PER_PAGE = 5;
+  const TPL_PER_PAGE = 10;
 
   useEffect(() => { getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {}); }, []);
 
@@ -1905,15 +1919,14 @@ function MessageTemplateSettings() {
                       <td style={{ textAlign: 'left' }}>{t.content}</td>
                       <td>{new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
                       <td>
-                        <button type="button" className={styles.editBtn} onClick={() => openEdit(t)}>&#x270E;</button>
-                        <button
-                          type="button"
-                          className={styles.editBtn}
-                          style={{ color: '#dc2626', marginLeft: 4 }}
-                          onClick={() => handleDelete(t.id)}
-                        >
-                          &#x2715;
-                        </button>
+                        <div className={styles.actionBtns}>
+                          <button type="button" className={styles.iconBtn} onClick={() => openEdit(t)}>
+                            <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                          </button>
+                          <button type="button" className={styles.iconBtn} onClick={() => handleDelete(t.id)}>
+                            <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1956,11 +1969,13 @@ function MessageTemplateSettings() {
                 <textarea
                   className={styles.formInput}
                   rows={4}
+                  maxLength={50}
                   placeholder="메시지 템플릿 내용을 입력하세요"
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   style={{ resize: 'vertical' }}
                 />
+                <span className={styles.charCount}>{formContent.length}/50</span>
               </div>
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
@@ -1993,6 +2008,8 @@ function StudentMessageSettings() {
   const [editTarget, setEditTarget] = useState<StudentMessage | null>(null);
   const [formContent, setFormContent] = useState('');
   const [formActive, setFormActive] = useState(true);
+  const [msgPage, setMsgPage] = useState(1);
+  const MSG_PER_PAGE = 7;
 
   // 복수 학생 선택 (신규 등록용)
   const [modalStudentIds, setModalStudentIds] = useState<number[]>([]);
@@ -2148,7 +2165,9 @@ function StudentMessageSettings() {
           <div className={styles.msgLayout}>
             <div className={styles.msgStudentList}>
               <input
-                className={styles.formInput}
+                type="text"
+                className={f.filterInput}
+                style={{ width: '100%' }}
                 placeholder="학생 이름 또는 학번 검색"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
@@ -2164,7 +2183,7 @@ function StudentMessageSettings() {
                       key={s.id}
                       type="button"
                       className={`${styles.msgStudentItem} ${selectedStudentId === s.id ? styles.msgStudentItemActive : ''}`}
-                      onClick={() => setSelectedStudentId(s.id)}
+                      onClick={() => { setSelectedStudentId(s.id); setMsgPage(1); }}
                     >
                       <span className={styles.msgStudentName}>{s.name}</span>
                       <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
@@ -2191,6 +2210,7 @@ function StudentMessageSettings() {
                   ) : messages.length === 0 ? (
                     <p className={styles.placeholderText}>등록된 메시지가 없습니다.</p>
                   ) : (
+                    <>
                     <table className={styles.dataTable}>
                       <thead>
                         <tr>
@@ -2201,14 +2221,14 @@ function StudentMessageSettings() {
                         </tr>
                       </thead>
                       <tbody>
-                        {messages.map((msg) => (
+                        {messages.slice((msgPage - 1) * MSG_PER_PAGE, msgPage * MSG_PER_PAGE).map((msg) => (
                           <tr key={msg.id}>
                             <td style={{ textAlign: 'left' }}>{msg.content}</td>
                             <td>
                               <button
                                 type="button"
-                                className={`${styles.statusBadge} ${msg.active ? '' : styles.statusInactive}`}
-                                style={{ cursor: 'pointer', border: msg.active ? 'none' : '1px solid #d1d5db', background: msg.active ? undefined : '#fff', color: msg.active ? undefined : '#6b7280' }}
+                                className={`${styles.statusBadge} ${msg.active ? styles.statusActive : styles.statusInactive}`}
+                                style={{ cursor: 'pointer' }}
                                 onClick={() => handleToggleActive(msg)}
                               >
                                 {msg.active ? '활성' : '비활성'}
@@ -2216,20 +2236,36 @@ function StudentMessageSettings() {
                             </td>
                             <td>{new Date(msg.createdAt).toLocaleDateString('ko-KR')}</td>
                             <td>
-                              <button type="button" className={styles.editBtn} onClick={() => openEdit(msg)}>&#x270E;</button>
-                              <button
-                                type="button"
-                                className={styles.editBtn}
-                                style={{ color: '#dc2626', marginLeft: 4 }}
-                                onClick={() => handleDelete(msg.id)}
-                              >
-                                &#x2715;
-                              </button>
+                              <div className={styles.actionBtns}>
+                                <button type="button" className={styles.iconBtn} onClick={() => openEdit(msg)}>
+                                  <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                                </button>
+                                <button type="button" className={styles.iconBtn} onClick={() => handleDelete(msg.id)}>
+                                  <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                    {messages.length > MSG_PER_PAGE && (
+                      <div className={f.pagination}>
+                        <button type="button" className={f.pageBtn} disabled={msgPage === 1} onClick={() => setMsgPage(msgPage - 1)}>&lt;</button>
+                        {Array.from({ length: Math.ceil(messages.length / MSG_PER_PAGE) }, (_, i) => (
+                          <button
+                            key={i + 1}
+                            type="button"
+                            className={`${f.pageBtn} ${msgPage === i + 1 ? f.pageBtnActive : ''}`}
+                            onClick={() => setMsgPage(i + 1)}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                        <button type="button" className={f.pageBtn} disabled={msgPage === Math.ceil(messages.length / MSG_PER_PAGE)} onClick={() => setMsgPage(msgPage + 1)}>&gt;</button>
+                      </div>
+                    )}
+                    </>
                   )}
                 </>
               )}
@@ -2253,7 +2289,9 @@ function StudentMessageSettings() {
                     대상 학생 ({modalStudentIds.length}명 선택)
                   </label>
                   <input
-                    className={styles.formInput}
+                    type="text"
+                    className={f.filterInput}
+                    style={{ width: '100%' }}
                     placeholder="이름 또는 학번으로 검색"
                     value={modalStudentSearch}
                     onChange={(e) => setModalStudentSearch(e.target.value)}
@@ -2286,7 +2324,7 @@ function StudentMessageSettings() {
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>템플릿 선택</label>
                   <select
-                    className={styles.formInput}
+                    className={styles.formSelect}
                     value=""
                     onChange={(e) => { if (e.target.value) setFormContent(e.target.value); }}
                   >
@@ -2303,11 +2341,13 @@ function StudentMessageSettings() {
                 <textarea
                   className={styles.formInput}
                   rows={4}
+                  maxLength={50}
                   placeholder="학생에게 표시할 메시지를 입력하세요"
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   style={{ resize: 'vertical' }}
                 />
+                <span className={styles.charCount}>{formContent.length}/50</span>
               </div>
 
               {editTarget && (

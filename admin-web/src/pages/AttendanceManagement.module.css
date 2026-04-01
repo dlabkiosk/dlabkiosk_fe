@@ -46,6 +46,19 @@
   gap: var(--spacing-md);
 }
 
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.downloadIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
 .tableWrap {
   overflow: hidden;
 }

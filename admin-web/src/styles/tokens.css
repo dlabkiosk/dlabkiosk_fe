@@ -9,7 +9,7 @@
   --color-sidebar-sub-text: #6b7280;
 
   /* Colors - Primary */
-  --color-primary: #4a90d9;
+  --color-primary: #2772C1;
   --color-primary-light: #f7f9fc;
   --color-excel: #004F2F;
 
@@ -26,6 +26,7 @@
   --color-text-primary: #1a1a2e;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;
+  --color-text-print: #1E1E1E;
 
   /* Colors - Border */
   --color-border: #e5e7eb;

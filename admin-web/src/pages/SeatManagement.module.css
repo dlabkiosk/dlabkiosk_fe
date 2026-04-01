@@ -46,19 +46,19 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-md);
-  height: var(--size-icon-btn);
+  height: var(--size-input-height);
   background-color: var(--color-bg-card);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
 }
 
 .waitingListBtn:hover {
-  border-color: var(--color-primary);
+  /* border-color: var(--color-primary); */
   background-color: var(--color-primary-light);
 }
 
@@ -95,12 +95,12 @@
 
 .refreshBtn {
   padding: 0 var(--spacing-md);
-  height: var(--size-icon-btn);
+  height: var(--size-input-height);
   background-color: var(--color-bg-card);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -163,18 +163,23 @@
   display: none;
 }
 
-.areaTitle {
+.layoutHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: sticky;
   top: calc(-1 * var(--spacing-lg));
   z-index: 2;
   background-color: var(--color-bg-card);
-  text-align: center;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-primary);
   padding-top: var(--spacing-lg);
   padding-bottom: var(--spacing-sm);
   margin-top: calc(-1 * var(--spacing-lg));
+}
+
+.areaTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .areaSummary {
@@ -430,7 +435,7 @@
   color: var(--color-primary);
   background-color: var(--color-primary-light);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -440,7 +445,7 @@
 }
 
 /* ── Edit Button ── */
-.editBtn {
+/* .editBtn {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -481,14 +486,14 @@
 }
 
 /* ── Modal Header Actions ── */
-.modalHeaderActions {
+/* .modalHeaderActions {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-}
+} */ 
 
 /* ── Form (좌석 추가 모달) ── */
-.formGroup {
+/* .formGroup {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -534,7 +539,7 @@
 .formRow {
   display: flex;
   gap: var(--spacing-sm);
-}
+} */
 
 /* ── Empty state ── */
 .emptyState {
@@ -930,4 +935,86 @@
   text-align: center;
   padding: var(--spacing-xl) !important;
   color: var(--color-text-muted);
+}
+
+/* ── Print Button ── */
+.printBtn {
+  position: absolute;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-print);
+  border: 1px solid var(--color-text-print);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.printBtn:hover {
+  background-color: var(--color-bg-page);
+}
+
+.printerIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ── Print Styles ── */
+@media print {
+  /* 사이드바, 헤더, 필터 등 배치도 외 요소 숨김 */
+  :global(.sidebar),
+  :global(.layout-sidebar),
+  :global([class*="sidebar"]),
+  :global([class*="Sidebar"]) {
+    display: none !important;
+  }
+
+  .pageHeader,
+  .areaTabs,
+  .printBtn {
+    display: none !important;
+  }
+
+  .layoutHeader {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* 배치도 카드: 제한 높이 해제, 오버플로우 표시 */
+  .contentCard {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .seatCanvas {
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .areaTitle {
+    position: static !important;
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+    font-size: 16pt;
+  }
 }

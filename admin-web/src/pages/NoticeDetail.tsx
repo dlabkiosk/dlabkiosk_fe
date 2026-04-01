@@ -1,19 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuChevronDown } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
+import editIcon from '../assets/edit.png';
+import trashIcon from '../assets/trash.png';
 import { getNotice, updateNotice, deleteNotice } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import { ApiError } from '../api/client';
 import useConfirm from '../hooks/useConfirm';
 import styles from './NoticeDetail.module.css';
 
-const CATEGORY_OPTIONS = ['일반공지', '긴급공지'];
+const SUBJECT_OPTIONS = ['선택', '전체', '국어', '수학', '과학', '사회', '한국사'];
 
 export default function NoticeDetail() {
   const { noticeId } = useParams<{ noticeId: string }>();
   const navigate = useNavigate();
   const { confirm, alert, ConfirmDialog } = useConfirm();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [editDropdownOpen, setEditDropdownOpen] = useState(false);
+  const editDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+      if (editDropdownRef.current && !editDropdownRef.current.contains(e.target as Node)) {
+        setEditDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +40,7 @@ export default function NoticeDetail() {
 
   /* 수정 모드 */
   const [editing, setEditing] = useState(false);
-  const [editCategory, setEditCategory] = useState('일반공지');
+  const [editCategory, setEditCategory] = useState('선택');
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editPinned, setEditPinned] = useState(false);
@@ -49,10 +68,19 @@ export default function NoticeDetail() {
 
   const startEditing = () => {
     if (!notice) return;
-    setEditTitle(notice.title);
+    // Parse [과목] prefix from title
+    const prefixMatch = notice.title.match(/^\[(.+?)\]\s*/);
+    if (prefixMatch) {
+      setEditCategory(prefixMatch[1]);
+      setEditTitle(notice.title.slice(prefixMatch[0].length));
+    } else {
+      setEditCategory('선택');
+      setEditTitle(notice.title);
+    }
     setEditContent(notice.content);
     setEditPinned(notice.pinned);
     setEditActive(notice.active);
+    setEditDropdownOpen(false);
     setSaveError('');
     setEditing(true);
   };
@@ -66,6 +94,10 @@ export default function NoticeDetail() {
     if (saving) return;
     setSaveError('');
 
+    if (editCategory === '선택') {
+      setSaveError('과목을 선택해주세요.');
+      return;
+    }
     if (!editTitle.trim()) {
       setSaveError('제목을 입력해주세요.');
       return;
@@ -75,10 +107,12 @@ export default function NoticeDetail() {
       return;
     }
 
+    const fullTitle = `[${editCategory}] ${editTitle}`;
+
     setSaving(true);
     try {
       const updated = await updateNotice(Number(noticeId), {
-        title: editTitle,
+        title: fullTitle,
         content: editContent,
         pinned: editPinned,
         active: editActive,
@@ -153,48 +187,76 @@ export default function NoticeDetail() {
           /* ── 수정 모드 ── */
           <>
             <div className={styles.field}>
-              <label className={styles.label}>카테고리</label>
-              <select
-                className={styles.select}
-                value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value)}
-              >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+              <label className={styles.label}>구분</label>
+              <div className={styles.dropdown} ref={editDropdownRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${editDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                  onClick={() => setEditDropdownOpen((v) => !v)}
+                >
+                  <span className={editCategory === '선택' ? styles.dropdownPlaceholder : ''}>
+                    {editCategory}
+                  </span>
+                  <LuChevronDown className={`${styles.dropdownChevron} ${editDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+                </button>
+                {editDropdownOpen && (
+                  <ul className={styles.dropdownMenu}>
+                    {SUBJECT_OPTIONS.filter((o) => o !== '선택').map((opt) => (
+                      <li key={opt}>
+                        <button
+                          type="button"
+                          className={`${styles.dropdownItem} ${editCategory === opt ? styles.dropdownItemActive : ''}`}
+                          onClick={() => { setEditCategory(opt); setEditDropdownOpen(false); }}
+                        >
+                          {opt}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div className={styles.field}>
               <label className={styles.label}>제목</label>
-              <input
-                type="text"
-                className={styles.input}
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-              />
-            </div>
-
-            <div className={styles.pinnedField}>
-              <label className={styles.pinnedLabel}>
+              <div className={styles.editTitleRow}>
+                {editCategory !== '선택' && (
+                  <span className={styles.titlePrefix}>[{editCategory}]</span>
+                )}
                 <input
-                  type="checkbox"
-                  checked={editPinned}
-                  onChange={(e) => setEditPinned(e.target.checked)}
-                  className={styles.pinnedCheckbox}
+                  type="text"
+                  className={styles.input}
+                  placeholder="공지 제목을 입력해주세요"
+                  maxLength={100}
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
                 />
-                <span>고정 공지</span>
-              </label>
+              </div>
+              <span className={styles.charCount}>{editTitle.length}/100</span>
             </div>
 
             <div className={styles.field}>
               <label className={styles.label}>내용</label>
               <textarea
                 className={styles.textarea}
+                placeholder="공지 내용을 입력해주세요."
+                maxLength={1000}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={10}
               />
+              <span className={styles.charCount}>{editContent.length}/1,000</span>
+            </div>
+
+            <div className={styles.pinnedField}>
+              <span className={styles.pinnedLabel}>고정 공지로 등록</span>
+              <button
+                type="button"
+                className={`${styles.toggle} ${editPinned ? styles.toggleOn : ''}`}
+                onClick={() => setEditPinned((v) => !v)}
+              >
+                <span className={styles.toggleKnob} />
+              </button>
             </div>
 
             {saveError && <p className={styles.error}>{saveError}</p>}
@@ -220,10 +282,33 @@ export default function NoticeDetail() {
         ) : (
           /* ── 조회 모드 ── */
           <>
-            <div className={styles.meta}>
-              <span className={styles.storeName}>{notice.storeName}</span>
-              {notice.pinned && <span className={styles.pinnedBadge}>고정</span>}
-              <span className={styles.date}>{formatDate(notice.createdAt)}</span>
+            <div className={styles.titleRow}>
+              <div className={styles.meta}>
+                <span className={styles.storeName}>{notice.storeName}</span>
+                {notice.pinned && <span className={styles.pinnedBadge}>고정</span>}
+                <span className={styles.date}>{formatDate(notice.createdAt)}</span>
+              </div>
+              <div className={styles.kebabWrap} ref={menuRef}>
+                <button type="button" className={styles.kebabBtn} onClick={() => setMenuOpen((v) => !v)}>
+                  <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor">
+                    <circle cx="2" cy="2" r="2" />
+                    <circle cx="2" cy="8" r="2" />
+                    <circle cx="2" cy="14" r="2" />
+                  </svg>
+                </button>
+                {menuOpen && (
+                  <div className={styles.kebabMenu}>
+                    <button type="button" className={styles.kebabMenuItem} onClick={() => { setMenuOpen(false); startEditing(); }}>
+                      <img src={editIcon} alt="" className={styles.kebabMenuIcon} />
+                      수정
+                    </button>
+                    <button type="button" className={styles.kebabMenuItem} onClick={() => { setMenuOpen(false); handleDelete(); }}>
+                      <img src={trashIcon} alt="" className={styles.kebabMenuIcon} />
+                      삭제
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <h2 className={styles.noticeTitle}>{notice.title}</h2>
@@ -232,22 +317,13 @@ export default function NoticeDetail() {
 
             <div className={styles.content}>{notice.content}</div>
 
-            <div className={styles.divider} />
-
             <div className={styles.actions}>
               <button
                 type="button"
-                className={styles.editButton}
-                onClick={startEditing}
+                className={styles.listButton}
+                onClick={() => navigate('/notices')}
               >
-                수정
-              </button>
-              <button
-                type="button"
-                className={styles.deleteButton}
-                onClick={handleDelete}
-              >
-                삭제
+                목록으로
               </button>
             </div>
           </>

@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuArrowLeft } from 'react-icons/lu';
+import { LuArrowLeft, LuChevronDown } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
 import { createNotice } from '../api/noticeApi';
 import { ApiError } from '../api/client';
 import styles from './NoticeCreate.module.css';
+import f from '../styles/filter.module.css';
 
-const CATEGORY_OPTIONS = ['선택', '일반공지', '긴급공지'];
+const SUBJECT_OPTIONS = ['선택','전체', '국어', '수학', '과학', '사회', '한국사'];
 
 export default function NoticeCreate() {
   const navigate = useNavigate();
@@ -16,6 +17,18 @@ export default function NoticeCreate() {
   const [pinned, setPinned] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSubmit = async () => {
     if (isLoading) return;
@@ -23,7 +36,7 @@ export default function NoticeCreate() {
     setError('');
 
     if (category === '선택') {
-      setError('카테고리를 선택해주세요.');
+      setError('과목을 선택해주세요.');
       return;
     }
     if (!title.trim()) {
@@ -35,10 +48,12 @@ export default function NoticeCreate() {
       return;
     }
 
+    const fullTitle = `[${category}] ${title}`;
+
     setIsLoading(true);
     try {
       await createNotice({
-        title,
+        title: fullTitle,
         content,
         pinned,
       });
@@ -74,39 +89,52 @@ export default function NoticeCreate() {
       {/* Form Card */}
       <div className={styles.formCard}>
         <div className={styles.field}>
-          <label className={styles.label}>카테고리</label>
-          <select
-            className={styles.select}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+          <label className={styles.label}>구분</label>
+          <div className={styles.dropdown} ref={dropdownRef}>
+            <button
+              type="button"
+              className={`${styles.dropdownTrigger} ${dropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+              onClick={() => setDropdownOpen((v) => !v)}
+            >
+              <span className={category === '선택' ? styles.dropdownPlaceholder : ''}>
+                {category}
+              </span>
+              <LuChevronDown className={`${styles.dropdownChevron} ${dropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+            </button>
+            {dropdownOpen && (
+              <ul className={styles.dropdownMenu}>
+                {SUBJECT_OPTIONS.filter((o) => o !== '선택').map((opt) => (
+                  <li key={opt}>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${category === opt ? styles.dropdownItemActive : ''}`}
+                      onClick={() => { setCategory(opt); setDropdownOpen(false); }}
+                    >
+                      {opt}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         <div className={styles.field}>
           <label className={styles.label}>제목</label>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="공지 제목을 입력해주세요"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div className={styles.pinnedField}>
-          <label className={styles.pinnedLabel}>
+          <div className={styles.titleRow}>
+            {category !== '선택' && (
+              <span className={styles.titlePrefix}>[{category}]</span>
+            )}
             <input
-              type="checkbox"
-              checked={pinned}
-              onChange={(e) => setPinned(e.target.checked)}
-              className={styles.pinnedCheckbox}
+              type="text"
+              className={styles.input}
+              placeholder="공지 제목을 입력해주세요"
+              maxLength={100}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
-            <span>고정 공지로 등록</span>
-          </label>
+          </div>
+          <span className={styles.charCount}>{title.length}/100</span>
         </div>
 
         <div className={styles.field}>
@@ -114,10 +142,23 @@ export default function NoticeCreate() {
           <textarea
             className={styles.textarea}
             placeholder="공지 내용을 입력해주세요."
+            maxLength={1000}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={10}
           />
+          <span className={styles.charCount}>{content.length}/1,000</span>
+        </div>
+
+        <div className={styles.pinnedField}>
+          <span className={styles.pinnedLabel}>고정 공지로 등록</span>
+          <button
+            type="button"
+            className={`${styles.toggle} ${pinned ? styles.toggleOn : ''}`}
+            onClick={() => setPinned((v) => !v)}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
