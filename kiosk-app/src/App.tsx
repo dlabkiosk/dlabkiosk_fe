@@ -30,13 +30,13 @@ export default function App() {
 
   if (checking && !session) return null;
 
-  if (!session) {
-    return <KioskLoginPage onLogin={handleLogin} />;
-  }
-
   return (
     <AccessibilityProvider>
-      <MainPage session={session} onLogout={handleLogout} />
+      {!session ? (
+        <KioskLoginPage onLogin={handleLogin} />
+      ) : (
+        <MainPage session={session} onLogout={handleLogout} />
+      )}
     </AccessibilityProvider>
   );
 }
