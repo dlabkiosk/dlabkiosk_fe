@@ -4,18 +4,12 @@
 
 1. **키오스크 앱과 어드민 웹을 한 레포에서 일관된 구조로 관리**
 2. **기능 추가보다 안정성, 예측 가능성, 유지보수성을 우선**
-3. **UI / 도메인 로직 / API / 타입 / Electron 브리지 역할을 명확히 분리**
+3. **UI / 도메인 로직 / API / 타입 역할을 명확히 분리**
 4. **장비 입력(카드/QR) 처리 흐름을 단순하고 안전하게 유지**
 5. **공통 타입과 공통 모듈을 최대한 재사용**
 6. **키오스크 특성상 전체화면, 고정 동선, 빠른 입력, 복구 용이성을 고려**
 7. **불필요한 추상화보다 읽기 쉽고 수정 쉬운 구조를 우선**
 8. **어드민과 키오스크는 같은 레포에 두되, 실행/배포 단위는 분리**
-
----
-
-## 개발 사고 순서 (항상 이 순서로 설계/출력)
-
-도메인 흐름 → 화면 목적 → 사용자 동선 → 상태 → API 계약 → 컴포넌트 구조 → 예외 처리 → 스타일 → 접근성
 
 ---
 
@@ -25,7 +19,7 @@
 
 구성:
 - **admin-web**: 관리자용 웹 페이지
-- **kiosk-app**: 현장 키오스크용 Electron 앱
+- **kiosk-app**: 현장 키오스크용 웹 앱
 - **shared**: 공통 타입, 공통 API 함수, 공통 상수/유틸
 
 핵심 특징:
@@ -44,11 +38,9 @@
 - Vite
 
 ### kiosk-app
-- Electron
 - React
 - TypeScript
-- Electron Forge
-- Webpack 기반 템플릿
+- Vite
 
 ### 공통
 - Backend: Java / Spring Boot / REST API
@@ -58,60 +50,22 @@
 
 ---
 
-## 모노레포 구조 원칙
-
-권장 구조:
-
-project-root
-├─ admin-web
-├─ kiosk-app
-├─ packages
-│  ├─ shared-types
-│  ├─ shared-api
-│  ├─ shared-utils
-│  └─ shared-constants
-├─ docs
-└─ CLAUDE.md
-
-초기 단계에서는 `admin-web`, `kiosk-app` 중심으로 시작하고,
-공통 코드가 명확해질 때만 `packages/*`로 분리한다.
-
-### 원칙
-- 레포는 하나로 관리
-- 앱은 분리
-- 배포도 분리
-- 공통화는 필요할 때만 수행
-- 너무 이른 shared 분리는 금지
-
----
-
 ## 아키텍처 원칙
 
 ### 1. 역할 분리
-- **React Renderer**: 화면, 사용자 입력, 렌더링
-- **Electron Main**: 창 제어, 앱 라이프사이클, OS 기능
-- **Electron Preload**: renderer에 안전하게 노출할 브리지
+- **React**: 화면, 사용자 입력, 렌더링
 - **API Layer**: 서버 통신
 - **Domain Layer**: 출결/좌석/회원/공지 등 업무 로직
 - **UI Layer**: 화면 요소 및 레이아웃
 
 ### 2. 입력 장치 처리
-카드리더기 / QR리더기는 우선 아래 두 경우로 구분한다.
-
-#### A. HID Keyboard 방식
+카드리더기 / QR리더기는 HID Keyboard 방식으로 문자열 입력을 처리한다.
 - 리더기가 키보드처럼 문자열 입력
 - React input 또는 전역 입력 버퍼로 처리 가능
 
-#### B. Native / Serial / 별도 연동 방식
-- Electron main 또는 preload를 통해 연동
-- renderer는 직접 장치 접근하지 않음
-- IPC 또는 contextBridge를 통해 최소 API만 사용
-
 ### 3. 보안
-- renderer에서 Node API 직접 사용 금지
-- preload를 통해 필요한 기능만 노출
-- `ipcRenderer` 전체 노출 금지
-- 민감한 시스템 기능은 main 프로세스에서 처리
+- 민감한 정보는 서버에서 처리
+- API 호출 시 인증 정보 안전 관리
 
 ---
 
@@ -148,16 +102,13 @@ project-root
 이 프로젝트는 **JavaScript보다 TypeScript를 우선**한다.
 
 ### 이유
-- admin-web / kiosk-app / shared 간 타입 공유 필요
 - API 응답 구조가 명확해야 함
-- Electron IPC payload 타입이 중요함
 - 카드/QR 입력 데이터 구조를 안전하게 관리해야 함
 
 ### 원칙
 - `any` 사용 금지
 - API DTO 타입 정의
 - UI Props 타입 정의
-- IPC request / response 타입 정의
 - nullable 여부를 명확히 표현
 
 예시 타입 범주:
@@ -188,19 +139,15 @@ admin-web/src
 
 ### kiosk-app 권장 구조
 kiosk-app/src
-├─ main
-├─ preload
-├─ renderer
-│  ├─ components
-│  ├─ features
-│  ├─ entities
-│  ├─ pages
-│  ├─ hooks
-│  ├─ api
-│  ├─ utils
-│  ├─ types
-│  └─ styles
-└─ shared
+├─ components
+├─ features
+├─ entities
+├─ pages
+├─ hooks
+├─ api
+├─ utils
+├─ types
+└─ styles
 
 ### 역할
 - `components`: 재사용 UI
@@ -222,7 +169,6 @@ kiosk-app/src
 - 유틸: camelCase
 - 상수: `UPPER_SNAKE_CASE`
 - 타입: PascalCase
-- Electron IPC 채널명: 도메인 기반 소문자 문자열
 
 예:
 - `AttendancePage.tsx`
@@ -230,17 +176,6 @@ kiosk-app/src
 - `useCardScanner.ts`
 - `attendanceApi.ts`
 - `seatConstants.ts`
-
-### IPC 채널명 규칙
-형식:
-`domain:action`
-
-예:
-- `card:scanned`
-- `qr:scanned`
-- `kiosk:login`
-- `window:reload`
-- `device:status`
 
 ---
 
@@ -347,65 +282,6 @@ Backend는 Spring REST API를 기본으로 한다.
 
 ---
 
-## Electron 원칙
-
-### main
-- 창 생성
-- 전체화면 / kiosk 모드 대응
-- 앱 시작/종료 제어
-- 시스템 기능 접근
-- 필요 시 장치 연동
-
-### preload
-- renderer에 노출할 최소 API만 정의
-- contextBridge 사용
-- 타입 정의 필수
-
-### renderer
-- 일반 React 앱처럼 유지
-- Electron 상세 구현을 최대한 모르게 설계
-- `window.kiosk.*` 같은 브리지 API만 사용
-
-### 금지
-- renderer에서 Node 내장 모듈 직접 사용
-- Electron 기능을 컴포넌트마다 제각각 호출
-- 보안 설정 무시
-- main/preload/renderer 책임 혼합
-
----
-
-## 접근성(A11y) 원칙
-
-키오스크라고 해서 접근성을 무시하지 않는다.
-
-- 버튼/입력 요소는 시맨틱 태그 사용
-- 상태 메시지는 명확하게 전달
-- 포커스 이동을 예측 가능하게 유지
-- 키보드 입력형 장치와 충돌 나지 않게 설계
-- 색상만으로 상태를 구분하지 않기
-- 오류 메시지는 즉시 인지 가능해야 함
-
----
-
-## 성능 원칙
-
-- 초기부터 과도한 최적화 금지
-- 하지만 키오스크는 반응성이 중요하므로 무거운 렌더링 피하기
-- 필요 없는 전역 리렌더 최소화
-- 큰 리스트는 필요한 경우만 최적화
-- 디버깅 코드/로그는 운영 빌드에서 정리
-
----
-
-## 로깅 / 디버깅 원칙
-
-- 개발용 로그와 운영용 로그 구분
-- 장비 입력 로그는 민감정보 여부 확인 후 최소화
-- raw 입력 / normalized 입력 / API 결과를 분리해 추적 가능하게
-- 에러 메시지는 사용자용 / 개발자용을 구분
-
----
-
 ## 배포 원칙
 
 ### admin-web
@@ -414,10 +290,10 @@ Backend는 Spring REST API를 기본으로 한다.
 - API base URL 관리
 
 ### kiosk-app
-- Electron 패키징
-- 운영 환경에서 자동 실행, 전체화면, 복구 시나리오 고려
-- Windows 키오스크 환경을 우선 고려
-- 업데이트 전략은 추후 확장
+- 일반 웹 배포 (Vite 빌드)
+- 환경변수 분리
+- API base URL 관리
+- 전체화면 브라우저 실행 시 고려
 
 ---
 
@@ -439,7 +315,6 @@ Backend는 Spring REST API를 기본으로 한다.
 
 ## 금지 (절대)
 
-- renderer에서 Node/Electron API 직접 남용
 - `any` 남발
 - 화면 컴포넌트 안에 API/도메인/파싱 로직 다 몰아넣기
 - 문자열 상태값 하드코딩
@@ -456,10 +331,7 @@ Backend는 Spring REST API를 기본으로 한다.
 2. 도메인이 무엇인가? (출결/좌석/공지/인증/랭킹/회원)
 3. 서버 상태인가, UI 상태인가?
 4. 공통 타입이 필요한가?
-5. 장비 입력과 연결되는가?
-6. Electron main/preload/renderer 중 어디 책임인가?
-7. 실패했을 때 복구 흐름은 무엇인가?
-8. 현장 운영자가 쓰기 쉬운가?
+5. 실패했을 때 복구 흐름은 무엇인가?
 
 ---
 
@@ -473,9 +345,8 @@ Backend는 Spring REST API를 기본으로 한다.
 4. 생성/수정 파일 목록
 5. 코드
 6. 상태 / API / 타입 설명
-7. Electron 연동이 필요한 경우 main / preload / renderer 역할 분리 설명
-8. 예외 처리 / 실패 케이스
-9. 이후 확장 포인트
+7. 예외 처리 / 실패 케이스
+8. 이후 확장 포인트
 
 ---
 
