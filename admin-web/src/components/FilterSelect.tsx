@@ -39,8 +39,8 @@ export default function FilterSelect({ value, options, labelMap, placeholder = '
         className={`${s.trigger} ${open ? s.triggerOpen : ''}`}
         onClick={() => setOpen((p) => !p)}
       >
-        <span className={`${s.triggerText} ${isPlaceholder ? s.triggerPlaceholder : ''}`}>
-          {isPlaceholder ? placeholder : displayLabel(value)}
+        <span className={s.triggerText}>
+          {displayLabel(value)}
         </span>
         <svg className={s.arrow} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9" />
