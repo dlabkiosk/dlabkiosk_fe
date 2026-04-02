@@ -12,8 +12,12 @@ import {
 } from '../api/seatLeaveApi';
 import type { SeatLeaveRecord } from '../api/seatLeaveApi';
 import { getStudents } from '../api/studentApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
 import FilterDatePicker from '../components/FilterDatePicker';
+import FilterSelect from '../components/FilterSelect';
 import styles from './SeatLeaveManagement.module.css';
 import f from '../styles/filter.module.css';
 
@@ -65,6 +69,12 @@ export default function SeatLeaveManagement() {
   const { confirm, alert, ConfirmDialog } = useConfirm();
   const today = new Date().toISOString().slice(0, 10);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+  const [studentStoreMap, setStudentStoreMap] = useState<Map<number, string>>(new Map());
+
   /* 필터 */
   const [searchName, setSearchName] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
@@ -90,6 +100,15 @@ export default function SeatLeaveManagement() {
   const [, setTick] = useState(0);
 
   useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const hasAway = data.some((r) => !r.endedAt);
     if (!hasAway) return;
     const timer = setInterval(() => setTick((t) => t + 1), 60000);
@@ -110,17 +129,21 @@ export default function SeatLeaveManagement() {
         getStudents(),
       ]);
 
-      // studentId → studentNumber / className 매핑
-      const studentById = new Map<number, { studentNumber: string }>();
+      // studentId → studentNumber / storeName 매핑
+      const studentById = new Map<number, { studentNumber: string; storeName?: string }>();
+      const storeMap = new Map<number, string>();
       students.forEach((s) => {
-        studentById.set(s.id, { studentNumber: s.studentNumber });
+        studentById.set(s.id, { studentNumber: s.studentNumber, storeName: s.storeName });
+        if (s.storeName) storeMap.set(s.id, s.storeName);
       });
+      setStudentStoreMap(storeMap);
 
       const enriched = result.content.map((row) => {
         const stu = studentById.get(row.studentId);
         return {
           ...row,
           studentNumber: row.studentNumber || stu?.studentNumber,
+          storeName: stu?.storeName,
         };
       });
 
@@ -149,6 +172,7 @@ export default function SeatLeaveManagement() {
     setSearchStartDate(today);
     setSearchEndDate(today);
     setAppliedFilters({ name: '', number: '', start: today, end: today });
+    if (isAdmin) setStoreFilter('전체');
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -183,9 +207,13 @@ export default function SeatLeaveManagement() {
     return data.filter((row) => {
       if (appliedFilters.name && !row.studentName.includes(appliedFilters.name)) return false;
       if (appliedFilters.number && !(row.studentNumber ?? '').includes(appliedFilters.number)) return false;
+      if (isAdmin && storeFilter !== '전체') {
+        const sName = studentStoreMap.get(row.studentId) ?? row.storeName;
+        if (sName !== storeFilter) return false;
+      }
       return true;
     });
-  }, [data, appliedFilters]);
+  }, [data, appliedFilters, isAdmin, storeFilter, studentStoreMap]);
 
   const sortedData = useMemo(() => {
     if (!sort.field) return filteredData;
@@ -268,6 +296,17 @@ export default function SeatLeaveManagement() {
       {/* 필터 */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel}>지점</label>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={setStoreFilter}
+              />
+            </div>
+          )}
           <div className={f.filterGroup}>
             <label className={f.filterLabel} htmlFor="sl-name">학생명</label>
             <input
@@ -316,6 +355,7 @@ export default function SeatLeaveManagement() {
               <th className={styles.checkboxCol}>
                 <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
               </th>
+              {isAdmin && <th>지점</th>}
               <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
                 이름 <SortIcon field="studentName" />
               </th>
@@ -339,11 +379,11 @@ export default function SeatLeaveManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={9}>불러오는 중...</td>
+                <td colSpan={isAdmin ? 10 : 9}>불러오는 중...</td>
               </tr>
             ) : sortedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={9}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 10 : 9}>데이터가 없습니다.</td>
               </tr>
             ) : (
               sortedData.map((row) => {
@@ -358,6 +398,7 @@ export default function SeatLeaveManagement() {
                         onChange={() => handleSelectRow(row.id)}
                       />
                     </td>
+                    {isAdmin && <td>{row.storeName ?? studentStoreMap.get(row.studentId) ?? '-'}</td>}
                     <td>{row.studentName}</td>
                     <td>{row.studentNumber ?? '-'}</td>
                     <td>{row.seatLabel}</td>
