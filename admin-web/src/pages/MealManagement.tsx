@@ -5,7 +5,10 @@ import downloadIcon from '../assets/download.png';
 import { getMeals } from '../api/mealApi';
 import type { MealRecord } from '../api/mealApi';
 import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import FilterDatePicker from '../components/FilterDatePicker';
+import FilterSelect from '../components/FilterSelect';
 import styles from './MealManagement.module.css';
 import f from '../styles/filter.module.css';
 
@@ -89,40 +92,80 @@ export default function MealManagement() {
   /* 페이지 */
   const [page, setPage] = useState(1);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+
   /* API 데이터 */
   const [rows, setRows] = useState<MealRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [storeId, setStoreId] = useState<number | undefined>(undefined);
+  const [ready, setReady] = useState(false);
 
   /* 선택 */
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    getMe().then((me) => setStoreId(me.storeId)).catch(() => {});
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        setStoreId(undefined);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      } else {
+        setStoreId(me.storeId);
+      }
+      setReady(true);
+    }).catch(() => {});
   }, []);
+
+  /* storeFilter → 실제 API에 보낼 storeId 계산 */
+  const effectiveStoreId = useMemo(() => {
+    if (!isAdmin) return storeId;
+    if (storeFilter === '전체') return undefined;
+    const found = stores.find((s) => s.storeName === storeFilter);
+    return found?.id;
+  }, [isAdmin, storeId, storeFilter, stores]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getMeals({
-        storeId,
+      const commonParams = {
         startDate: searchDate,
         endDate: searchDate,
         studentName: searchName || undefined,
         studentNumber: searchNumber || undefined,
-      });
-      setRows(data);
+      };
+
+      if (isAdmin && effectiveStoreId == null && stores.length > 0) {
+        // ADMIN 전체: 각 지점별로 조회 후 합침
+        const results = await Promise.all(
+          stores.map(async (s) => {
+            const list = await getMeals({ storeId: s.id, ...commonParams });
+            return list.map((r) => ({ ...r, storeName: s.storeName }));
+          }),
+        );
+        setRows(results.flat());
+      } else {
+        const data = await getMeals({ storeId: effectiveStoreId, ...commonParams });
+        const selectedStore = stores.find((s) => s.id === effectiveStoreId);
+        setRows(selectedStore ? data.map((r) => ({ ...r, storeName: selectedStore.storeName })) : data);
+      }
     } catch {
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [storeId, searchDate, searchName, searchNumber]);
+  }, [isAdmin, stores, effectiveStoreId, searchDate, searchName, searchNumber]);
 
-  // 초기 로드 + 날짜 변경 시 자동 조회
+  // 초기 로드 + 지점/날짜 변경 시 자동 조회
   useEffect(() => {
-    if (storeId != null) fetchData();
-  }, [storeId, searchDate]);
+    if (!ready) return;
+    if (isAdmin && stores.length === 0) return;
+    if (!isAdmin && storeId == null) return;
+    setPage(1);
+    fetchData();
+  }, [ready, stores, effectiveStoreId, searchDate]);
 
   const handleSearch = () => {
     setPage(1);
@@ -133,6 +176,7 @@ export default function MealManagement() {
     setSearchName('');
     setSearchNumber('');
     setSearchDate(today);
+    if (isAdmin) setStoreFilter('전체');
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -211,6 +255,17 @@ export default function MealManagement() {
       {/* 필터 */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <span className={f.filterLabel}>지점</span>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={setStoreFilter}
+              />
+            </div>
+          )}
           <div className={f.filterGroup}>
             <span className={f.filterLabel}>학생명</span>
             <input
@@ -255,6 +310,7 @@ export default function MealManagement() {
               <th className={styles.checkboxCol}>
                 <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
               </th>
+              {isAdmin && <th>지점</th>}
               <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
                 이름 <SortIcon field="studentName" />
               </th>
@@ -281,11 +337,11 @@ export default function MealManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={8}>로딩 중...</td>
+                <td colSpan={isAdmin ? 9 : 8}>로딩 중...</td>
               </tr>
             ) : pageData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={8}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 9 : 8}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pageData.map((row) => (
@@ -297,6 +353,7 @@ export default function MealManagement() {
                       onChange={() => handleSelectRow(row.studentId)}
                     />
                   </td>
+                  {isAdmin && <td>{row.storeName ?? '-'}</td>}
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
                   <td>{row.seatLabel}</td>

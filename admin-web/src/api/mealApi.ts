@@ -14,6 +14,8 @@ export interface MealRecord {
   dinnerApplied: boolean;
   dinnerChecked: boolean;
   dinnerCheckedTime: string | null;
+  /** 프론트에서 ADMIN 전체 조회 시 주입 */
+  storeName?: string;
 }
 
 export interface MealParams {
