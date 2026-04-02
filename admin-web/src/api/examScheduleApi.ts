@@ -30,10 +30,13 @@ export async function getExamSchedule(id: number): Promise<ExamSchedule> {
 }
 
 export async function createExamSchedule(body: { examName: string; examDate: string; storeId?: number; active?: boolean }): Promise<ExamSchedule> {
-  const res = await fetch('/api/v1/admin/exam-schedules', {
+  const params = new URLSearchParams();
+  if (body.storeId) params.append('storeId', String(body.storeId));
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`/api/v1/admin/exam-schedules${query}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ examName: body.examName, examDate: body.examDate, active: body.active }),
   });
   const json: ApiResponse<ExamSchedule> = await res.json();
   if (!json.success) throw new Error(json.error?.message || '시험일정 등록 실패');

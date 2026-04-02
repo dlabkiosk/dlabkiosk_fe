@@ -6,6 +6,9 @@ import {
   type MealMenuDay,
 } from '../api/mealScheduleApi';
 import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
+import FilterSelect from './FilterSelect';
 import useConfirm from '../hooks/useConfirm';
 import editIcon from '../assets/edit.png';
 import trashIcon from '../assets/trash.png';
@@ -344,21 +347,40 @@ export default function MealScheduleSettings() {
   const [nextWeekMeals, setNextWeekMeals] = useState<WeekMeals>(emptyWeek);
   const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(1);
+
   // 모달 상태: null이면 닫힘
   const [modal, setModal] = useState<{ week: 'this' | 'next' } | null>(null);
 
   useEffect(() => {
-    getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {});
+    getMe().then((me) => {
+      setMyStoreId(me.storeId);
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+          if (activeStores.length > 0) {
+            setSelectedStoreId(activeStores[0].id);
+          }
+        });
+      }
+    }).catch(() => {});
   }, []);
+
+  const currentStoreId = isAdmin ? selectedStoreId : myStoreId;
 
   const fetchWeek = useCallback(async (monday: Date, setFn: React.Dispatch<React.SetStateAction<WeekMeals>>) => {
     try {
-      const res = await getMealMenuWeek(toISODate(monday), myStoreId);
+      const res = await getMealMenuWeek(toISODate(monday), currentStoreId);
       setFn(apiToWeekMeals(res.days, monday));
     } catch {
       // API 미구현 시 빈 상태 유지
     }
-  }, [myStoreId]);
+  }, [currentStoreId]);
 
   useEffect(() => {
     fetchWeek(thisMonday, setThisWeekMeals);
@@ -368,7 +390,7 @@ export default function MealScheduleSettings() {
   const handleDelete = async (monday: Date) => {
     if (!(await confirm('해당 주 식단을 삭제하시겠습니까?'))) return;
     try {
-      await deleteMealMenu(toISODate(monday), myStoreId);
+      await deleteMealMenu(toISODate(monday), currentStoreId);
       fetchWeek(thisMonday, setThisWeekMeals);
       fetchWeek(nextMonday, setNextWeekMeals);
     } catch (err) {
@@ -393,6 +415,19 @@ export default function MealScheduleSettings() {
 
   return (
     <div className={styles.container}>
+      {isAdmin && (
+        <div style={{ marginBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'flex-end' }}>
+          <FilterSelect
+            value={selectedStoreId && stores.length > 0 ? stores.find((s) => s.id === selectedStoreId)?.storeName || '' : ''}
+            options={stores.map((s) => s.storeName)}
+            defaultValue={stores.length > 0 ? stores.find((s) => s.id === selectedStoreId)?.storeName : undefined}
+            onChange={(v: string) => {
+              const store = stores.find((s) => s.storeName === v);
+              setSelectedStoreId(store?.id);
+            }}
+          />
+        </div>
+      )}
       <div className={styles.gridRow}>
         <WeekMealCard
           title="이번주 식단표"
@@ -417,7 +452,7 @@ export default function MealScheduleSettings() {
           title={getModalTitle()}
           monday={getModalMonday()}
           initialMeals={getModalMeals()}
-          storeId={myStoreId}
+          storeId={currentStoreId}
           onClose={() => setModal(null)}
           onSaved={handleModalSaved}
         />

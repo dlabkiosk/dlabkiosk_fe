@@ -28,8 +28,17 @@ export class ApiError extends Error {
 async function request<T>(
   path: string,
   options: RequestInit = {},
+  query?: Record<string, string | number | undefined>,
 ): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const urlObj = new URL(`${API_BASE_URL}${path}`);
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined) {
+        urlObj.searchParams.append(key, String(value));
+      }
+    });
+  }
+  const url = urlObj.toString();
 
   const res = await fetch(url, {
     ...options,
@@ -103,11 +112,11 @@ export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'GET' });
 }
 
-export function apiPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+export function apiPost<T>(path: string, body?: Record<string, unknown>, query?: Record<string, string | number | undefined>): Promise<T> {
   return request<T>(path, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
-  });
+  }, query);
 }
 
 export function apiPut<T>(path: string, body?: Record<string, unknown>): Promise<T> {

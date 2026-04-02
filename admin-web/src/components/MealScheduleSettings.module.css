@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  /* gap: var(--spacing-lg); */
 }
 
 .headerButtons {
@@ -55,6 +55,7 @@
   padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
+  min-height: 300px;
 }
 
 .cardHeader {
@@ -269,8 +270,9 @@
   font-size: var(--font-size-md);
   font-weight: 500;
   cursor: pointer;
-  align-self: center;
-  margin-top: var(--spacing-lg);
+  margin: auto;
+  display: block  ;
+  
 }
 
 .registerButton:hover {

@@ -29,8 +29,9 @@ export interface SeatLeaveRecord {
 /* ── 이탈 사유 CRUD ── */
 
 /** 이탈 사유 목록 조회 */
-export function getSeatLeaveReasons(): Promise<SeatLeaveReason[]> {
-  return apiGet<SeatLeaveReason[]>('/api/v1/admin/seat-leave-reasons');
+export function getSeatLeaveReasons(storeId?: number): Promise<SeatLeaveReason[]> {
+  const query = storeId ? `?storeId=${storeId}` : '';
+  return apiGet<SeatLeaveReason[]>(`/api/v1/admin/seat-leave-reasons${query}`);
 }
 
 /** 이탈 사유 등록 */
@@ -40,7 +41,12 @@ export function createSeatLeaveReason(params: {
   active: boolean;
   storeId?: number;
 }): Promise<SeatLeaveReason> {
-  return apiPost<SeatLeaveReason>('/api/v1/admin/seat-leave-reasons', params as Record<string, unknown>);
+  const query = params.storeId ? `?storeId=${params.storeId}` : '';
+  return apiPost<SeatLeaveReason>(`/api/v1/admin/seat-leave-reasons${query}`, {
+    reasonName: params.reasonName,
+    displayOrder: params.displayOrder,
+    active: params.active,
+  } as Record<string, unknown>);
 }
 
 /** 이탈 사유 수정 */

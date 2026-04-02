@@ -27,8 +27,8 @@ export function getMessageTemplates(): Promise<MessageTemplate[]> {
 }
 
 /** 메시지 템플릿 등록 */
-export function createMessageTemplate(body: MessageTemplateCreateBody): Promise<MessageTemplate> {
-  return apiPost<MessageTemplate>('/api/v1/admin/message-templates', body as unknown as Record<string, unknown>);
+export function createMessageTemplate(body: MessageTemplateCreateBody, storeId?: number): Promise<MessageTemplate> {
+  return apiPost<MessageTemplate>('/api/v1/admin/message-templates', body as unknown as Record<string, unknown>, { storeId });
 }
 
 /** 메시지 템플릿 수정 */

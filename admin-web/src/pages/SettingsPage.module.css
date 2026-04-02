@@ -89,7 +89,7 @@
   background-color: #ffffff;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border-light);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sectionHeader {
@@ -161,6 +161,7 @@
 
 .formInput::placeholder {
   color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
 .formInput:focus {
@@ -470,6 +471,7 @@
 .dataTable {
   width: 100%;
   border-collapse: collapse;
+  padding: var(--spacing-lg);
 }
 
 .dataTable th {
@@ -754,7 +756,7 @@
   width: var(--size-modal);
   max-width: 90vw;
   max-height: 85vh;
-  overflow-y: auto;
+  /* overflow-y: auto; */
 }
 
 .modalClose {

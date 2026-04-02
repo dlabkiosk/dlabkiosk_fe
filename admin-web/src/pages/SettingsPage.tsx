@@ -34,6 +34,7 @@ import useConfirm from '../hooks/useConfirm';
 import { getStores, getStore, createStore, updateStore, deleteStore } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { getMe } from '../api/authApi';
+import FilterSelect from '../components/FilterSelect';
 import { getStudents } from '../api/studentApi';
 import type { Student } from '../api/studentApi';
 import {
@@ -155,8 +156,7 @@ export default function SettingsPage() {
           </button>
         ))}
       </div>
-
-      {activeTab === '기본설정' && <BasicSettings />}
+      
       {activeTab === '배너 관리' && <BannerManagement />}
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
@@ -782,7 +782,7 @@ function BannerManagement() {
 
       {/* 배너 목록 */}
       <div className={styles.section}>
-        <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeader} style={{ borderBottom: 'none' }}>
           <h3 className={styles.sectionTitle}>배너 목록</h3>
           {isAdmin && (
             <div className={styles.dropdown} ref={storeFilterRef} style={{ marginLeft: 'auto', width: 160 }}>
@@ -822,22 +822,23 @@ function BannerManagement() {
             <p className={styles.placeholderText}>로딩 중...</p>
           </div>
         ) : (
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }} />
-                <th style={{ width: 50 }}>순서</th>
-                <th>미리보기</th>
-                <th style={{ width: 100 }}>미디어 타입</th>
-                <th style={{ width: 100 }}>노출 시간</th>
-                <th style={{ width: 80 }}>상태</th>
-                <th style={{ width: 100 }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAds.length === 0 ? (
-                <tr><td colSpan={7} className={styles.emptyCell}>등록된 배너가 없습니다.</td></tr>
-              ) : (
+          <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }} />
+                  <th style={{ width: 50 }}>순서</th>
+                  <th>미리보기</th>
+                  <th style={{ width: 100 }}>미디어 타입</th>
+                  <th style={{ width: 100 }}>노출 시간</th>
+                  <th style={{ width: 80 }}>상태</th>
+                  <th style={{ width: 100 }}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAds.length === 0 ? (
+                  <tr><td colSpan={7} className={styles.emptyCell}>등록된 배너가 없습니다.</td></tr>
+                ) : (
                 filteredAds.map((ad, idx) => (
                   <tr
                     key={ad.id}
@@ -894,6 +895,7 @@ function BannerManagement() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
       {ConfirmDialog}
@@ -913,6 +915,13 @@ function ExamSchedule() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTarget, setEditTarget] = useState<ExamScheduleType | null>(null);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+  const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(undefined);
+
   const [formName, setFormName] = useState('');
   const [formDate, setFormDate] = useState('');
 
@@ -922,6 +931,26 @@ function ExamSchedule() {
 
   const grid = getCalendarGrid(calYear, calMonth);
   const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  /* 사용자 정보 로드 */
+  useEffect(() => {
+    getMe().then((me) => {
+      setMyStoreId(me.storeId);
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  /* ADMIN 지점 필터 적용 */
+  const filteredExams = useMemo(() => {
+    if (!isAdmin || storeFilter === '전체') return exams;
+    return exams.filter((e) => e.storeName === storeFilter);
+  }, [exams, isAdmin, storeFilter]);
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -951,7 +980,7 @@ function ExamSchedule() {
 
   const getExamsForDay = (day: number): ExamScheduleType[] => {
     const dateStr = `${calYear}-${String(calMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return exams.filter((e) => e.examDate === dateStr);
+    return filteredExams.filter((e) => e.examDate === dateStr);
   };
 
   const getExamStatus = (examDate: string): string => {
@@ -971,6 +1000,7 @@ function ExamSchedule() {
   const resetForm = () => {
     setFormName('');
     setFormDate('');
+    setSelectedStoreId(undefined);
   };
 
   const openAddModal = () => {
@@ -987,12 +1017,15 @@ function ExamSchedule() {
   };
 
   const handleSubmit = async () => {
-    if (!formName || !formDate) return;
+    if (!formName) { await alert('시험명을 입력해주세요.'); return; }
+    if (!formDate) { await alert('날짜를 선택해주세요.'); return; }
+    if (isAdmin && !selectedStoreId) { await alert('지점을 선택해주세요.'); return; }
     try {
       if (editTarget) {
         await updateExamSchedule(editTarget.id, { examName: formName, examDate: formDate });
       } else {
-        const created = await createExamSchedule({ examName: formName, examDate: formDate, active: false });
+        const storeIdToSend = isAdmin ? selectedStoreId : myStoreId;
+        const created = await createExamSchedule({ examName: formName, examDate: formDate, storeId: storeIdToSend, active: false });
         if (created.active) {
           await toggleExamScheduleActive(created.id);
         }
@@ -1049,9 +1082,10 @@ function ExamSchedule() {
   const MAX_ACTIVE = 2;
 
   const handleToggleActive = async (exam: ExamScheduleType) => {
-    // 활성화하려는 경우 최대 개수 체크
-    if (!exam.active && exams.filter((e) => e.active).length >= MAX_ACTIVE) {
-      void alert(`키오스크 활성화는 최대 ${MAX_ACTIVE}개까지 가능합니다.`);
+    // 활성화하려는 경우 지점별로 최대 개수 체크
+    const activeInStore = filteredExams.filter((e) => e.active && e.storeId === exam.storeId).length;
+    if (!exam.active && activeInStore >= MAX_ACTIVE) {
+      void alert(`키오스크 활성화는 지점당 최대 ${MAX_ACTIVE}개까지 가능합니다.`);
       return;
     }
     try {
@@ -1071,7 +1105,7 @@ function ExamSchedule() {
   const toggleDateSort = () => setDateSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
 
   /** 검색 → active 상단 고정 → 날짜 정렬 */
-  const displayedExams = exams
+  const displayedExams = filteredExams
     .filter((e) => !searchQuery || e.examName.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       // active(ON) 상단 고정
@@ -1154,6 +1188,17 @@ function ExamSchedule() {
         ) : (
           <div className={styles.sectionBody}>
             <div className={styles.tableToolbar}>
+              {isAdmin && (
+                <div className={f.filterGroup} style={{ marginRight: 8 }}>
+                  <FilterSelect
+                    value={storeFilter}
+                    options={['전체', ...stores.map((s) => s.storeName)]}
+                    placeholder="전체"
+                    defaultValue="전체"
+                    onChange={(v: string) => setStoreFilter(v)}
+                  />
+                </div>
+              )}
               <div className={f.filterGroup}>
                 {/* <span className={f.filterLabel}>시험명</span> */}
                 <input
@@ -1250,6 +1295,20 @@ function ExamSchedule() {
             <h3 className={styles.modalTitle}>{editTarget ? '시험 수정' : '시험 추가'}</h3>
 
             <div className={styles.modalForm}>
+              {!editTarget && isAdmin && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>지점</label>
+                  <FilterSelect
+                    value={selectedStoreId ? stores.find((s) => s.id === selectedStoreId)?.storeName || '' : ''}
+                    options={stores.map((s) => s.storeName)}
+                    placeholder="지점 선택"
+                    onChange={(v: string) => {
+                      const store = stores.find((s) => s.storeName === v);
+                      setSelectedStoreId(store?.id);
+                    }}
+                  />
+                </div>
+              )}
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>시험명</label>
                 <input
@@ -1257,12 +1316,16 @@ function ExamSchedule() {
                   placeholder="시험명을 입력해주세요"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
+                  maxLength={15}
                 />
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textAlign: 'right', marginTop: 2 }}>
+                  {formName.length}/15
+                </div>
               </div>
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>날짜</label>
-                <FilterDatePicker value={formDate} onChange={setFormDate} />
+                <FilterDatePicker value={formDate} onChange={setFormDate} placeholder="날짜 선택" />
               </div>
             </div>
 
@@ -1302,22 +1365,46 @@ function SeatLeaveReasonSettings() {
   const [formOrder, setFormOrder] = useState(1);
   const [formActive, setFormActive] = useState(true);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(1);
+  const [modalStoreId, setModalStoreId] = useState<number | undefined>(undefined);
+
   const dragIdx = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+          if (activeStores.length > 0) {
+            setSelectedStoreId(activeStores[0].id);
+          }
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const currentStoreId = isAdmin ? selectedStoreId : undefined;
 
   const fetchReasons = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getSeatLeaveReasons();
-      setReasons(data.sort((a, b) => a.displayOrder - b.displayOrder));
+      const filtered = currentStoreId ? data.filter((r) => r.storeId === currentStoreId) : data;
+      setReasons(filtered.sort((a, b) => a.displayOrder - b.displayOrder));
     } catch (err) {
       console.error('이탈 사유 조회 실패:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentStoreId]);
 
-  useEffect(() => { fetchReasons(); }, [fetchReasons]);
+  useEffect(() => { fetchReasons(); }, [fetchReasons, isAdmin]);
 
   const resetForm = () => {
     setFormName('');
@@ -1328,7 +1415,7 @@ function SeatLeaveReasonSettings() {
 
   const openAdd = () => {
     resetForm();
-    setFormOrder(reasons.length + 1);
+    setModalStoreId(undefined);
     setShowModal(true);
   };
 
@@ -1358,8 +1445,9 @@ function SeatLeaveReasonSettings() {
       } else {
         await createSeatLeaveReason({
           reasonName: formName.trim(),
-          displayOrder: formOrder,
+          displayOrder: reasons.length + 1,
           active: formActive,
+          storeId: isAdmin ? modalStoreId : undefined,
         });
       }
       closeModal();
@@ -1429,40 +1517,53 @@ function SeatLeaveReasonSettings() {
           <button type="button" className={styles.addBtn} onClick={openAdd}>+ 사유 추가</button>
         </div>
 
-        {loading ? (
-          <div className={styles.sectionBody}>
-            <p className={styles.placeholderText}>로딩 중...</p>
+        {isAdmin && (
+          <div style={{ paddingTop: 'var(--spacing-md)', paddingRight: 'var(--spacing-lg)', display: 'flex', justifyContent: 'flex-end' }}>
+            <FilterSelect
+              value={selectedStoreId && stores.length > 0 ? stores.find((s) => s.id === selectedStoreId)?.storeName || '' : ''}
+              options={stores.map((s) => s.storeName)}
+              defaultValue={stores.length > 0 ? stores[0].storeName : undefined}
+              onChange={(v: string) => {
+                const store = stores.find((s) => s.storeName === v);
+                setSelectedStoreId(store?.id);
+              }}
+            />
           </div>
-        ) : (
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}></th>
-                <th style={{ width: 60 }}>순서</th>
-                <th>사유명</th>
-                <th style={{ width: 80 }}>상태</th>
-                <th style={{ width: 100 }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reasons.length === 0 ? (
-                <tr><td colSpan={5} className={styles.emptyCell}>등록된 사유가 없습니다.</td></tr>
-              ) : (
-                reasons.map((reason, idx) => (
-                  <tr
-                    key={reason.id}
-                    draggable
-                    onDragStart={() => handleDragStart(idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDrop={() => handleDrop(idx)}
-                    onDragEnd={handleDragEnd}
-                    className={dragOverIdx === idx ? styles.draggingRow : ''}
-                    style={{ cursor: 'grab' }}
-                  >
-                    <td className={styles.dragHandle}>&#x2630;</td>
-                    <td>{reason.displayOrder}</td>
-                    <td>{reason.reasonName}</td>
-                    <td>
+        )}
+
+        <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
+          {loading ? (
+            <p className={styles.placeholderText}>로딩 중...</p>
+          ) : (
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th style={{ width: 60 }}>순서</th>
+                  <th>사유명</th>
+                  <th style={{ width: 80 }}>상태</th>
+                  <th style={{ width: 100 }}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reasons.length === 0 ? (
+                  <tr><td colSpan={5} className={styles.emptyCell}>등록된 사유가 없습니다.</td></tr>
+                ) : (
+                  reasons.map((reason, idx) => (
+                    <tr
+                      key={reason.id}
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={() => handleDrop(idx)}
+                      onDragEnd={handleDragEnd}
+                      className={dragOverIdx === idx ? styles.draggingRow : ''}
+                      style={{ cursor: 'grab' }}
+                    >
+                      <td className={styles.dragHandle}>&#x2630;</td>
+                      <td>{reason.displayOrder}</td>
+                      <td>{reason.reasonName}</td>
+                      <td>
                       <span className={`${styles.statusBadge} ${reason.active ? styles.statusActive : styles.statusInactive}`}>
                         {reason.active ? '활성' : '비활성'}
                       </span>
@@ -1482,7 +1583,8 @@ function SeatLeaveReasonSettings() {
               )}
             </tbody>
           </table>
-        )}
+          )}
+        </div>
       </div>
 
       {showModal && (
@@ -1492,6 +1594,21 @@ function SeatLeaveReasonSettings() {
             <h3 className={styles.modalTitle}>{editTarget ? '사유 수정' : '사유 추가'}</h3>
 
             <div className={styles.modalForm}>
+              {!editTarget && isAdmin && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>지점</label>
+                  <FilterSelect
+                    value={modalStoreId && stores.length > 0 ? stores.find((s) => s.id === modalStoreId)?.storeName || '' : ''}
+                    options={stores.map((s) => s.storeName)}
+                    placeholder="지점 선택"
+                    onChange={(v: string) => {
+                      const store = stores.find((s) => s.storeName === v);
+                      setModalStoreId(store?.id);
+                    }}
+                  />
+                </div>
+              )}
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>사유명</label>
                 <input
@@ -1499,18 +1616,11 @@ function SeatLeaveReasonSettings() {
                   placeholder="예: 화장실, 상담 등"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
+                  maxLength={10}
                 />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>표시 순서</label>
-                <input
-                  type="number"
-                  className={styles.formInput}
-                  min={1}
-                  value={formOrder}
-                  onChange={(e) => setFormOrder(Number(e.target.value))}
-                />
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textAlign: 'right', marginTop: 2 }}>
+                  {formName.length}/10
+                </div>
               </div>
 
               <div className={styles.formGroup}>
@@ -1956,24 +2066,45 @@ function MessageTemplateSettings() {
   const [tplPage, setTplPage] = useState(1);
   const TPL_PER_PAGE = 10;
 
-  useEffect(() => { getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {}); }, []);
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(undefined);
+  const [modalStoreId, setModalStoreId] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    getMe().then((me) => {
+      setMyStoreId(me.storeId);
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const currentStoreId = isAdmin ? selectedStoreId : undefined;
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
     try {
-      setTemplates(await getMessageTemplates());
+      const data = await getMessageTemplates();
+      const filtered = currentStoreId ? data.filter((t) => t.storeId === currentStoreId) : data;
+      setTemplates(filtered);
     } catch {
       setTemplates([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentStoreId]);
 
-  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates, isAdmin]);
 
   const resetForm = () => { setFormContent(''); setEditTarget(null); };
 
-  const openAdd = () => { resetForm(); setShowModal(true); };
+  const openAdd = () => { resetForm(); setModalStoreId(undefined); setShowModal(true); };
   const openEdit = (t: MessageTemplate) => {
     setEditTarget(t);
     setFormContent(t.content);
@@ -1987,7 +2118,8 @@ function MessageTemplateSettings() {
       if (editTarget) {
         await updateMessageTemplate(editTarget.id, { content: formContent.trim() });
       } else {
-        await createMessageTemplate({ content: formContent.trim(), storeId: myStoreId });
+        const storeIdToSend = isAdmin ? modalStoreId : myStoreId;
+        await createMessageTemplate({ content: formContent.trim() }, storeIdToSend);
       }
       closeModal();
       await fetchTemplates();
@@ -2013,25 +2145,47 @@ function MessageTemplateSettings() {
           <h3 className={styles.sectionTitle}>메시지 템플릿</h3>
           <button type="button" className={styles.addBtn} onClick={openAdd}>+ 템플릿 추가</button>
         </div>
-        <div className={styles.sectionBody}>
+
+        {isAdmin && (
+          <div style={{ paddingTop: 'var(--spacing-md)', paddingRight: 'var(--spacing-lg)', display: 'flex', justifyContent: 'flex-end' }}>
+            <FilterSelect
+              value={selectedStoreId ? (stores.find((s) => s.id === selectedStoreId)?.storeName || '') : '전체'}
+              options={['전체', ...stores.map((s) => s.storeName)]}
+              defaultValue="전체"
+              onChange={(v: string) => {
+                if (v === '전체') {
+                  setSelectedStoreId(undefined);
+                } else {
+                  const store = stores.find((s) => s.storeName === v);
+                  setSelectedStoreId(store?.id);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
           {loading ? (
             <p className={styles.placeholderText}>로딩 중...</p>
-          ) : templates.length === 0 ? (
-            <p className={styles.placeholderText}>등록된 템플릿이 없습니다.</p>
           ) : (
             <>
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
+                    <th>지점</th>
                     <th>내용</th>
                     <th style={{ width: 150 }}>등록일</th>
                     <th style={{ width: 100 }}>관리</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {templates.slice((tplPage - 1) * TPL_PER_PAGE, tplPage * TPL_PER_PAGE).map((t) => (
+                  {templates.length === 0 ? (
+                    <tr><td colSpan={4} className={styles.emptyCell}>등록된 템플릿이 없습니다.</td></tr>
+                  ) : (
+                    templates.slice((tplPage - 1) * TPL_PER_PAGE, tplPage * TPL_PER_PAGE).map((t) => (
                     <tr key={t.id}>
-                      <td style={{ textAlign: 'left' }}>{t.content}</td>
+                      <td>{t.storeName}</td>
+                      <td style={{ textAlign: 'center' }}>{t.content}</td>
                       <td>{new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
                       <td>
                         <div className={styles.actionBtns}>
@@ -2044,7 +2198,8 @@ function MessageTemplateSettings() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
               {templates.length > TPL_PER_PAGE && (
@@ -2079,6 +2234,21 @@ function MessageTemplateSettings() {
             <button type="button" className={styles.modalClose} onClick={closeModal}>&#x2715;</button>
             <h3 className={styles.modalTitle}>{editTarget ? '템플릿 수정' : '템플릿 추가'}</h3>
             <div className={styles.modalForm}>
+              {!editTarget && isAdmin && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>지점</label>
+                  <FilterSelect
+                    value={modalStoreId && stores.length > 0 ? stores.find((s) => s.id === modalStoreId)?.storeName || '' : ''}
+                    options={stores.map((s) => s.storeName)}
+                    placeholder="지점 선택"
+                    onChange={(v: string) => {
+                      const store = stores.find((s) => s.storeName === v);
+                      setModalStoreId(store?.id);
+                    }}
+                  />
+                </div>
+              )}
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>내용</label>
                 <textarea

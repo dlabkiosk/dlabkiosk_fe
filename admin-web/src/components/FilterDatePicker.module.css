@@ -37,6 +37,12 @@
   border-color: var(--color-primary);
 }
 
+.inputPlaceholder {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: left;
+}
+
 /* ── Popper ── */
 .popper {
   z-index: 100 !important;

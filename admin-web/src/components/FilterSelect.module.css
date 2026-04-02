@@ -19,6 +19,7 @@
   transition: border-color 0.15s;
   width: var(--size-filter-input);
   text-align: left;
+  position: relative;
 }
 
 .trigger:hover {
@@ -58,13 +59,13 @@
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
-  min-width: 100%;
+  width: var(--size-filter-input);
   background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   padding: var(--spacing-xs) 0;
-  z-index: 50;
+  z-index: 1000;
   list-style: none;
   max-height: 240px;
   overflow-y: auto;

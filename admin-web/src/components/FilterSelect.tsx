@@ -18,7 +18,7 @@ export default function FilterSelect({ value, options, labelMap, placeholder = '
   const ref = useRef<HTMLDivElement>(null);
 
   const placeholderValue = defaultValue ?? options[0];
-  const isPlaceholder = value === placeholderValue;
+  const isPlaceholder = !value || (value === placeholderValue && !options.includes(value));
 
   /* 외부 클릭 시 닫기 */
   useEffect(() => {
@@ -30,13 +30,17 @@ export default function FilterSelect({ value, options, labelMap, placeholder = '
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const displayLabel = (v: string) => labelMap?.[v] ?? v;
+  const displayLabel = (v: string) => {
+    if (!v) return placeholder;
+    if (options.includes(v)) return labelMap?.[v] ?? v;
+    return placeholder;
+  };
 
   return (
     <div className={s.wrap} ref={ref}>
       <button
         type="button"
-        className={`${s.trigger} ${open ? s.triggerOpen : ''}`}
+        className={`${s.trigger} ${open ? s.triggerOpen : ''} ${isPlaceholder && !options.includes(value || '') ? s.triggerPlaceholder : ''}`}
         onClick={() => setOpen((p) => !p)}
       >
         <span className={s.triggerText}>

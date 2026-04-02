@@ -12,6 +12,7 @@ interface FilterDatePickerProps {
   id?: string;
   minDate?: string;        // 'YYYY-MM-DD'
   maxDate?: string;        // 'YYYY-MM-DD'
+  placeholder?: string;
 }
 
 function toDate(str: string): Date | null {
@@ -28,7 +29,7 @@ function toStr(d: Date | null): string {
   return `${y}-${m}-${day}`;
 }
 
-export default function FilterDatePicker({ value, onChange, id, minDate, maxDate }: FilterDatePickerProps) {
+export default function FilterDatePicker({ value, onChange, id, minDate, maxDate, placeholder }: FilterDatePickerProps) {
   const ref = useRef<DatePicker>(null);
 
   return (
@@ -38,9 +39,10 @@ export default function FilterDatePicker({ value, onChange, id, minDate, maxDate
         ref={ref}
         locale="ko"
         selected={toDate(value)}
-        onChange={(d) => onChange(toStr(d))}
+        onChange={(d: Date | null) => onChange(toStr(d))}
         dateFormat="yyyy-MM-dd"
-        className={s.input}
+        className={value ? s.input : `${s.input} ${s.inputPlaceholder}`}
+        placeholderText={placeholder}
         calendarClassName={s.calendar}
         dayClassName={() => s.day}
         popperClassName={s.popper}
