@@ -6,6 +6,9 @@ import editIcon from '../assets/edit.png';
 import trashIcon from '../assets/trash.png';
 import { getNotice, updateNotice, deleteNotice } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import useConfirm from '../hooks/useConfirm';
 import styles from './NoticeDetail.module.css';
@@ -22,12 +25,24 @@ export default function NoticeDetail() {
   const editDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
       if (editDropdownRef.current && !editDropdownRef.current.contains(e.target as Node)) {
         setEditDropdownOpen(false);
+      }
+      if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
+        setStoreDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -47,6 +62,13 @@ export default function NoticeDetail() {
   const [editActive, setEditActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  /* ADMIN 역할 & 지점 선택 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [editStoreId, setEditStoreId] = useState<number | null>(null);
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+  const storeDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotice = useCallback(async () => {
     if (!noticeId) return;
@@ -80,7 +102,9 @@ export default function NoticeDetail() {
     setEditContent(notice.content);
     setEditPinned(notice.pinned);
     setEditActive(notice.active);
+    setEditStoreId(notice.storeId);
     setEditDropdownOpen(false);
+    setStoreDropdownOpen(false);
     setSaveError('');
     setEditing(true);
   };
@@ -94,6 +118,10 @@ export default function NoticeDetail() {
     if (saving) return;
     setSaveError('');
 
+    if (isAdmin && !editStoreId) {
+      setSaveError('지점을 선택해주세요.');
+      return;
+    }
     if (editCategory === '선택') {
       setSaveError('과목을 선택해주세요.');
       return;
@@ -111,12 +139,11 @@ export default function NoticeDetail() {
 
     setSaving(true);
     try {
-      const updated = await updateNotice(Number(noticeId), {
-        title: fullTitle,
-        content: editContent,
-        pinned: editPinned,
-        active: editActive,
-      });
+      const updated = await updateNotice(
+        Number(noticeId),
+        { title: fullTitle, content: editContent, pinned: editPinned, active: editActive },
+        isAdmin && editStoreId ? editStoreId : undefined,
+      );
       setNotice(updated);
       setEditing(false);
     } catch (err) {
@@ -186,6 +213,42 @@ export default function NoticeDetail() {
         {editing ? (
           /* ── 수정 모드 ── */
           <>
+            {/* ADMIN 전용: 지점 선택 */}
+            {isAdmin && (
+              <div className={styles.field}>
+                <label className={styles.label}>지점</label>
+                <div className={styles.dropdown} ref={storeDropdownRef} style={{ width: 200 }}>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownTrigger} ${storeDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                    onClick={() => setStoreDropdownOpen((v) => !v)}
+                  >
+                    <span className={!editStoreId ? styles.dropdownPlaceholder : ''}>
+                      {editStoreId
+                        ? stores.find((s) => s.id === editStoreId)?.storeName ?? '선택'
+                        : '지점을 선택해주세요'}
+                    </span>
+                    <LuChevronDown className={`${styles.dropdownChevron} ${storeDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+                  </button>
+                  {storeDropdownOpen && (
+                    <ul className={styles.dropdownMenu}>
+                      {stores.map((store) => (
+                        <li key={store.id}>
+                          <button
+                            type="button"
+                            className={`${styles.dropdownItem} ${editStoreId === store.id ? styles.dropdownItemActive : ''}`}
+                            onClick={() => { setEditStoreId(store.id); setStoreDropdownOpen(false); }}
+                          >
+                            {store.storeName}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className={styles.field}>
               <label className={styles.label}>구분</label>
               <div className={styles.dropdown} ref={editDropdownRef}>

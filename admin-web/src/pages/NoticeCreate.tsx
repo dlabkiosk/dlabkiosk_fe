@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { LuArrowLeft, LuChevronDown } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
 import { createNotice } from '../api/noticeApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import styles from './NoticeCreate.module.css';
 import f from '../styles/filter.module.css';
@@ -20,10 +23,29 @@ export default function NoticeCreate() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  /* ADMIN 역할 & 지점 선택 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+  const storeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
+        setStoreDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -35,6 +57,10 @@ export default function NoticeCreate() {
 
     setError('');
 
+    if (isAdmin && !selectedStoreId) {
+      setError('지점을 선택해주세요.');
+      return;
+    }
     if (category === '선택') {
       setError('과목을 선택해주세요.');
       return;
@@ -52,11 +78,10 @@ export default function NoticeCreate() {
 
     setIsLoading(true);
     try {
-      await createNotice({
-        title: fullTitle,
-        content,
-        pinned,
-      });
+      await createNotice(
+        { title: fullTitle, content, pinned },
+        isAdmin && selectedStoreId ? selectedStoreId : undefined,
+      );
       navigate('/notices');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -88,6 +113,42 @@ export default function NoticeCreate() {
 
       {/* Form Card */}
       <div className={styles.formCard}>
+        {/* ADMIN 전용: 지점 선택 */}
+        {isAdmin && (
+          <div className={styles.field}>
+            <label className={styles.label}>지점</label>
+            <div className={styles.dropdown} ref={storeDropdownRef} style={{ width: 200 }}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${storeDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                onClick={() => setStoreDropdownOpen((v) => !v)}
+              >
+                <span className={!selectedStoreId ? styles.dropdownPlaceholder : ''}>
+                  {selectedStoreId
+                    ? stores.find((s) => s.id === selectedStoreId)?.storeName ?? '선택'
+                    : '지점을 선택해주세요'}
+                </span>
+                <LuChevronDown className={`${styles.dropdownChevron} ${storeDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+              </button>
+              {storeDropdownOpen && (
+                <ul className={styles.dropdownMenu}>
+                  {stores.map((store) => (
+                    <li key={store.id}>
+                      <button
+                        type="button"
+                        className={`${styles.dropdownItem} ${selectedStoreId === store.id ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setSelectedStoreId(store.id); setStoreDropdownOpen(false); }}
+                      >
+                        {store.storeName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className={styles.field}>
           <label className={styles.label}>구분</label>
           <div className={styles.dropdown} ref={dropdownRef}>

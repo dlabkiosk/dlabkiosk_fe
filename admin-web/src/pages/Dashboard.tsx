@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuPlus } from 'react-icons/lu';
+import { LuPlus, LuChevronDown } from 'react-icons/lu';
 import dashboardIcon from '../assets/dashboard_active.png';
 import todayIcon from '../assets/dashboard_today.png';
 import attendanceIcon from '../assets/attendance_active.png';
@@ -10,6 +10,9 @@ import seatchangeIcon from '../assets/dashboard_seatchange.png';
 import noticeIcon from '../assets/notice_active.png';
 import { getDashboardAll } from '../api/dashboardApi';
 import type { DashboardData } from '../api/dashboardApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import styles from './Dashboard.module.css';
 
 /* ── Components ── */
@@ -62,12 +65,49 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStore, setSelectedStore] = useState<string>('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    getDashboardAll()
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const active = list.filter((s) => s.active);
+          setStores(active);
+          if (active.length > 0) setSelectedStore(active[0].storeName);
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const getStoreId = (): number | undefined => {
+    if (!isAdmin) return undefined;
+    return stores.find((s) => s.storeName === selectedStore)?.id;
+  };
+
+  useEffect(() => {
+    if (isAdmin && !selectedStore) return;
+    setLoading(true);
+    getDashboardAll(getStoreId())
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedStore, stores]);
 
   const daily = data?.dailyOperation;
   const att = data?.attendanceSummary;
@@ -81,12 +121,36 @@ export default function Dashboard() {
 
   return (
     <div className={styles.dashboard}>
-      {/* <div className={styles.pageHeader}>
-        <div className={styles.pageTitleGroup}>
-          <img src={dashboardIcon} alt="" className={styles.pageTitleIcon} />
-          <h2 className={styles.pageTitle}>대시보드</h2>
+      {/* ADMIN 지점 필터 */}
+      {isAdmin && (
+        <div className={styles.storeFilterRow}>
+          <div className={styles.dropdown} ref={dropdownRef}>
+            <button
+              type="button"
+              className={`${styles.dropdownTrigger} ${dropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+              onClick={() => setDropdownOpen((v) => !v)}
+            >
+              <span>{selectedStore}</span>
+              <LuChevronDown className={`${styles.dropdownChevron} ${dropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+            </button>
+            {dropdownOpen && (
+              <ul className={styles.dropdownMenu}>
+                {stores.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${selectedStore === s.storeName ? styles.dropdownItemActive : ''}`}
+                      onClick={() => { setSelectedStore(s.storeName); setDropdownOpen(false); }}
+                    >
+                      {s.storeName}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div> */}
+      )}
       {/* Row 1 */}
       <div className={styles.row2}>
         <DashboardCard title="일일 운영 현황" icon={<img src={todayIcon} alt="" className={styles.cardIconImg} />}>

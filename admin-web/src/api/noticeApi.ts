@@ -39,14 +39,16 @@ export function getNotice(noticeId: number): Promise<Notice> {
   return apiGet<Notice>(`/api/v1/admin/notices/${noticeId}`);
 }
 
-/** 공지 등록 (MANAGER: 자기 지점 자동, ADMIN: storeId 필수) */
-export function createNotice(data: CreateNoticeRequest): Promise<Notice> {
-  return apiPost<Notice>('/api/v1/admin/notices', data as unknown as Record<string, unknown>);
+/** 공지 등록 (MANAGER: 자기 지점 자동, ADMIN: storeId query param 필수) */
+export function createNotice(data: CreateNoticeRequest, storeId?: number): Promise<Notice> {
+  const query = storeId ? `?storeId=${storeId}` : '';
+  return apiPost<Notice>(`/api/v1/admin/notices${query}`, data as unknown as Record<string, unknown>);
 }
 
 /** 공지 수정 */
-export function updateNotice(noticeId: number, data: UpdateNoticeRequest): Promise<Notice> {
-  return apiPut<Notice>(`/api/v1/admin/notices/${noticeId}`, data as unknown as Record<string, unknown>);
+export function updateNotice(noticeId: number, data: UpdateNoticeRequest, storeId?: number): Promise<Notice> {
+  const query = storeId ? `?storeId=${storeId}` : '';
+  return apiPut<Notice>(`/api/v1/admin/notices/${noticeId}${query}`, data as unknown as Record<string, unknown>);
 }
 
 /** 공지 삭제 */

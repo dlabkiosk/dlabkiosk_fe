@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { LuArrowUp, LuArrowDown, LuChevronDown } from 'react-icons/lu';
 import settingIcon from '../assets/setting_active.png';
 import editIcon from '../assets/edit.png';
 import trashIcon from '../assets/trash.png';
@@ -346,6 +346,16 @@ function BannerManagement() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
+  /* ADMIN 역할 & 지점 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+  const [storeFilterOpen, setStoreFilterOpen] = useState(false);
+  const storeFilterRef = useRef<HTMLDivElement>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(undefined);
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+  const storeDropdownRef = useRef<HTMLDivElement>(null);
+
   /* 폼 상태 */
   const [editTarget, setEditTarget] = useState<Advertisement | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -377,8 +387,38 @@ function BannerManagement() {
   useEffect(() => { fetchAds(); }, [fetchAds]);
 
   useEffect(() => {
-    getMe().then((me) => setMyStoreId(me.storeId)).catch(() => {});
+    getMe().then((me) => {
+      setMyStoreId(me.storeId);
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+          if (activeStores.length > 0) setStoreFilter(activeStores[0].storeName);
+        });
+      }
+    }).catch(() => {});
   }, []);
+
+  /* 드롭다운 외부 클릭 닫기 */
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
+        setStoreDropdownOpen(false);
+      }
+      if (storeFilterRef.current && !storeFilterRef.current.contains(e.target as Node)) {
+        setStoreFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  /* ADMIN 지점 필터 적용 */
+  const filteredAds = useMemo(() => {
+    if (!isAdmin || storeFilter === '전체') return ads;
+    return ads.filter((ad) => ad.storeName === storeFilter);
+  }, [ads, isAdmin, storeFilter]);
 
   const handleFileChange = (selected: File | null) => {
     setFile(selected);
@@ -425,6 +465,8 @@ function BannerManagement() {
     setMediaType('IMAGE');
     setDisplaySeconds(5);
     setActive(true);
+    setSelectedStoreId(undefined);
+    setStoreDropdownOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -515,7 +557,9 @@ function BannerManagement() {
         });
       } else {
         if (!file) { await alert('파일을 선택해주세요.'); setSubmitting(false); return; }
-        await createAdvertisement({ file, mediaType, displayOrder: ads.length + 1, displaySeconds, crop, storeId: myStoreId });
+        if (isAdmin && !selectedStoreId) { await alert('지점을 선택해주세요.'); setSubmitting(false); return; }
+        const storeIdToSend = isAdmin ? selectedStoreId : myStoreId;
+        await createAdvertisement({ file, mediaType, displayOrder: ads.length + 1, displaySeconds, crop, storeId: storeIdToSend });
       }
       resetForm();
       await fetchAds();
@@ -584,6 +628,42 @@ function BannerManagement() {
           )}
         </div>
         <div className={styles.sectionBody}>
+          {/* ADMIN 전용: 등록 시 지점 선택 */}
+          {isAdmin && !editTarget && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>지점</label>
+              <div className={styles.dropdown} ref={storeDropdownRef} style={{ width: 200 }}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${storeDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                  onClick={() => setStoreDropdownOpen((v) => !v)}
+                >
+                  <span className={!selectedStoreId ? styles.dropdownPlaceholder : ''}>
+                    {selectedStoreId
+                      ? stores.find((s) => s.id === selectedStoreId)?.storeName ?? '선택'
+                      : '지점을 선택해주세요'}
+                  </span>
+                  <LuChevronDown className={`${styles.dropdownChevron} ${storeDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
+                </button>
+                {storeDropdownOpen && (
+                  <ul className={styles.dropdownMenu}>
+                    {stores.map((store) => (
+                      <li key={store.id}>
+                        <button
+                          type="button"
+                          className={`${styles.dropdownItem} ${selectedStoreId === store.id ? styles.dropdownItemActive : ''}`}
+                          onClick={() => { setSelectedStoreId(store.id); setStoreDropdownOpen(false); }}
+                        >
+                          {store.storeName}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>
               파일
@@ -704,6 +784,33 @@ function BannerManagement() {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h3 className={styles.sectionTitle}>배너 목록</h3>
+          {isAdmin && (
+            <div className={styles.dropdown} ref={storeFilterRef} style={{ marginLeft: 'auto', width: 160 }}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${storeFilterOpen ? styles.dropdownTriggerOpen : ''}`}
+                onClick={() => setStoreFilterOpen((v) => !v)}
+              >
+                <span>{storeFilter}</span>
+                <LuChevronDown className={`${styles.dropdownChevron} ${storeFilterOpen ? styles.dropdownChevronOpen : ''}`} />
+              </button>
+              {storeFilterOpen && (
+                <ul className={styles.dropdownMenu}>
+                  {stores.map((s) => (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        className={`${styles.dropdownItem} ${storeFilter === s.storeName ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setStoreFilter(s.storeName); setStoreFilterOpen(false); }}
+                      >
+                        {s.storeName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
         {fetchError && (
           <div className={styles.sectionBody}>
@@ -728,10 +835,10 @@ function BannerManagement() {
               </tr>
             </thead>
             <tbody>
-              {ads.length === 0 ? (
+              {filteredAds.length === 0 ? (
                 <tr><td colSpan={7} className={styles.emptyCell}>등록된 배너가 없습니다.</td></tr>
               ) : (
-                ads.map((ad, idx) => (
+                filteredAds.map((ad, idx) => (
                   <tr
                     key={ad.id}
                     draggable

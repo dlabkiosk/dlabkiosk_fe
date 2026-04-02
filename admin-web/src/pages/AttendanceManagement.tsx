@@ -9,6 +9,8 @@ import downloadIcon from '../assets/download.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import styles from './AttendanceManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
@@ -83,37 +85,78 @@ export default function AttendanceManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+
   /* API 데이터 */
   const [rows, setRows] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [storeId, setStoreId] = useState<number | undefined>(undefined);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    getMe().then((me) => setStoreId(me.storeId)).catch(() => {});
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        setStoreId(undefined);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      } else {
+        setStoreId(me.storeId);
+      }
+      setReady(true);
+    }).catch(() => {});
   }, []);
+
+  /* storeFilter → 실제 API에 보낼 storeId 계산 */
+  const effectiveStoreId = useMemo(() => {
+    if (!isAdmin) return storeId;
+    if (storeFilter === '전체') return undefined;
+    const found = stores.find((s) => s.storeName === storeFilter);
+    return found?.id;
+  }, [isAdmin, storeId, storeFilter, stores]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAttendances({
-        storeId,
+      const commonParams = {
         studentName: searchName || undefined,
         studentNumber: searchStudentNumber || undefined,
         attendanceStatus: filterStatus !== '전체' ? filterStatus : undefined,
         phoneSubmitted: filterPhone === '전체' ? undefined : filterPhone === 'O',
-      });
-      setRows(data);
+      };
+
+      if (isAdmin && effectiveStoreId == null && stores.length > 0) {
+        // ADMIN 전체: 각 지점별로 조회 후 합침
+        const results = await Promise.all(
+          stores.map(async (s) => {
+            const list = await getAttendances({ storeId: s.id, ...commonParams });
+            return list.map((r) => ({ ...r, storeName: s.storeName }));
+          }),
+        );
+        setRows(results.flat());
+      } else {
+        const data = await getAttendances({ storeId: effectiveStoreId, ...commonParams });
+        // 단일 지점 선택 시 지점명 주입
+        const selectedStore = stores.find((s) => s.id === effectiveStoreId);
+        setRows(selectedStore ? data.map((r) => ({ ...r, storeName: selectedStore.storeName })) : data);
+      }
     } catch {
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [storeId, searchName, searchStudentNumber, filterStatus, filterPhone]);
+  }, [isAdmin, stores, effectiveStoreId, searchName, searchStudentNumber, filterStatus, filterPhone]);
 
-  // 초기 로드
+  // 초기 로드 + 지점 필터 변경 시 자동 fetch
   useEffect(() => {
-    if (storeId != null) fetchData();
-  }, [storeId]);
+    if (!ready) return;
+    if (isAdmin && stores.length === 0) return;
+    if (!isAdmin && storeId == null) return;
+    setPage(1);
+    fetchData();
+  }, [ready, stores, effectiveStoreId]);
 
   const handleSearch = () => {
     setPage(1);
@@ -125,6 +168,7 @@ export default function AttendanceManagement() {
     setSearchStudentNumber('');
     setFilterStatus('전체');
     setFilterPhone('전체');
+    if (isAdmin) setStoreFilter('전체');
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -228,6 +272,17 @@ export default function AttendanceManagement() {
       {/* Filter Row */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel}>지점</label>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={setStoreFilter}
+              />
+            </div>
+          )}
           <div className={f.filterGroup}>
             <label className={f.filterLabel} htmlFor="att-name">학생명</label>
             <input
@@ -297,6 +352,7 @@ export default function AttendanceManagement() {
               <th className={styles.checkboxCol}>
                 <input type="checkbox" checked={allChecked} onChange={toggleAll} />
               </th>
+              {isAdmin && <th>지점</th>}
               <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
                 이름 <SortIcon field="studentName" />
               </th>
@@ -317,11 +373,11 @@ export default function AttendanceManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={6}>로딩 중...</td>
+                <td colSpan={isAdmin ? 7 : 6}>로딩 중...</td>
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={6}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 7 : 6}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row) => (
@@ -333,6 +389,7 @@ export default function AttendanceManagement() {
                       onChange={() => toggleOne(row.studentId)}
                     />
                   </td>
+                  {isAdmin && <td>{row.storeName ?? '-'}</td>}
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
                   <td>{row.seatLabel}</td>

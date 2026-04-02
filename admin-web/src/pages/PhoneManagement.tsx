@@ -16,8 +16,13 @@ import {
   exportPhoneSubmissions,
 } from '../api/phoneSubmissionApi';
 import type { PhoneSubmission, PageResponse } from '../api/phoneSubmissionApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
+import { getStudents } from '../api/studentApi';
 import useConfirm from '../hooks/useConfirm';
 import FilterDatePicker from '../components/FilterDatePicker';
+import FilterSelect from '../components/FilterSelect';
 import styles from './PhoneManagement.module.css';
 import f from '../styles/filter.module.css';
 
@@ -110,6 +115,26 @@ export default function PhoneManagement() {
   const [allData, setAllData] = useState<PhoneSubmission[]>([]);
   const [loading, setLoading] = useState(false);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+  const [studentStoreMap, setStudentStoreMap] = useState<Map<number, string>>(new Map());
+
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+        getStudents().then((students) => {
+          const map = new Map<number, string>();
+          students.forEach((s) => map.set(s.id, s.storeName));
+          setStudentStoreMap(map);
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
   /* 모달 */
   const [detailTarget, setDetailTarget] = useState<PhoneSubmission | null>(null);
   const [editTarget, setEditTarget] = useState<PhoneSubmission | null>(null);
@@ -158,8 +183,13 @@ export default function PhoneManagement() {
       });
     }
 
+    // ADMIN 지점 필터
+    if (isAdmin && storeFilter !== '전체') {
+      rows = rows.filter((r) => studentStoreMap.get(r.studentId) === storeFilter);
+    }
+
     return rows;
-  }, [allData, appliedFilters.date]);
+  }, [allData, appliedFilters.date, isAdmin, storeFilter, studentStoreMap]);
 
   useEffect(() => {
     fetchData();
@@ -176,6 +206,7 @@ export default function PhoneManagement() {
     setSearchNumber('');
     setSearchDate(today);
     setAppliedFilters({ name: '', number: '', date: today });
+    if (isAdmin) setStoreFilter('전체');
     setSort({ field: null, dir: 'asc' });
     setPage(1);
   };
@@ -336,6 +367,17 @@ export default function PhoneManagement() {
       {/* 필터 */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel}>지점</label>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={setStoreFilter}
+              />
+            </div>
+          )}
           <div className={f.filterGroup}>
             <label className={f.filterLabel} htmlFor="phone-name">학생명</label>
             <input
@@ -391,6 +433,7 @@ export default function PhoneManagement() {
               <th className={styles.checkboxCol}>
                 <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
               </th>
+              {isAdmin && <th>지점</th>}
               <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
                 이름 <SortIcon field="studentName" />
               </th>
@@ -412,11 +455,11 @@ export default function PhoneManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={7}>불러오는 중...</td>
+                <td colSpan={isAdmin ? 8 : 7}>불러오는 중...</td>
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={7}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 8 : 7}>데이터가 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row: PhoneSubmission) => (
@@ -432,6 +475,7 @@ export default function PhoneManagement() {
                       onChange={() => handleSelectRow(row.id)}
                     />
                   </td>
+                  {isAdmin && <td>{studentStoreMap.get(row.studentId) ?? '-'}</td>}
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
                   <td>{row.seatLabel}</td>

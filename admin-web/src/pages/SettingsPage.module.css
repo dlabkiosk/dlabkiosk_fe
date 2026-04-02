@@ -1026,3 +1026,89 @@
 .syncErrors p {
   margin: var(--spacing-xs, 0.25rem) 0;
 }
+
+/* ── Dropdown (지점 선택) ── */
+.dropdown {
+  position: relative;
+  width: 120px;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--size-input-height);
+  padding: 0 var(--spacing-sm);
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.dropdownTrigger:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.dropdownTriggerOpen {
+  border-color: var(--color-primary);
+}
+
+.dropdownPlaceholder {
+  color: var(--color-text-muted);
+}
+
+.dropdownChevron {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.dropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xs) 0;
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.dropdownItem:hover {
+  background-color: var(--color-bg-page);
+}
+
+.dropdownItemActive {
+  color: var(--color-primary);
+  font-weight: 600;
+  background-color: var(--color-primary-light);
+}

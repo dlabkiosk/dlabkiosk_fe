@@ -4,6 +4,9 @@ import { LuSearch, LuPlus } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
+import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
 import styles from './NoticeManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
@@ -21,6 +24,20 @@ export default function NoticeManagement() {
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => setStores(list));
+      }
+    });
+  }, []);
 
   const fetchNotices = useCallback(async () => {
     setLoading(true);
@@ -41,6 +58,9 @@ export default function NoticeManagement() {
 
   const filteredNotices = notices
     .filter((n) => {
+      if (isAdmin && storeFilter !== '전체') {
+        if (n.storeName !== storeFilter) return false;
+      }
       if (category !== '전체') {
         const prefix = `[${category}]`;
         if (!n.title.startsWith(prefix)) return false;
@@ -85,6 +105,19 @@ export default function NoticeManagement() {
       {/* Filter */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {/* ADMIN 전용: 지점 필터 */}
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <span className={f.filterLabel}>지점</span>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={(v) => { setStoreFilter(v); setCurrentPage(1); }}
+              />
+            </div>
+          )}
+
           <div className={f.filterGroup}>
             <span className={f.filterLabel}>구분</span>
             <FilterSelect
@@ -110,7 +143,7 @@ export default function NoticeManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={() => { setCategory('전체'); setSearchText(''); setAppliedSearch(''); }}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={() => { setStoreFilter('전체'); setCategory('전체'); setSearchText(''); setAppliedSearch(''); }}>초기화</button>
             <button
               type="button"
               className={styles.newButton}
@@ -138,7 +171,7 @@ export default function NoticeManagement() {
               <col style={{ width: '6%' }} />
               <col />
               <col style={{ width: '15%' }} />
-              <col style={{ width: '12%' }} />
+              <col style={{ width: '15%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -148,7 +181,7 @@ export default function NoticeManagement() {
                 <th>No</th>
                 <th className={styles.titleCell}>제목</th>
                 <th>날짜</th>
-                <th>관리자</th>
+                <th>등록 지점</th>
               </tr>
             </thead>
             <tbody>
