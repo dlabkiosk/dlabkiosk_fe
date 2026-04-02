@@ -32,6 +32,7 @@ import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
 import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
 import styles from './SeatManagement.module.css';
 import f from '../styles/filter.module.css';
@@ -69,7 +70,7 @@ function compareRows(a: SeatChangeRequest, b: SeatChangeRequest, field: SortFiel
   return dir === 'desc' ? -cmp : cmp;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 
 const ATT_STYLE_MAP: Record<string, string> = {
   '학습중': 'attPresent',
@@ -92,8 +93,22 @@ export default function SeatManagement() {
   const { confirm, alert, ConfirmDialog } = useConfirm();
   const [view, setView] = useState<ViewMode>(initialView);
 
+  /* ── ADMIN 역할 + 지점 필터 ── */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<{ id: number; storeName: string }[]>([]);
+  const [storeFilter, setStoreFilter] = useState<string>('');
+  const [waitingStoreFilter, setWaitingStoreFilter] = useState<string>('전체');
+
   /* ── 로그인 지점 ── */
   const [myStoreId, setMyStoreId] = useState<number | undefined>(undefined);
+
+  /* storeFilter → 실제 API에 보낼 storeId 계산 */
+  const effectiveStoreId = useMemo(() => {
+    if (!isAdmin) return myStoreId;
+    if (storeFilter === '전체') return undefined;
+    const found = stores.find((s) => s.storeName === storeFilter);
+    return found?.id;
+  }, [isAdmin, myStoreId, storeFilter, stores]);
 
   /* ── 구역 상태 ── */
   const [areas, setAreas] = useState<SeatArea[]>([]);
@@ -220,8 +235,19 @@ export default function SeatManagement() {
   useEffect(() => {
     getMe()
       .then((me) => {
-        setMyStoreId(me.storeId);
-        return getSeatAreas(me.storeId);
+        if (me.role === 'ADMIN') {
+          setIsAdmin(true);
+          getStores().then((list) => {
+            const activeStores = list.filter((s) => s.active);
+            setStores(activeStores);
+            if (activeStores.length > 0 && !storeFilter) {
+              setStoreFilter(activeStores[0].storeName);
+            }
+          });
+        } else {
+          setMyStoreId(me.storeId);
+        }
+        return getSeatAreas(me.role === 'ADMIN' ? undefined : me.storeId);
       })
       .then((list) => {
         setAreas(list);
@@ -232,6 +258,21 @@ export default function SeatManagement() {
       .catch(() => setAreas([]));
   }, []);
 
+  /* ADMIN: 지점 필터 변경 시 구역 다시 로드 */
+  useEffect(() => {
+    if (!isAdmin) return;
+    getSeatAreas(effectiveStoreId)
+      .then((list) => {
+        setAreas(list);
+        if (list.length > 0) {
+          setSelectedAreaCd(list[0].areaCd);
+        } else {
+          setSelectedAreaCd('');
+        }
+      })
+      .catch(() => setAreas([]));
+  }, [effectiveStoreId]);
+
   /* ── 배치도 로드: 좌석 + 좌석현황 + 출결 + 이탈 병합 ── */
   const loadLayout = useCallback(async () => {
     setLayoutLoading(true);
@@ -240,7 +281,7 @@ export default function SeatManagement() {
 
       // DSA 좌석 현황: 구역이 선택되었을 때만 조회
       const dsaStatusPromise = selectedAreaCd
-        ? getSeatStatusByArea(selectedAreaCd).catch(() => [] as SeatStatusByArea[])
+        ? getSeatStatusByArea(selectedAreaCd, effectiveStoreId).catch(() => [] as SeatStatusByArea[])
         : Promise.resolve([] as SeatStatusByArea[]);
 
       const DSA_CELL_W = 80;
@@ -336,21 +377,50 @@ export default function SeatManagement() {
     } finally {
       setLayoutLoading(false);
     }
-  }, [selectedAreaCd]);
+  }, [selectedAreaCd, effectiveStoreId]);
 
   useEffect(() => {
     if (view === 'layout') loadLayout();
   }, [view, loadLayout]);
 
   /* ── 대기 리스트 로드 ── */
-  const loadWaiting = useCallback(() => {
-    getSeatChangeRequests({ status: statusFilter === 'ALL' ? undefined : statusFilter, page: page - 1, size: ITEMS_PER_PAGE })
-      .then((result: PageResponse<SeatChangeRequest>) => {
-        setWaitingData(result.content);
-        setWaitingTotal(result.totalElements);
-      })
-      .catch(() => { /* 에러 시 빈 목록 */ });
-  }, [statusFilter, page]);
+  const loadWaiting = useCallback(async () => {
+    if (statusFilter === 'ALL') {
+      // 전체: 모든 상태를 병렬로 조회 후 합침
+      const [pending, approved, rejected] = await Promise.all([
+        getSeatChangeRequests({ status: 'PENDING', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
+        getSeatChangeRequests({ status: 'APPROVED', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
+        getSeatChangeRequests({ status: 'REJECTED', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
+      ]);
+      let combined = [...pending.content, ...approved.content, ...rejected.content];
+      
+      // 클라이언트 측 지점 필터링
+      if (isAdmin && waitingStoreFilter !== '전체') {
+        const targetStoreId = stores.find((s) => s.storeName === waitingStoreFilter)?.id;
+        if (targetStoreId) {
+          combined = combined.filter((r) => r.storeId === targetStoreId);
+        }
+      }
+      
+      setWaitingData(combined);
+      setWaitingTotal(combined.length);
+    } else {
+      getSeatChangeRequests({ status: statusFilter, page: page - 1, size: ITEMS_PER_PAGE })
+        .then((result: PageResponse<SeatChangeRequest>) => {
+          let data = result.content;
+          // 클라이언트 측 지점 필터링
+          if (isAdmin && waitingStoreFilter !== '전체') {
+            const targetStoreId = stores.find((s) => s.storeName === waitingStoreFilter)?.id;
+            if (targetStoreId) {
+              data = data.filter((r) => r.storeId === targetStoreId);
+            }
+          }
+          setWaitingData(data);
+          setWaitingTotal(result.totalElements);
+        })
+        .catch(() => { /* 에러 시 빈 목록 */ });
+    }
+  }, [statusFilter, page, waitingStoreFilter, isAdmin, stores]);
 
   useEffect(() => {
     if (view === 'waiting') loadWaiting();
@@ -871,16 +941,10 @@ export default function SeatManagement() {
     }
   };
 
-  /** 테이블 처리상태 셀: 배지 + 처리일시 + 승인좌석 */
+  /** 테이블 처리상태 셀: 배지만 표시 */
   const renderStatusCell = (row: SeatChangeRequest) => (
     <div className={styles.statusCellWrap}>
       {getStatusBadge(row.status)}
-      {row.status === 'APPROVED' && row.approvedSeatLabel && (
-        <span className={styles.statusExtra}>{row.approvedSeatLabel}</span>
-      )}
-      {row.status !== 'PENDING' && row.processedAt && (
-        <span className={styles.statusExtra}>{row.processedAt.replace('T', ' ').slice(0, 16)}</span>
-      )}
     </div>
   );
 
@@ -926,6 +990,18 @@ export default function SeatManagement() {
           {/* 필터 */}
           <div className={f.filterCard}>
             <div className={f.filterRow}>
+              {isAdmin && (
+                <div className={f.filterGroup}>
+                  <label className={f.filterLabel}>지점</label>
+                  <FilterSelect
+                    value={storeFilter}
+                    options={stores.map((s) => s.storeName)}
+                    placeholder={stores[0]?.storeName || ''}
+                    defaultValue={stores[0]?.storeName || ''}
+                    onChange={(v) => setStoreFilter(v as string)}
+                  />
+                </div>
+              )}
               {areas.length > 0 && (
                 <div className={styles.areaTabs}>
                   {areas.map((a) => (
@@ -955,14 +1031,7 @@ export default function SeatManagement() {
           {/* 배치/편집 모드 배너 제거 — DSA 기준 조회만 사용 */}
 
           {/* 배치도 */}
-          <div
-            ref={scrollContainerRef}
-            className={`${styles.contentCard} ${styles.pannable}`}
-            onMouseDown={handlePanStart}
-            onMouseMove={handlePanMove}
-            onMouseUp={handlePanEnd}
-            onMouseLeave={handlePanEnd}
-          >
+          <div className={styles.layoutWrapper}>
             <div className={styles.layoutHeader}>
               <div className={styles.areaTitle}>
                 배정인원 : {occupiedCount}명
@@ -977,7 +1046,15 @@ export default function SeatManagement() {
               </button>
             </div>
 
-            {layoutLoading ? (
+            <div
+              ref={scrollContainerRef}
+              className={`${styles.contentCard} ${styles.pannable}`}
+              onMouseDown={handlePanStart}
+              onMouseMove={handlePanMove}
+              onMouseUp={handlePanEnd}
+              onMouseLeave={handlePanEnd}
+            >
+              {layoutLoading ? (
               <div className={styles.emptyState}>불러오는 중...</div>
             ) : seats.length === 0 ? (
               <div className={styles.emptyState}>등록된 좌석이 없습니다.</div>
@@ -1027,6 +1104,7 @@ export default function SeatManagement() {
               </div>
             )}
           </div>
+          </div>
         </>
       )}
 
@@ -1036,6 +1114,18 @@ export default function SeatManagement() {
         {/* 필터 */}
         <div className={f.filterCard}>
           <div className={f.filterRow}>
+            {isAdmin && (
+              <div className={f.filterGroup}>
+                <label className={f.filterLabel}>지점</label>
+                <FilterSelect
+                  value={waitingStoreFilter}
+                  options={['전체', ...stores.map((s) => s.storeName)]}
+                  placeholder="전체"
+                  defaultValue="전체"
+                  onChange={(v) => setWaitingStoreFilter(v as string)}
+                />
+              </div>
+            )}
             <div className={f.filterGroup}>
               <label className={f.filterLabel} htmlFor="sw-name">학생명</label>
               <input
@@ -1043,8 +1133,7 @@ export default function SeatManagement() {
                 className={f.filterInput}
                 placeholder="학생명"
                 value={wSearchName}
-                onChange={(e) => setWSearchName(e.target.value)}
-                onKeyDown={handleWaitingKeyDown}
+                onChange={(e) => { setWSearchName(e.target.value); setWAppliedFilters({ name: e.target.value, number: wSearchNumber }); setPage(1); }}
               />
             </div>
             <div className={f.filterGroup}>
@@ -1054,8 +1143,7 @@ export default function SeatManagement() {
                 className={f.filterInput}
                 placeholder="학번"
                 value={wSearchNumber}
-                onChange={(e) => setWSearchNumber(e.target.value)}
-                onKeyDown={handleWaitingKeyDown}
+                onChange={(e) => { setWSearchNumber(e.target.value); setWAppliedFilters({ name: wSearchName, number: e.target.value }); setPage(1); }}
               />
             </div>
             <div className={f.filterGroup}>
@@ -1084,6 +1172,7 @@ export default function SeatManagement() {
                   <th className={styles.checkboxCol}>
                     <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
                   </th>
+                  {isAdmin && <th>지점</th>}
                   <th className={styles.sortableCol} onClick={() => handleSort('studentName')}>
                     이름 <SortIcon field="studentName" />
                   </th>
@@ -1107,7 +1196,7 @@ export default function SeatManagement() {
               <tbody>
                 {sortedWaiting.length === 0 ? (
                   <tr className={styles.emptyRow}>
-                    <td colSpan={9}>대기 중인 요청이 없습니다.</td>
+                    <td colSpan={isAdmin ? 10 : 9}>대기 중인 요청이 없습니다.</td>
                   </tr>
                 ) : (
                   sortedWaiting.map((row) => (
@@ -1119,6 +1208,7 @@ export default function SeatManagement() {
                           onChange={() => handleSelectRow(row.id)}
                         />
                       </td>
+                      {isAdmin && <td>{stores.find((s) => s.id === row.storeId)?.storeName || '-'}</td>}
                       <td>{row.studentName}</td>
                       <td>{row.studentNumber}</td>
                       <td>{row.currentSeatLabel}</td>

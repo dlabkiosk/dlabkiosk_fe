@@ -9,6 +9,8 @@ export interface DailyStudyTime {
 }
 
 export interface StudentStudyTime {
+  storeId?: number;
+  storeName?: string;
   studentName: string;
   studentNumber: string;
   seatLabel: string;

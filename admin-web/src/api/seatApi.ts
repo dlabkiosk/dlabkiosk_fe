@@ -106,9 +106,10 @@ export interface PageResponse<T> {
 
 /* ── 좌석 CRUD API ── */
 
-/** 구역 목록 조회 (storeId 필수) */
-export function getSeatAreas(storeId: number): Promise<SeatArea[]> {
-  return apiGet<SeatArea[]>(`/api/v1/admin/seats/areas?storeId=${storeId}`);
+/** 구역 목록 조회 (storeId 선택 - ADMIN은 전체 조회 시 undefined) */
+export function getSeatAreas(storeId?: number): Promise<SeatArea[]> {
+  const query = storeId ? `?storeId=${storeId}` : '';
+  return apiGet<SeatArea[]>(`/api/v1/admin/seats/areas${query}`);
 }
 
 /** 구역별 좌석 현황 조회 (areaCd 필수, storeId 선택) */
@@ -160,12 +161,14 @@ export function deleteSeat(seatId: number): Promise<string> {
 /** 좌석 변경 신청 목록 조회 */
 export function getSeatChangeRequests(params?: {
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  storeId?: number;
   page?: number;
   size?: number;
   sort?: string;
 }): Promise<PageResponse<SeatChangeRequest>> {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
+  if (params?.storeId) query.set('storeId', String(params.storeId));
   query.set('page', String(params?.page ?? 0));
   query.set('size', String(params?.size ?? 20));
   if (params?.sort) query.set('sort', params.sort);

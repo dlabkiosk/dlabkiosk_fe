@@ -17,6 +17,9 @@ registerLocale('ko', ko);
 import { getStudyTimes } from '../api/studyTimeApi';
 import type { StudentStudyTime } from '../api/studyTimeApi';
 import { getMe } from '../api/authApi';
+import { getStores } from '../api/storeApi';
+import type { Store } from '../api/storeApi';
+import FilterSelect from '../components/FilterSelect';
 
 /* ── 날짜 유틸 ── */
 
@@ -61,6 +64,8 @@ interface StudentStudyRow {
   name: string;
   seat: string;
   total: string;
+  storeId?: number;
+  storeName?: string;
   dailyTimes: Record<string, string>;
 }
 
@@ -104,6 +109,8 @@ function toRows(data: StudentStudyTime[], monday: Date): StudentStudyRow[] {
       name: s.studentName,
       seat: s.seatLabel || '-',
       total: s.totalStudyTime,
+      storeId: s.storeId,
+      storeName: s.storeName,
       dailyTimes,
     };
   });
@@ -131,6 +138,11 @@ export default function StudyTimeManagement() {
   const [loading, setLoading] = useState(false);
   const [storeId, setStoreId] = useState<number | undefined>(undefined);
 
+  /* ADMIN 역할 & 지점 필터 */
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeFilter, setStoreFilter] = useState('전체');
+
   // 페이지네이션
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 15;
@@ -154,32 +166,69 @@ export default function StudyTimeManagement() {
 
   // 사용자 정보 로드
   useEffect(() => {
-    getMe().then((me) => setStoreId(me.storeId)).catch(() => {});
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        setStoreId(undefined);
+        getStores().then((list) => setStores(list.filter((s) => s.active)));
+      } else {
+        setStoreId(me.storeId);
+      }
+    }).catch(() => {});
   }, []);
+
+  /* storeFilter → 실제 API에 보낼 storeId 계산 */
+  const effectiveStoreId = useMemo(() => {
+    if (!isAdmin) return storeId;
+    if (storeFilter === '전체') return undefined;
+    const found = stores.find((s) => s.storeName === storeFilter);
+    return found?.id;
+  }, [isAdmin, storeId, storeFilter, stores]);
 
   // API 호출
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getStudyTimes({
-        storeId,
+      const commonParams = {
         startDate: formatDateKey(startDate),
         endDate: formatDateKey(endDate),
         studentName: filterName || undefined,
         studentNumber: filterNumber || undefined,
-      });
-      setRows(toRows(data, startDate));
+      };
+
+      if (isAdmin && effectiveStoreId == null && stores.length > 0) {
+        // ADMIN 전체: 각 지점별로 조회 후 합침
+        const results = await Promise.all(
+          stores.map(async (s) => {
+            const list = await getStudyTimes({ storeId: s.id, ...commonParams });
+            return list.map((r) => ({ ...r, storeId: s.id, storeName: s.storeName }));
+          }),
+        );
+        setRows(toRows(results.flat(), startDate));
+      } else {
+        const data = await getStudyTimes({ storeId: effectiveStoreId, ...commonParams });
+        const selectedStore = stores.find((s) => s.id === effectiveStoreId);
+        setRows(toRows(
+          selectedStore 
+            ? data.map((r) => ({ ...r, storeId: selectedStore.id, storeName: selectedStore.storeName }))
+            : data, 
+          startDate
+        ));
+      }
     } catch {
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [storeId, startDate, endDate, filterName, filterNumber]);
+  }, [isAdmin, stores, effectiveStoreId, startDate, endDate, filterName, filterNumber]);
 
   // 주간 변경 시 자동 조회
   useEffect(() => {
-    if (storeId != null) fetchData();
-  }, [selectedMonday, storeId]);
+    if (isAdmin && stores.length === 0) return;
+    if (!isAdmin && storeId == null) return;
+    setPage(0);
+    fetchData();
+  }, [selectedMonday, effectiveStoreId, stores]);
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
@@ -251,6 +300,17 @@ export default function StudyTimeManagement() {
       {/* 필터 */}
       <div className={f.filterCard}>
         <div className={f.filterRow}>
+          {isAdmin && (
+            <div className={f.filterGroup}>
+              <label className={f.filterLabel}>지점</label>
+              <FilterSelect
+                value={storeFilter}
+                options={['전체', ...stores.map((s) => s.storeName)]}
+                placeholder="전체"
+                onChange={setStoreFilter}
+              />
+            </div>
+          )}
           <div className={f.filterGroup}>
             <label className={f.filterLabel}>학생명</label>
             <input
@@ -318,6 +378,7 @@ export default function StudyTimeManagement() {
                 <th className={styles.checkboxCol}>
                   <input type="checkbox" />
                 </th>
+                {isAdmin && <th>지점</th>}
                 <th className={styles.sortableCol} onClick={() => handleSort('name')}>
                   이름 <SortIcon field="name" />
                 </th>
@@ -336,11 +397,11 @@ export default function StudyTimeManagement() {
             <tbody>
               {loading ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={5 + dayHeaders.length}>로딩 중...</td>
+                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>로딩 중...</td>
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={5 + dayHeaders.length}>데이터가 없습니다.</td>
+                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>데이터가 없습니다.</td>
                 </tr>
               ) : (
                 pagedData.map((row) => (
@@ -348,6 +409,7 @@ export default function StudyTimeManagement() {
                     <td className={styles.checkboxCol}>
                       <input type="checkbox" />
                     </td>
+                    {isAdmin && <td>{row.storeName || '-'}</td>}
                     <td>{row.name}</td>
                     <td>{row.studentNumber}</td>
                     <td>{row.seat}</td>

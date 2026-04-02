@@ -154,6 +154,7 @@
   flex-direction: column;
   gap: var(--spacing-md);
   overflow: auto;
+  min-height: auto;
   max-height: calc(100vh - 260px);
   position: relative;
   scrollbar-width: none;
@@ -167,13 +168,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: sticky;
-  top: calc(-1 * var(--spacing-lg));
-  z-index: 2;
+  position: relative;
   background-color: var(--color-bg-card);
-  padding-top: var(--spacing-lg);
-  padding-bottom: var(--spacing-sm);
-  margin-top: calc(-1 * var(--spacing-lg));
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
+}
+
+.layoutWrapper {
+  display: flex;
+  flex-direction: column;
 }
 
 .areaTitle {
@@ -543,8 +548,11 @@
 
 /* ── Empty state ── */
 .emptyState {
-  text-align: center;
-  padding: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 350px;
   color: var(--color-text-muted);
 }
 
@@ -675,7 +683,7 @@
 .statusCellWrap {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
 }
 
@@ -940,7 +948,7 @@
 /* ── Print Button ── */
 .printBtn {
   position: absolute;
-  right: 0;
+  right: var(--spacing-sm);
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
