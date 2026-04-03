@@ -8,6 +8,7 @@ import attendanceIcon from '../assets/attendance_active.png';
 import downloadIcon from '../assets/download.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
+import { downloadStudentQr } from '../api/studentApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
@@ -89,6 +90,11 @@ export default function AttendanceManagement() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
   const [storeFilter, setStoreFilter] = useState('전체');
+
+  /* QR 모달 */
+  const [qrStudent, setQrStudent] = useState<{ studentId: number; studentName: string; studentNumber: string; storeName: string } | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
 
   /* API 데이터 */
   const [rows, setRows] = useState<AttendanceRecord[]>([]);
@@ -250,6 +256,49 @@ export default function AttendanceManagement() {
     }
   };
 
+  const openQrModal = async (row: AttendanceRecord) => {
+    setQrStudent({ studentId: row.studentId, studentName: row.studentName, studentNumber: row.studentNumber, storeName: row.storeName ?? '' });
+    setQrUrl(null);
+    setQrLoading(true);
+    try {
+      const blob = await downloadStudentQr(row.studentId);
+      setQrUrl(URL.createObjectURL(blob));
+    } catch {
+      setQrUrl(null);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const closeQrModal = () => {
+    if (qrUrl) URL.revokeObjectURL(qrUrl);
+    setQrStudent(null);
+    setQrUrl(null);
+  };
+
+  const handleQrDownload = () => {
+    if (!qrUrl || !qrStudent) return;
+    const link = document.createElement('a');
+    link.href = qrUrl;
+    link.download = `QR_${qrStudent.studentName}_${qrStudent.studentNumber}.png`;
+    link.click();
+  };
+
+  const handleQrPrint = () => {
+    if (!qrUrl) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>QR 인쇄</title><style>
+        body { display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
+        img { max-width:400px; }
+      </style></head><body>
+        <img src="${qrUrl}" onload="window.print();window.close();" />
+      </body></html>
+    `);
+    win.document.close();
+  };
+
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     let start = Math.max(1, page - 4);
@@ -381,7 +430,7 @@ export default function AttendanceManagement() {
               </tr>
             ) : (
               pagedData.map((row) => (
-                <tr key={row.studentId}>
+                <tr key={row.studentId} className={styles.clickableRow} onClick={() => openQrModal(row)}>
                   <td className={styles.checkboxCol} onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -440,6 +489,37 @@ export default function AttendanceManagement() {
           </button>
         </div>
       </div>
+
+      {/* QR 모달 */}
+      {qrStudent && (
+        <div className={styles.overlay} onClick={closeQrModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeQrModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>QR 코드</h3>
+
+            <div className={styles.qrInfo}>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>이름</span><span>{qrStudent.studentName}</span></p>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>학번</span><span>{qrStudent.studentNumber}</span></p>
+              {isAdmin && <p className={styles.qrInfoRow}><span className={styles.qrLabel}>지점</span><span>{qrStudent.storeName}</span></p>}
+            </div>
+
+            <div className={styles.qrImageWrap}>
+              {qrLoading ? (
+                <span className={styles.qrLoading}>불러오는 중...</span>
+              ) : qrUrl ? (
+                <img src={qrUrl} alt="QR" className={styles.qrImage} />
+              ) : (
+                <span className={styles.qrError}>QR 코드를 불러올 수 없습니다.</span>
+              )}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnSecondary} onClick={handleQrPrint} disabled={!qrUrl}>인쇄</button>
+              <button type="button" className={styles.btnPrimary} onClick={handleQrDownload} disabled={!qrUrl}>다운로드</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
