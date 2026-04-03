@@ -30,15 +30,17 @@ async function request<T>(
   options: RequestInit = {},
   query?: Record<string, string | number | undefined>,
 ): Promise<T> {
-  const urlObj = new URL(`${API_BASE_URL}${path}`);
+  let url = `${API_BASE_URL}${path}`;
   if (query) {
+    const params = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined) {
-        urlObj.searchParams.append(key, String(value));
+        params.append(key, String(value));
       }
     });
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
   }
-  const url = urlObj.toString();
 
   const res = await fetch(url, {
     ...options,

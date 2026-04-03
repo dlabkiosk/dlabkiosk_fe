@@ -168,6 +168,34 @@
   border-color: var(--color-primary);
 }
 
+.datePickerFullWidth {
+  width: var(--size-filter-input);
+}
+
+.datePickerFullWidth > div {
+  display: block;
+  width: 100%;
+}
+
+.datePickerFullWidth :global(.react-datepicker-wrapper),
+.datePickerFullWidth :global(.react-datepicker__input-container) {
+  display: block !important;
+  width: 100% !important;
+}
+
+.datePickerFullWidth input {
+  width: 100% !important;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: var(--font-size-md);
+  padding-right: var(--spacing-xl);
+}
+
+.datePickerFullWidth input::placeholder {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
 .formSelect {
   width: 100%;
   height: var(--size-input-height);
@@ -639,6 +667,11 @@
 
 .examCalCell:last-child {
   border-right: none;
+}
+
+.examCalCellHoverable:hover {
+  background-color: #f0f4ff;
+  transition: background-color 0.15s ease;
 }
 
 .examCalDay {

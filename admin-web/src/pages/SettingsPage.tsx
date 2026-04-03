@@ -914,6 +914,8 @@ function ExamSchedule() {
   const [viewMode, setViewMode] = useState<'calendar' | 'table'>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTarget, setEditTarget] = useState<ExamScheduleType | null>(null);
+  const [selectedCalDate, setSelectedCalDate] = useState<string | null>(null);
+  const [calMenuOpenId, setCalMenuOpenId] = useState<number | null>(null);
 
   /* ADMIN 역할 & 지점 필터 */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1003,8 +1005,9 @@ function ExamSchedule() {
     setSelectedStoreId(undefined);
   };
 
-  const openAddModal = () => {
+  const openAddModal = (presetDate?: string) => {
     resetForm();
+    if (presetDate) setFormDate(presetDate);
     setEditTarget(null);
     setShowAddModal(true);
   };
@@ -1160,7 +1163,21 @@ function ExamSchedule() {
                 {grid.map((week, wi) => (
                   <tr key={wi}>
                     {week.map((day, di) => (
-                      <td key={di} className={styles.examCalCell}>
+                      <td
+                        key={di}
+                        className={`${styles.examCalCell}${day ? ` ${styles.examCalCellHoverable}` : ''}`}
+                        style={day ? { cursor: 'pointer' } : undefined}
+                        onClick={() => {
+                          if (!day) return;
+                          const dateStr = `${calYear}-${String(calMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          const dayExams = getExamsForDay(day);
+                          if (dayExams.length > 0) {
+                            setSelectedCalDate(dateStr);
+                          } else {
+                            openAddModal(dateStr);
+                          }
+                        }}
+                      >
                         {day && (
                           <>
                             <span className={`${styles.examCalDay} ${isToday(day) ? styles.examCalToday : ''}`}>
@@ -1287,6 +1304,76 @@ function ExamSchedule() {
         )}
       </div>
 
+      {/* 캘린더 날짜 상세 모달 */}
+      {selectedCalDate && (
+        <div className={styles.overlay} onClick={() => setSelectedCalDate(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={() => setSelectedCalDate(null)}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{selectedCalDate}</h3>
+
+            <div className={styles.modalForm}>
+              {filteredExams
+                .filter((e) => e.examDate === selectedCalDate)
+                .map((exam) => (
+                  <div key={exam.id} style={{ padding: 'var(--spacing-sm) 0', borderBottom: '1px solid var(--color-border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: 'var(--font-size-base)' }}>{exam.examName}</span>
+                        <span className={`${styles.statusBadge} ${getExamStatusClass(getExamStatus(exam.examDate))}`}>
+                          {getExamStatus(exam.examDate)}
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '16px', color: '#6b7280' }}
+                          onClick={() => setCalMenuOpenId(calMenuOpenId === exam.id ? null : exam.id)}
+                        >
+                          &#x22EE;
+                        </button>
+                        {calMenuOpenId === exam.id && (
+                          <div style={{
+                            position: 'absolute', right: 0, top: '100%', background: '#fff', border: '1px solid var(--color-border-light)',
+                            borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, minWidth: 100, overflow: 'hidden',
+                          }}>
+                            <button
+                              type="button"
+                              style={{ display: 'block', width: '100%', padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--font-size-sm)', textAlign: 'left' }}
+                              onClick={() => { setCalMenuOpenId(null); setSelectedCalDate(null); openEditModal(exam); }}
+                            >
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              style={{ display: 'block', width: '100%', padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--font-size-sm)', textAlign: 'left', color: '#dc2626' }}
+                              onClick={() => { setCalMenuOpenId(null); setSelectedCalDate(null); handleDelete(exam.id); }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      지점: {exam.storeName} · 활성 여부: {exam.active ? '활성' : '비활성'}
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={() => { setSelectedCalDate(null); openAddModal(selectedCalDate); }}
+              >
+                + 추가 일정 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 시험 추가/수정 모달 */}
       {showAddModal && (
         <div className={styles.overlay} onClick={closeModal}>
@@ -1309,7 +1396,7 @@ function ExamSchedule() {
                   />
                 </div>
               )}
-              <div className={styles.formGroup}>
+              <div className={styles.formGroup} style={{ marginBottom: 'var(--spacing-sm)' }}>
                 <label className={styles.formLabel}>시험명</label>
                 <input
                   className={styles.formInput}
@@ -1325,7 +1412,9 @@ function ExamSchedule() {
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>날짜</label>
-                <FilterDatePicker value={formDate} onChange={setFormDate} placeholder="날짜 선택" />
+                <div className={styles.datePickerFullWidth}>
+                  <FilterDatePicker value={formDate} onChange={setFormDate} placeholder="날짜 선택" />
+                </div>
               </div>
             </div>
 
@@ -1434,7 +1523,8 @@ function SeatLeaveReasonSettings() {
   };
 
   const handleSubmit = async () => {
-    if (!formName.trim()) return;
+    if (isAdmin && !editTarget && !modalStoreId) { await alert('지점을 선택해주세요.'); return; }
+    if (!formName.trim()) { await alert('사유명을 입력해주세요.'); return; }
     try {
       if (editTarget) {
         await updateSeatLeaveReason(editTarget.id, {
@@ -1956,47 +2046,49 @@ function BranchInfo() {
   return (
     <>
       <div className={styles.section}>
-        <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeader} style={{ borderBottom: 'none' }}>
           <h3 className={styles.sectionTitle}>지점 정보</h3>
           <button type="button" className={styles.addBtn} onClick={() => setShowCreateModal(true)}>+ 지점 추가</button>
         </div>
 
-        <table className={styles.dataTable}>
-          <thead>
-            <tr>
-              <th style={{ width: 80 }}>지점코드</th>
-              <th>지점명</th>
-              <th>주소</th>
-              <th style={{ width: 140 }}>전화번호</th>
-              <th style={{ width: 70 }}>상태</th>
-              <th style={{ width: 80 }}>DSA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stores.length === 0 ? (
-              <tr><td colSpan={6} className={styles.emptyCell}>등록된 지점이 없습니다.</td></tr>
-            ) : (
-              stores.map((store) => (
-                <tr key={store.id} style={{ cursor: 'pointer' }} onClick={() => nav(`/settings/branch/${store.id}`)}>
-                  <td>{store.storeCode}</td>
-                  <td>{store.storeName}</td>
-                  <td>{store.address || '-'}</td>
-                  <td>{store.phone || '-'}</td>
-                  <td>
-                    <span className={`${styles.statusBadge} ${store.active ? styles.statusActive : styles.statusInactive}`}>
-                      {store.active ? '활성' : '비활성'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`${styles.statusBadge} ${store.dsaConnected ? styles.statusActive : styles.statusInactive}`}>
-                      {store.dsaConnected ? '연결' : '미연결'}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th style={{ width: 80 }}>지점코드</th>
+                <th>지점명</th>
+                <th>주소</th>
+                <th style={{ width: 140 }}>전화번호</th>
+                <th style={{ width: 70 }}>상태</th>
+                <th style={{ width: 80 }}>DSA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stores.length === 0 ? (
+                <tr><td colSpan={6} className={styles.emptyCell}>등록된 지점이 없습니다.</td></tr>
+              ) : (
+                stores.map((store) => (
+                  <tr key={store.id} style={{ cursor: 'pointer' }} onClick={() => nav(`/settings/branch/${store.id}`)}>
+                    <td>{store.storeCode}</td>
+                    <td>{store.storeName}</td>
+                    <td>{store.address || '-'}</td>
+                    <td>{store.phone || '-'}</td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${store.active ? styles.statusActive : styles.statusInactive}`}>
+                        {store.active ? '활성' : '비활성'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${store.dsaConnected ? styles.statusActive : styles.statusInactive}`}>
+                        {store.dsaConnected ? '연결' : '미연결'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 등록 모달 */}
@@ -2113,7 +2205,8 @@ function MessageTemplateSettings() {
   const closeModal = () => { setShowModal(false); resetForm(); };
 
   const handleSubmit = async () => {
-    if (!formContent.trim()) return;
+    if (isAdmin && !editTarget && !modalStoreId) { await alert('지점을 선택해주세요.'); return; }
+    if (!formContent.trim()) { await alert('메시지 내용을 입력해주세요.'); return; }
     try {
       if (editTarget) {
         await updateMessageTemplate(editTarget.id, { content: formContent.trim() });
@@ -2395,7 +2488,8 @@ function StudentMessageSettings() {
   };
 
   const handleSubmit = async () => {
-    if (!formContent.trim()) return;
+    if (!editTarget && modalStudentIds.length === 0) { await alert('학생을 선택해주세요.'); return; }
+    if (!formContent.trim()) { await alert('템플릿을 선택하거나 메시지 내용을 입력해주세요.'); return; }
     try {
       if (editTarget) {
         await updateStudentMessage(editTarget.id, {
@@ -2403,7 +2497,6 @@ function StudentMessageSettings() {
           active: formActive,
         });
       } else {
-        if (modalStudentIds.length === 0) return;
         await createStudentMessage({
           studentIds: modalStudentIds,
           content: formContent.trim(),
@@ -2463,17 +2556,24 @@ function StudentMessageSettings() {
                 ) : filteredStudents.length === 0 ? (
                   <p className={styles.placeholderText}>학생이 없습니다.</p>
                 ) : (
-                  filteredStudents.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`${styles.msgStudentItem} ${selectedStudentId === s.id ? styles.msgStudentItemActive : ''}`}
-                      onClick={() => { setSelectedStudentId(s.id); setMsgPage(1); }}
-                    >
-                      <span className={styles.msgStudentName}>{s.name}</span>
-                      <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
-                    </button>
-                  ))
+                  <>
+                    {filteredStudents.slice(0, 50).map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`${styles.msgStudentItem} ${selectedStudentId === s.id ? styles.msgStudentItemActive : ''}`}
+                        onClick={() => { setSelectedStudentId(s.id); setMsgPage(1); }}
+                      >
+                        <span className={styles.msgStudentName}>{s.name}</span>
+                        <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
+                      </button>
+                    ))}
+                    {filteredStudents.length > 50 && (
+                      <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
+                        외 {filteredStudents.length - 50}명 — 검색으로 범위를 좁혀주세요
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -2590,7 +2690,7 @@ function StudentMessageSettings() {
                       />
                       전체 선택
                     </label>
-                    {modalFilteredStudents.map((s) => (
+                    {modalFilteredStudents.slice(0, 50).map((s) => (
                       <label key={s.id} className={styles.modalStudentCheckItem}>
                         <input
                           type="checkbox"
@@ -2601,6 +2701,11 @@ function StudentMessageSettings() {
                         <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
                       </label>
                     ))}
+                    {modalFilteredStudents.length > 50 && (
+                      <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
+                        외 {modalFilteredStudents.length - 50}명 — 검색으로 범위를 좁혀주세요
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2656,7 +2761,6 @@ function StudentMessageSettings() {
                   type="button"
                   className={styles.btnPrimary}
                   onClick={handleSubmit}
-                  disabled={!formContent.trim() || (!editTarget && modalStudentIds.length === 0)}
                 >
                   {editTarget ? '수정' : `${modalStudentIds.length}명에게 등록`}
                 </button>

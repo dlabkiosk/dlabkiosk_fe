@@ -62,7 +62,7 @@ export default function NoticeCreate() {
       return;
     }
     if (category === '선택') {
-      setError('과목을 선택해주세요.');
+      setError('말머리를 선택해주세요.');
       return;
     }
     if (!title.trim()) {

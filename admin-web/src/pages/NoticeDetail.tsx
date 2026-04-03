@@ -123,7 +123,7 @@ export default function NoticeDetail() {
       return;
     }
     if (editCategory === '선택') {
-      setSaveError('과목을 선택해주세요.');
+      setSaveError('말머리를 선택해주세요.');
       return;
     }
     if (!editTitle.trim()) {
