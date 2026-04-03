@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuSearch, LuPlus } from 'react-icons/lu';
+import { LuPlus, LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
@@ -56,8 +56,27 @@ export default function NoticeManagement() {
     fetchNotices();
   }, [fetchNotices]);
 
-  const filteredNotices = notices
-    .filter((n) => {
+  /* 정렬 */
+  type SortField = 'title' | 'createdAt';
+  type SortDir = 'asc' | 'desc';
+  const [sort, setSort] = useState<{ field: SortField | null; dir: SortDir }>({ field: null, dir: 'asc' });
+
+  const handleSort = (field: SortField) => {
+    setSort((prev) => {
+      if (prev.field === field) return { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      return { field, dir: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sort.field !== field) return <LuArrowUpDown className={styles.sortIcon} />;
+    return sort.dir === 'asc'
+      ? <LuArrowUp className={styles.sortIconActive} />
+      : <LuArrowDown className={styles.sortIconActive} />;
+  };
+
+  const filteredNotices = useMemo(() => {
+    const filtered = notices.filter((n) => {
       if (isAdmin && storeFilter !== '전체') {
         if (n.storeName !== storeFilter) return false;
       }
@@ -69,11 +88,21 @@ export default function NoticeManagement() {
         if (!n.title.toLowerCase().includes(appliedSearch.toLowerCase())) return false;
       }
       return true;
-    })
-    .sort((a, b) => {
+    });
+
+    return filtered.sort((a, b) => {
+      // 고정 공지 항상 상단
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      // 컬럼 정렬
+      if (sort.field) {
+        const va = a[sort.field] ?? '';
+        const vb = b[sort.field] ?? '';
+        const cmp = va.localeCompare(vb);
+        return sort.dir === 'desc' ? -cmp : cmp;
+      }
       return 0;
     });
+  }, [notices, isAdmin, storeFilter, category, appliedSearch, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / ITEMS_PER_PAGE));
   const pageNotices = filteredNotices.slice(
@@ -179,8 +208,12 @@ export default function NoticeManagement() {
                   <input type="checkbox" />
                 </th>
                 <th>No</th>
-                <th className={styles.titleCell}>제목</th>
-                <th>날짜</th>
+                <th className={styles.sortableCol} style={{ textAlign: 'center' }} onClick={() => handleSort('title')}>
+                  제목 <SortIcon field="title" />
+                </th>
+                <th className={styles.sortableCol} onClick={() => handleSort('createdAt')}>
+                  날짜 <SortIcon field="createdAt" />
+                </th>
                 <th>등록 지점</th>
               </tr>
             </thead>
