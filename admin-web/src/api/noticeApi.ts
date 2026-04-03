@@ -10,6 +10,7 @@ export interface Notice {
   content: string;
   pinned: boolean;
   active: boolean;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
 }

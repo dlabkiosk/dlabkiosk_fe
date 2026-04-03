@@ -114,7 +114,7 @@ export default function Dashboard() {
   const att = data?.attendanceSummary;
   const seat = data?.seatLeaveSummary;
   const mealSummary = data?.mealTagSummary;
-  const mealRecords = data?.mealTagRecords ?? [];
+  const mealRecords = data?.mealTagSummary?.details ?? [];
   const seatChanges = data?.seatChangeRequests ?? [];
   const notices = data?.notices ?? [];
 

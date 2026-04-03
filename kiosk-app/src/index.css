@@ -269,7 +269,7 @@ html.high-contrast .dotActive {
   background: rgba(255, 255, 0, 0.95);
 }
 
-/* 접근성 바 active 상태 */
+/* 접근성 바 active 상태 */ 
 html.high-contrast .btn.active {
   background: #1a1a2e;
   color: #00ccff;

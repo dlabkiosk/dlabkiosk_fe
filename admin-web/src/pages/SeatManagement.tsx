@@ -66,7 +66,9 @@ interface SortState {
 function compareRows(a: SeatChangeRequest, b: SeatChangeRequest, field: SortField, dir: SortDir): number {
   const va = (a[field] ?? '') as string;
   const vb = (b[field] ?? '') as string;
-  const cmp = va.localeCompare(vb);
+  const cmp = field === 'createdAt'
+    ? new Date(va).getTime() - new Date(vb).getTime()
+    : va.localeCompare(vb);
   return dir === 'desc' ? -cmp : cmp;
 }
 
@@ -220,7 +222,7 @@ export default function SeatManagement() {
   const [waitingData, setWaitingData] = useState<SeatChangeRequest[]>([]);
   const [waitingTotal, setWaitingTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
+  const [sort, setSort] = useState<SortState>({ field: 'createdAt', dir: 'desc' });
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [modalItem, setModalItem] = useState<SeatChangeRequest | null>(null);

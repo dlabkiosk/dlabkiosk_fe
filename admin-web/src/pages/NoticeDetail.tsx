@@ -349,7 +349,7 @@ export default function NoticeDetail() {
               <div className={styles.meta}>
                 <span className={styles.storeName}>{notice.storeName}</span>
                 {notice.pinned && <span className={styles.pinnedBadge}>고정</span>}
-                <span className={styles.date}>{formatDate(notice.createdAt)}</span>
+                <span className={styles.date}>{notice.createdBy} · {formatDate(notice.createdAt)}</span>
               </div>
               <div className={styles.kebabWrap} ref={menuRef}>
                 <button type="button" className={styles.kebabBtn} onClick={() => setMenuOpen((v) => !v)}>

@@ -1,43 +1,16 @@
-import { useState } from 'react';
 import type { Student } from '../data/mockStudents';
+import type { MealApplication } from '../api/studentApi';
 import styles from './MealCalendarModal.module.css';
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-/** 일별 급식 신청 데이터 */
-interface DayMeal {
-  day: number;
-  lunch: boolean;
-  dinner: boolean;
+/** mealType → lunch/dinner boolean */
+function parseMealType(mealType: string): { lunch: boolean; dinner: boolean } {
+  if (mealType === '점심/저녁') return { lunch: true, dinner: true };
+  if (mealType === '점심') return { lunch: true, dinner: false };
+  if (mealType === '저녁') return { lunch: false, dinner: true };
+  return { lunch: false, dinner: false };
 }
-
-// 목 데이터: 2026년 3월 급식 신청 현황
-const MOCK_MEAL_MAP: Record<string, DayMeal[]> = {
-  '2026-3': [
-    { day: 1, lunch: true, dinner: false },
-    { day: 2, lunch: true, dinner: true },
-    { day: 3, lunch: true, dinner: true },
-    { day: 4, lunch: true, dinner: false },
-    { day: 5, lunch: true, dinner: true },
-    { day: 6, lunch: false, dinner: true },
-    { day: 7, lunch: true, dinner: true },
-    { day: 8, lunch: true, dinner: true },
-    { day: 9, lunch: true, dinner: false },
-    { day: 10, lunch: true, dinner: true },
-    { day: 11, lunch: true, dinner: true },
-    { day: 13, lunch: true, dinner: true },
-    { day: 14, lunch: false, dinner: true },
-    { day: 16, lunch: true, dinner: false },
-    { day: 17, lunch: true, dinner: true },
-    { day: 19, lunch: true, dinner: true },
-    { day: 20, lunch: true, dinner: true },
-    { day: 21, lunch: false, dinner: true },
-    { day: 23, lunch: true, dinner: true },
-    { day: 24, lunch: true, dinner: true },
-    { day: 27, lunch: true, dinner: true },
-    { day: 28, lunch: true, dinner: false },
-  ],
-};
 
 function getCalendarDays(year: number, month: number): (number | null)[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -57,83 +30,53 @@ interface MealCalendarModalProps {
 
 export default function MealCalendarModal({ student, onClose, onBack }: MealCalendarModalProps) {
   const now = new Date();
-  const [viewYear, setViewYear] = useState(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const viewYear = now.getFullYear();
+  const viewMonth = now.getMonth();
 
   const days = getCalendarDays(viewYear, viewMonth);
-  const mealKey = `${viewYear}-${viewMonth + 1}`;
-  const mealDays = MOCK_MEAL_MAP[mealKey] ?? [];
+  const meals = student.mealApplications ?? [];
 
-  const getMeal = (day: number): DayMeal | undefined => {
-    return mealDays.find((m) => m.day === day);
-  };
-
-  const goToPrevMonth = () => {
-    if (viewMonth === 0) {
-      setViewYear(viewYear - 1);
-      setViewMonth(11);
-    } else {
-      setViewMonth(viewMonth - 1);
-    }
-  };
-
-  const goToNextMonth = () => {
-    if (viewMonth === 11) {
-      setViewYear(viewYear + 1);
-      setViewMonth(0);
-    } else {
-      setViewMonth(viewMonth + 1);
-    }
+  const getMeal = (day: number): { lunch: boolean; dinner: boolean } | undefined => {
+    const found = meals.find((m: MealApplication) => Number(m.day) === day);
+    if (!found) return undefined;
+    return parseMealType(found.mealType);
   };
 
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* 헤더 */}
-        <div className={styles.header}>
-          <button type="button" className={styles.backButton} onClick={onBack} aria-label="뒤로">
-            ←
-          </button>
-          <span className={styles.headerTitle}>D'Lab</span>
-        </div>
-        <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
-          ✕
-        </button>
-
-        {/* 학생 배지 */}
-        <div className={styles.studentBadge}>
-          <span>👤</span>
-          <span>{student.name}</span>
+        <div className={styles.detailHeader}>
+          <div className={styles.detailHeaderTop}>
+            <button type="button" className={styles.backButton} onClick={onBack} aria-label="뒤로가기">
+              ←
+            </button>
+            <button type="button" className={styles.detailCloseButton} onClick={onClose} aria-label="닫기">
+              ✕
+            </button>
+          </div>
+          <div className={styles.detailTitle}>급식 신청 내역</div>
         </div>
 
         {/* 스크롤 영역 */}
         <div className={styles.scrollArea}>
-          {/* 제목 + 범례 */}
+          {/* 범례 */}
           <div className={styles.titleArea}>
-            <h2 className={styles.title}>급식 신청 내역</h2>
             <div className={styles.legend}>
-              <span className={styles.legendItem}>
-                <span className={`${styles.legendLine} ${styles.legendLunch}`} />
-                점심
-              </span>
-              <span className={styles.legendItem}>
-                <span className={`${styles.legendLine} ${styles.legendDinner}`} />
-                저녁
-              </span>
+              <div className={styles.legendChip}>
+                <div className={`${styles.legendDot} ${styles.legendLunch}`} />
+                중식
+              </div>
+              <div className={styles.legendChip}>
+                <div className={`${styles.legendDot} ${styles.legendDinner}`} />
+                석식
+              </div>
             </div>
           </div>
 
           {/* 캘린더 카드 */}
           <div className={styles.calendarCard}>
-            <div className={styles.monthNav}>
-              <button type="button" className={styles.navButton} onClick={goToPrevMonth}>
-                &lt;
-              </button>
-              <span className={styles.monthLabel}>{viewYear}년 {viewMonth + 1}월</span>
-              <button type="button" className={styles.navButton} onClick={goToNextMonth}>
-                &gt;
-              </button>
-            </div>
+            <div className={styles.monthLabel}>{viewYear}년 {viewMonth + 1}월</div>
 
             <div className={styles.calendarGrid}>
               {DAY_LABELS.map((label, idx) => (
@@ -152,9 +95,9 @@ export default function MealCalendarModal({ student, onClose, onBack }: MealCale
                     <span className={`${styles.dayNumber} ${dayOfWeek === 0 ? styles.daySunday : ''} ${dayOfWeek === 6 ? styles.daySaturday : ''}`}>
                       {day}
                     </span>
-                    <div className={styles.mealBars}>
-                      {meal?.lunch && <span className={`${styles.mealBar} ${styles.mealBarLunch}`} />}
-                      {meal?.dinner && <span className={`${styles.mealBar} ${styles.mealBarDinner}`} />}
+                    <div className={styles.mealDots}>
+                      {meal?.lunch && <span className={`${styles.mealDot} ${styles.mealDotLunch}`} />}
+                      {meal?.dinner && <span className={`${styles.mealDot} ${styles.mealDotDinner}`} />}
                     </div>
                   </div>
                 );
