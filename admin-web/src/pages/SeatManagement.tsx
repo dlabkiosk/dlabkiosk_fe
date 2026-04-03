@@ -261,13 +261,15 @@ export default function SeatManagement() {
   /* ADMIN: 지점 필터 변경 시 구역 다시 로드 */
   useEffect(() => {
     if (!isAdmin) return;
+    // 지점 전환 중 이전 areaCd로 loadLayout이 먼저 실행되지 않도록
+    // 영역을 비워서 loadLayout을 막고, 새 영역 목록 로드 후 선택
+    setSelectedAreaCd('');
+    setSeats([]);
     getSeatAreas(effectiveStoreId)
       .then((list) => {
         setAreas(list);
         if (list.length > 0) {
           setSelectedAreaCd(list[0].areaCd);
-        } else {
-          setSelectedAreaCd('');
         }
       })
       .catch(() => setAreas([]));
@@ -275,6 +277,7 @@ export default function SeatManagement() {
 
   /* ── 배치도 로드: 좌석 + 좌석현황 + 출결 + 이탈 병합 ── */
   const loadLayout = useCallback(async () => {
+    if (!selectedAreaCd) return;
     setLayoutLoading(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
