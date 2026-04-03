@@ -46,6 +46,11 @@ function compareRows(a: SeatLeaveRecord, b: SeatLeaveRecord, field: SortField, d
 
 /* ── 시간 유틸 ── */
 
+function formatDate(iso: string | null): string {
+  if (!iso) return '-';
+  return iso.slice(0, 10);
+}
+
 function formatTime(iso: string | null): string {
   if (!iso) return '-';
   return iso.slice(11, 16);
@@ -331,9 +336,9 @@ export default function SeatLeaveManagement() {
           </div>
           <div className={f.filterGroup}>
             <label className={f.filterLabel} htmlFor="sl-start">기간</label>
-            <FilterDatePicker id="sl-start" value={searchStartDate} onChange={setSearchStartDate} maxDate={searchEndDate} />
+            <FilterDatePicker id="sl-start" value={searchStartDate} onChange={(v) => { setSearchStartDate(v); setAppliedFilters((prev) => ({ ...prev, start: v })); setPage(1); }} maxDate={searchEndDate} />
             <span className={f.dateSeparator}>~</span>
-            <FilterDatePicker id="sl-end" value={searchEndDate} onChange={setSearchEndDate} minDate={searchStartDate} />
+            <FilterDatePicker id="sl-end" value={searchEndDate} onChange={(v) => { setSearchEndDate(v); setAppliedFilters((prev) => ({ ...prev, end: v })); setPage(1); }} minDate={searchStartDate} />
           </div>
 
           <div className={f.filterActions}>
@@ -366,8 +371,9 @@ export default function SeatLeaveManagement() {
                 좌석 <SortIcon field="seatLabel" />
               </th>
               <th className={styles.sortableCol} onClick={() => handleSort('startedAt')}>
-                이탈신청시간 <SortIcon field="startedAt" />
+                신청일 <SortIcon field="startedAt" />
               </th>
+              <th>신청시간</th>
               <th>상태</th>
               <th className={styles.sortableCol} onClick={() => handleSort('elapsed')}>
                 경과 <SortIcon field="elapsed" />
@@ -379,11 +385,11 @@ export default function SeatLeaveManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 10 : 9}>불러오는 중...</td>
+                <td colSpan={isAdmin ? 11 : 10}>불러오는 중...</td>
               </tr>
             ) : sortedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 10 : 9}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 11 : 10}>데이터가 없습니다.</td>
               </tr>
             ) : (
               sortedData.map((row) => {
@@ -402,6 +408,7 @@ export default function SeatLeaveManagement() {
                     <td>{row.studentName}</td>
                     <td>{row.studentNumber ?? '-'}</td>
                     <td>{row.seatLabel}</td>
+                    <td>{formatDate(row.startedAt)}</td>
                     <td>{formatTime(row.startedAt)}</td>
                     <td>
                       {isAway ? (

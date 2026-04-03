@@ -22,9 +22,10 @@ interface CardProps {
   icon: React.ReactNode;
   children: React.ReactNode;
   onMore?: () => void;
+  bodyClassName?: string;
 }
 
-function DashboardCard({ title, icon, children, onMore }: CardProps) {
+function DashboardCard({ title, icon, children, onMore, bodyClassName }: CardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
@@ -39,7 +40,7 @@ function DashboardCard({ title, icon, children, onMore }: CardProps) {
           </button>
         )}
       </div>
-      <div className={styles.cardBody}>{children}</div>
+      <div className={bodyClassName ?? styles.cardBody}>{children}</div>
     </div>
   );
 }
@@ -205,7 +206,7 @@ export default function Dashboard() {
 
       {/* Row 3 */}
       <div className={styles.row2}>
-        <DashboardCard title="좌석 변경 신청현황" icon={<img src={seatchangeIcon} alt="" className={styles.cardIconImg} />} onMore={() => navigate('/seats?view=waiting')}>
+        <DashboardCard title="좌석 변경 신청현황" icon={<img src={seatchangeIcon} alt="" className={styles.cardIconImg} />} onMore={() => navigate('/seats?view=waiting')} bodyClassName={styles.cardBodyTop}>
           <table className={styles.table}>
             <thead>
               <tr>

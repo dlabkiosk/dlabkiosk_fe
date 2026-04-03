@@ -111,6 +111,13 @@
   justify-content: flex-end;
 }
 
+.cardBodyTop {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: flex-start;
+}
+
 /* Stat rows (key-value) */
 .statRow {
   display: flex;
