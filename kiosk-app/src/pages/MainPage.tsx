@@ -215,6 +215,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     if (!result.action) {
       const hasPending = result.pendingActions && result.pendingActions.length > 0;
       const hasMeal = result.mealInfo && result.mealInfo.applied && !result.mealInfo.alreadyTagged;
+      const mealAlreadyTagged = result.mealInfo && result.mealInfo.alreadyTagged;
 
       // pendingActions 또는 급식 미확인이 있으면 선택 화면으로
       if (hasPending || hasMeal) {
@@ -229,10 +230,31 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           messages: result.messages,
         };
       }
-      // 식사시간 + 식사신청 안 함 + 출결 신청 없음 → 두 메시지 카드로 표시
+      // 이미 급식 태그 완료 → 성공으로 처리 (백엔드 메시지 표시)
+      if (mealAlreadyTagged) {
+        return {
+          name: result.studentName,
+          studentId: result.studentId,
+          message: result.mealInfo?.message || '이미 태깅 완료',
+          identifier: fallbackIdentifier,
+          inputMethod,
+          pendingActions: result.pendingActions,
+          mealInfo: result.mealInfo,
+          messages: result.messages,
+        };
+      }
+      // 식사시간 + 식사신청 안 함 + 출결 신청 없음 → 성공 UI로 안내
       if (result.mealInfo && !result.mealInfo.applied) {
-        const mealMsg = result.mealInfo.message || '식사 신청내역 없음';
-        throw new Error(`${mealMsg}\n---\n출결 신청내역 없음`);
+        return {
+          name: result.studentName,
+          studentId: result.studentId,
+          message: result.mealInfo.message || '식사 신청내역 없음',
+          identifier: fallbackIdentifier,
+          inputMethod,
+          pendingActions: result.pendingActions,
+          mealInfo: result.mealInfo,
+          messages: result.messages,
+        };
       }
       // 그 외 에러 — messages 우선, 최후 기본값
       const msg = result.mealInfo?.message || result.messages?.[0] || '처리할 수 없습니다.';

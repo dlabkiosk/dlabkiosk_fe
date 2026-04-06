@@ -143,24 +143,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
     const hasMessages = tagMsgs.length > 0;
 
-    // 급식 신청 있고 미태그면 바로 급식 태그 처리 → 완료 모달 3초 후 닫힘
-    // pendingActions는 다음 태깅에서 처리 (이번에는 설정하지 않음)
-    if (meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
-      setActivePendingActions([]);
-      setActiveMealInfo(null);
-      onMealConfirm({ identifier: result.identifier, inputMethod: result.inputMethod || 'RFID' })
-        .then(() => {
-          setSuccessInfo({ name: result.name, action: '급식 태깅 완료' });
-          startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
-        })
-        .catch(() => {
-          startSuccessTimer(SUCCESS_DISPLAY_MS);
-        });
-      return;
-    }
-
-    // pendingAction 1개 + 식사시간 아님 → 자동 처리 (선택 모달 없이)
-    // mealInfo가 존재하면 식사시간이므로 선택 모달로 표시 (식사 미신청 안내 포함)
+    // ── pending 1개 + mealInfo 없음 → 자동 처리 ──
     if (pending.length === 1 && !meal && onConfirmAction && result.identifier) {
       setActivePendingActions([]);
       setActiveMealInfo(null);
@@ -175,13 +158,64 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
 
-    // 급식 자동 처리가 아닌 경우에만 pending/meal 설정
+    // ── pending 0 + 급식 신청됨 + 미태그 → 자동 급식 태그 ──
+    if (pending.length === 0 && meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
+      setActivePendingActions([]);
+      setActiveMealInfo(null);
+      onMealConfirm({ identifier: result.identifier, inputMethod: result.inputMethod || 'RFID' })
+        .then(() => {
+          setSuccessInfo({ name: result.name, action: '급식 태깅 완료' });
+          startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
+        })
+        .catch(() => {
+          startSuccessTimer(SUCCESS_DISPLAY_MS);
+        });
+      return;
+    }
+
+    // ── 식사시간 + pending 0 + 미신청 → mealInfo 카드 + 사전신청내역 없음 안내 ──
+    if (pending.length === 0 && meal && !meal.applied) {
+      setActivePendingActions([]);
+      setActiveMealInfo(meal);
+      setSuccessInfo({ name: result.name, action: '' });
+      const noApplyMsg = '사전 신청 내역이 없습니다.';
+      const hasNoApplyMsg = tagMsgs.some((m) => m.content.includes('사전신청'));
+      if (!hasNoApplyMsg) {
+        setStudentMessages((prev) => [...prev, { id: -999, content: noApplyMsg } as StudentMessage]);
+      }
+      startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
+      return;
+    }
+
+    // ── 식사시간 + 이미 태그됨 ──
+    if (meal && meal.alreadyTagged) {
+      setActiveMealInfo(meal);
+      if (pending.length === 0) {
+        // 이미 태그 + pending 없음 → mealInfo 카드 + 사전신청내역 없음 안내
+        setActivePendingActions([]);
+        setSuccessInfo({ name: result.name, action: '' });
+        const noApplyMsg = '사전 신청 내역이 없습니다.';
+        const hasNoApplyMsg = tagMsgs.some((m) => m.content.includes('사전신청'));
+        if (!hasNoApplyMsg) {
+          setStudentMessages((prev) => [...prev, { id: -999, content: noApplyMsg } as StudentMessage]);
+        }
+        startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
+        return;
+      }
+      // 이미 태그 + pending 있음 → 식사 안내 + 선택 모달
+      setActivePendingActions(pending);
+      return;
+    }
+
+    // ── 나머지 ──
+    // pending 2개+: 항상 선택 모달
+    // pending 1개 + mealInfo 있음 (식사시간): 식사 안내 + 선택 모달
+    // pending 0 + meal 없거나: 성공 표시 후 자동 닫힘
     setActivePendingActions(pending);
     setActiveMealInfo(meal);
 
     const hasPendingInteraction = pending.length > 0;
 
-    // pendingActions가 있으면 자동 닫힘 없이 사용자 선택 대기
     if (!hasPendingInteraction) {
       const baseMs = hasMessages ? SUCCESS_WITH_MSG_DISPLAY_MS : SUCCESS_DISPLAY_MS;
       startSuccessTimer(baseMs);
