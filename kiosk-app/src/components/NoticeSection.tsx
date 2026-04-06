@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LuPin } from 'react-icons/lu';
-import { getNotices, getSubjectNotices } from '../api/noticeApi';
+import { getNotices } from '../api/noticeApi';
 import type { Notice, SubjectNotice } from '../api/noticeApi';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
@@ -36,12 +36,8 @@ export default function NoticeSection() {
     let cancelled = false;
     (async () => {
       try {
-        const [general, subject] = await Promise.allSettled([
-          getNotices(),
-          getSubjectNotices(),
-        ]);
+        const allNotices = await getNotices();
         if (!cancelled) {
-          const allNotices = general.status === 'fulfilled' ? general.value : [];
           // [전체] 이외의 카테고리 prefix가 있는 공지는 과목 공지로 분류
           const generalOnly: Notice[] = [];
           const parsedSubject: SubjectNotice[] = [];
@@ -62,9 +58,8 @@ export default function NoticeSection() {
               generalOnly.push(n);
             }
           }
-          const apiSubject = subject.status === 'fulfilled' ? subject.value : [];
           setNotices(generalOnly);
-          setSubjectNotices([...apiSubject, ...parsedSubject]);
+          setSubjectNotices(parsedSubject);
         }
       } finally {
         if (!cancelled) setLoading(false);

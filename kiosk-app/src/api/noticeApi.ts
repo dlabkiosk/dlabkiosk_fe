@@ -32,7 +32,3 @@ export function getNotices(): Promise<Notice[]> {
   return apiGet<Notice[]>('/api/v1/kiosk/notices');
 }
 
-/** 해당 지점의 과목 공지 목록 조회 */
-export function getSubjectNotices(): Promise<SubjectNotice[]> {
-  return apiGet<SubjectNotice[]>('/api/v1/kiosk/notices/subject');
-}

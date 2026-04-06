@@ -30,7 +30,6 @@ import {
 } from '../api/seatApi';
 import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
-import { getTodayAttendanceStatus } from '../api/attendanceAdminApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
@@ -41,7 +40,7 @@ import FilterSelect from '../components/FilterSelect';
 /* ── 배치도용 합성 타입 ── */
 
 /** 좌석에 표시할 출결 상태 */
-type SeatAttendanceLabel = '학습중' | '외출' | '조퇴' | '하원' | '좌석이탈' | null;
+type SeatAttendanceLabel = '학습중' | '외출' | '하원' | '좌석이탈' | null;
 
 interface SeatWithStatus extends Seat {
   assignedStudentName: string | null;
@@ -77,7 +76,6 @@ const ITEMS_PER_PAGE = 15;
 const ATT_STYLE_MAP: Record<string, string> = {
   '학습중': 'attPresent',
   '외출': 'attOuting',
-  '조퇴': 'attEarlyLeave',
   '하원': 'attCheckedOut',
   '좌석이탈': 'attSeatLeave',
 };
@@ -292,19 +290,10 @@ export default function SeatManagement() {
       const DSA_CELL_W = 80;
       const DSA_CELL_H = 60;
 
-      const [dsaStatusList, attendanceList, seatLeaveResult] = await Promise.all([
+      const [dsaStatusList, seatLeaveResult] = await Promise.all([
         dsaStatusPromise,
-        getTodayAttendanceStatus().catch(() => []),
         getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
       ]);
-
-      // 출결 상태 맵
-      const attendanceBySeatLabel = new Map<string, string>();
-      const attendanceByStudentName = new Map<string, string>();
-      attendanceList.forEach((a) => {
-        if (a.seatLabel) attendanceBySeatLabel.set(a.seatLabel, a.status);
-        if (a.studentName) attendanceByStudentName.set(a.studentName, a.status);
-      });
 
       // 활성 좌석이탈
       const activeLeaveBySeatLabel = new Map<string, string>();
@@ -328,6 +317,7 @@ export default function SeatManagement() {
           switch (dsa.state) {
             case 'S': attendanceLabel = '학습중'; break;
             case 'D': attendanceLabel = '외출'; break;
+            case 'T': attendanceLabel = '하원'; break;
             case 'A': attendanceLabel = '좌석이탈'; break;
             default: break;
           }
@@ -336,20 +326,6 @@ export default function SeatManagement() {
           }
           if (attendanceLabel === '좌석이탈' && dsa.leaveReasonName) {
             seatLeaveReason = dsa.leaveReasonName;
-          }
-
-          // 자체 백엔드 출결로 조퇴/하원 덮어쓰기
-          const attStatus = attendanceBySeatLabel.get(seatLabel)
-            || (studentName ? attendanceByStudentName.get(studentName) : undefined);
-          if (attStatus === 'EARLY_LEAVE') {
-            attendanceLabel = '조퇴';
-          } else if (attStatus === 'CHECKED_OUT') {
-            attendanceLabel = '하원';
-          } else if (attStatus === 'OUTING' && attendanceLabel !== '좌석이탈') {
-            attendanceLabel = '외출';
-          }
-          if (attStatus === 'PRESENT' && !attendanceLabel) {
-            attendanceLabel = '학습중';
           }
 
           // 좌석이탈 사유 보강
