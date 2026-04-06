@@ -155,7 +155,7 @@ export default function SeatLeaveManagement() {
       setData(enriched);
       setTotalElements(result.totalElements);
     } catch (err) {
-      console.error('좌석 이탈 조회 실패:', err);
+
     } finally {
       setLoading(false);
     }
@@ -195,7 +195,6 @@ export default function SeatLeaveManagement() {
       await forceReturnSeatLeave(record.id);
       await fetchData();
     } catch (err) {
-      console.error('강제 복귀 실패:', err);
       await alert('강제 복귀에 실패했습니다.');
     }
   };

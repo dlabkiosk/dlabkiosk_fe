@@ -378,7 +378,7 @@ export default function SeatManagement() {
         });
       setSeats(merged);
     } catch (err) {
-      console.error('좌석 배치도 조회 실패:', err);
+
     } finally {
       setLayoutLoading(false);
     }
@@ -586,7 +586,6 @@ export default function SeatManagement() {
       setEditingLayout(false);
       loadLayout();
     } catch (err) {
-      console.error('좌석 일괄 저장 실패:', err);
       await alert('저장에 실패했습니다. 일부 변경만 적용되었을 수 있습니다.');
       loadLayout();
     } finally {
@@ -767,7 +766,6 @@ export default function SeatManagement() {
       resetAddForm();
       loadLayout();
     } catch (err) {
-      console.error('좌석 추가 실패:', err);
       await alert('좌석 추가에 실패했습니다.');
     } finally {
       setAddLoading(false);
@@ -807,7 +805,6 @@ export default function SeatManagement() {
       closeSeatDetail();
       loadLayout();
     } catch (err) {
-      console.error('좌석 삭제 실패:', err);
       await alert('좌석 삭제에 실패했습니다.');
     }
   };
@@ -831,7 +828,6 @@ export default function SeatManagement() {
       closeSeatDetail();
       loadLayout();
     } catch (err) {
-      console.error('좌석 수정 실패:', err);
       await alert('좌석 수정에 실패했습니다.');
     } finally {
       setEditLoading(false);
@@ -932,7 +928,6 @@ export default function SeatManagement() {
       }
       loadWaiting();
     } catch (err) {
-      console.error(`좌석 변경 ${label} 실패:`, err);
       await alert(`${label}에 실패했습니다.`);
     }
     setModalItem(null);
@@ -1218,8 +1213,8 @@ export default function SeatManagement() {
                       <td>{row.studentNumber}</td>
                       <td>{row.currentSeatLabel}</td>
                       <td>{row.desiredSeat1Label}</td>
-                      <td>{row.desiredSeat2Label}</td>
-                      <td>{row.desiredSeat3Label}</td>
+                      <td>{row.desiredSeat2Label || '-'}</td>
+                      <td>{row.desiredSeat3Label || '-'}</td>
                       <td>{row.createdAt.slice(0, 10)}</td>
                       <td>{renderStatusCell(row)}</td>
                     </tr>
@@ -1492,11 +1487,11 @@ export default function SeatManagement() {
               </div>
               <div className={styles.modalRow}>
                 <span className={styles.modalLabel}>희망 2순위</span>
-                <span className={styles.modalValue}>{modalItem.desiredSeat2Label}</span>
+                <span className={styles.modalValue}>{modalItem.desiredSeat2Label || '-'}</span>
               </div>
               <div className={styles.modalRow}>
                 <span className={styles.modalLabel}>희망 3순위</span>
-                <span className={styles.modalValue}>{modalItem.desiredSeat3Label}</span>
+                <span className={styles.modalValue}>{modalItem.desiredSeat3Label || '-'}</span>
               </div>
               <div className={styles.modalRow}>
                 <span className={styles.modalLabel}>처리상태</span>

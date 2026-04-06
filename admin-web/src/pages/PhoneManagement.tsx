@@ -160,7 +160,7 @@ export default function PhoneManagement() {
       });
       setAllData(result.content);
     } catch (err) {
-      console.error('휴대폰 미소지 조회 실패:', err);
+
     } finally {
       setLoading(false);
     }
@@ -236,7 +236,6 @@ export default function PhoneManagement() {
       setSelectedIds(new Set(selectedIds));
       await fetchData();
     } catch (err) {
-      console.error('삭제 실패:', err);
       await alert('삭제에 실패했습니다.');
     }
   };
@@ -249,7 +248,6 @@ export default function PhoneManagement() {
       setSelectedIds(new Set());
       await fetchData();
     } catch (err) {
-      console.error('일괄 삭제 실패:', err);
       await alert('일부 항목 삭제에 실패했습니다.');
       await fetchData();
     }
@@ -282,7 +280,6 @@ export default function PhoneManagement() {
       setDetailTarget(null);
       await fetchData();
     } catch (err) {
-      console.error('수정 실패:', err);
       await alert('수정에 실패했습니다.');
     }
   };
@@ -603,13 +600,6 @@ export default function PhoneManagement() {
                 onClick={() => handleDelete(detailTarget.id)}
               >
                 삭제
-              </button>
-              <button
-                type="button"
-                className={styles.modalBtnSecondary}
-                onClick={() => setDetailTarget(null)}
-              >
-                닫기
               </button>
             </div>
           </div>

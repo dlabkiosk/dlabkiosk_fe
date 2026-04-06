@@ -94,7 +94,7 @@ export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalPro
       const res = await getMealMenuWeek(toISODate(mon), storeId);
       setMeals(apiToWeekMeals(res.days, mon));
     } catch (err) {
-      console.error('[식단표 조회 실패]', err);
+
     } finally {
       setLoading(false);
     }

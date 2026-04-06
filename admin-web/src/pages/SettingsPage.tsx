@@ -564,7 +564,6 @@ function BannerManagement() {
       resetForm();
       await fetchAds();
     } catch (err) {
-      console.error('[배너 저장] 에러:', err);
       await alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
@@ -579,7 +578,6 @@ function BannerManagement() {
       if (editTarget?.id === id) resetForm();
       await fetchAds();
     } catch (err) {
-      console.error('광고 삭제 실패:', err);
     }
   };
 
@@ -610,7 +608,6 @@ function BannerManagement() {
       );
       await fetchAds();
     } catch (err) {
-      console.error('순서 변경 실패:', err);
       await fetchAds(); // 실패 시 서버 상태로 복구
     }
   };
@@ -960,7 +957,7 @@ function ExamSchedule() {
       const data = await getExamSchedules();
       setExams(data);
     } catch (err) {
-      console.error('시험일정 조회 실패:', err);
+
     } finally {
       setLoading(false);
     }
@@ -1038,7 +1035,7 @@ function ExamSchedule() {
       setEditTarget(null);
       await fetchExams();
     } catch (err) {
-      console.error('시험일정 저장 실패:', err);
+
     }
   };
 
@@ -1049,7 +1046,7 @@ function ExamSchedule() {
       setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
       await fetchExams();
     } catch (err) {
-      console.error('시험일정 삭제 실패:', err);
+
     }
   };
 
@@ -1061,7 +1058,7 @@ function ExamSchedule() {
       setSelectedIds(new Set());
       await fetchExams();
     } catch (err) {
-      console.error('시험일정 일괄 삭제 실패:', err);
+
     }
   };
 
@@ -1095,7 +1092,7 @@ function ExamSchedule() {
       await toggleExamScheduleActive(exam.id);
       await fetchExams();
     } catch (err) {
-      console.error('활성화 상태 변경 실패:', err);
+
     }
   };
 
@@ -1487,7 +1484,7 @@ function SeatLeaveReasonSettings() {
       const filtered = currentStoreId ? data.filter((r) => r.storeId === currentStoreId) : data;
       setReasons(filtered.sort((a, b) => a.displayOrder - b.displayOrder));
     } catch (err) {
-      console.error('이탈 사유 조회 실패:', err);
+
     } finally {
       setLoading(false);
     }
@@ -1543,7 +1540,6 @@ function SeatLeaveReasonSettings() {
       closeModal();
       await fetchReasons();
     } catch (err) {
-      console.error('이탈 사유 저장 실패:', err);
       await alert('저장에 실패했습니다.');
     }
   };
@@ -1554,7 +1550,6 @@ function SeatLeaveReasonSettings() {
       await deleteSeatLeaveReason(id);
       await fetchReasons();
     } catch (err) {
-      console.error('이탈 사유 삭제 실패:', err);
       await alert('삭제에 실패했습니다.');
     }
   };

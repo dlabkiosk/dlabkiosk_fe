@@ -63,12 +63,10 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const errorModalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleScan = useCallback((result: CardScanResult) => {
-    console.log('[MainPage] 카드 인식:', result.rawValue);
     setScanResult(result);
   }, []);
 
   const handleQrScan = useCallback((result: QrScanResult) => {
-    console.log('[MainPage] QR 인식:', result.rawValue);
     setQrResult(result);
   }, []);
 
@@ -194,7 +192,6 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     // 좌석이탈 복귀 등 identifier 하나만 받는 API용
     const fallbackIdentifier = params.identifier || params.phone8;
     if (!fallbackIdentifier) throw new Error('학생을 식별할 수 없습니다.');
-    console.log('[handleTagAction] params:', params, '→ inputMethod:', inputMethod);
 
     // 좌석 이탈 중이면 먼저 복귀 처리
     try {

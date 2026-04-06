@@ -37,7 +37,7 @@ export default function SeatLeaveReasonModal({ onClose, onSelect }: SeatLeaveRea
   useEffect(() => {
     getSeatLeaveReasons()
       .then((list) => setReasons(list.filter((r) => r.active).sort((a, b) => a.displayOrder - b.displayOrder)))
-      .catch((err) => console.error('이탈 사유 조회 실패:', err))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

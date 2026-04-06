@@ -228,7 +228,6 @@ export default function RemoteApplyManagement() {
 
   const handleApprove = () => {
     if (!selectedPending) return;
-    console.log('승인:', selectedPending.name);
     setSelectedPending(null);
   };
 
@@ -241,7 +240,6 @@ export default function RemoteApplyManagement() {
 
   const handleRejectSubmit = () => {
     if (!rejectTarget) return;
-    console.log('거절:', rejectTarget.name, '사유:', rejectReason);
     setRejectTarget(null);
     setRejectReason('');
   };

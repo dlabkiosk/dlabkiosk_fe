@@ -22,7 +22,6 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
         if (list.length > 0) setSelectedAreaCd(list[0].areaCd);
       })
       .catch((err) => {
-        console.error('구역 조회 실패:', err);
         setErrorMsg('구역 정보를 불러올 수 없습니다.');
         setLoading(false);
       });
@@ -36,7 +35,6 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
     getSeats(selectedAreaCd)
       .then(setSeats)
       .catch((err) => {
-        console.error('좌석 조회 실패:', err);
         setErrorMsg(err instanceof Error ? err.message : '좌석 정보를 불러올 수 없습니다.');
       })
       .finally(() => setLoading(false));

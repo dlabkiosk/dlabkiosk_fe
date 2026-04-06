@@ -71,7 +71,7 @@ interface StudentStudyRow {
 
 /* ── 정렬 ── */
 
-type SortField = 'name' | 'studentNumber' | 'seat';
+type SortField = 'name' | 'studentNumber' | 'seat' | 'total';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -385,7 +385,9 @@ export default function StudyTimeManagement() {
                 <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
                   좌석 <SortIcon field="seat" />
                 </th>
-                <th>합계</th>
+                <th className={styles.sortableCol} onClick={() => handleSort('total')}>
+                  합계 <SortIcon field="total" />
+                </th>
                 {dayHeaders.map((d) => (
                   <th key={d.toISOString()}>{formatDateShort(d)}</th>
                 ))}
