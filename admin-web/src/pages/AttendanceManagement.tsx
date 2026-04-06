@@ -8,6 +8,7 @@ import attendanceIcon from '../assets/attendance_active.png';
 import downloadIcon from '../assets/download.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
+import { getSeatLeaves } from '../api/seatLeaveApi';
 import { downloadStudentQr } from '../api/studentApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
@@ -18,7 +19,7 @@ import FilterSelect from '../components/FilterSelect';
 
 /* ── 출결 상태 ── */
 
-const STATUS_OPTIONS = ['전체', '등원', '미출석', '외출', '조퇴', '하원', '좌석이탈'];
+const STATUS_OPTIONS = ['전체', '등원', '미출석', '외출', '하원', '공석', '미확인', '좌석이탈'];
 const PHONE_OPTIONS = ['전체', 'O', 'X'];
 
 const ITEMS_PER_PAGE = 15;
@@ -129,25 +130,45 @@ export default function AttendanceManagement() {
       const commonParams = {
         studentName: searchName || undefined,
         studentNumber: searchStudentNumber || undefined,
-        attendanceStatus: filterStatus !== '전체' ? filterStatus : undefined,
+        attendanceStatus: (filterStatus !== '전체' && filterStatus !== '좌석이탈') ? filterStatus : undefined,
         phoneSubmitted: filterPhone === '전체' ? undefined : filterPhone === 'O',
       };
 
+      const today = new Date().toISOString().slice(0, 10);
+
+      let attendanceRows: AttendanceRecord[];
       if (isAdmin && effectiveStoreId == null && stores.length > 0) {
-        // ADMIN 전체: 각 지점별로 조회 후 합침
         const results = await Promise.all(
           stores.map(async (s) => {
             const list = await getAttendances({ storeId: s.id, ...commonParams });
             return list.map((r) => ({ ...r, storeName: s.storeName }));
           }),
         );
-        setRows(results.flat());
+        attendanceRows = results.flat();
       } else {
         const data = await getAttendances({ storeId: effectiveStoreId, ...commonParams });
-        // 단일 지점 선택 시 지점명 주입
         const selectedStore = stores.find((s) => s.id === effectiveStoreId);
-        setRows(selectedStore ? data.map((r) => ({ ...r, storeName: selectedStore.storeName })) : data);
+        attendanceRows = selectedStore ? data.map((r) => ({ ...r, storeName: selectedStore.storeName })) : data;
       }
+
+      // 좌석이탈 현황 조회 → 현재 이탈 중인 학생 상태 덮어쓰기
+      try {
+        const seatLeaveRes = await getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 9999 });
+        const activeLeaves = new Set(
+          seatLeaveRes.content
+            .filter((sl) => !sl.endedAt)
+            .map((sl) => sl.studentId),
+        );
+        if (activeLeaves.size > 0) {
+          attendanceRows = attendanceRows.map((r) =>
+            activeLeaves.has(r.studentId) ? { ...r, attendanceStatus: '좌석이탈' } : r,
+          );
+        }
+      } catch {
+        // 좌석이탈 조회 실패 시 무시
+      }
+
+      setRows(attendanceRows);
     } catch {
       setRows([]);
     } finally {
@@ -170,13 +191,7 @@ export default function AttendanceManagement() {
   };
 
   const handleReset = () => {
-    setSearchName('');
-    setSearchStudentNumber('');
-    setFilterStatus('전체');
-    setFilterPhone('전체');
-    if (isAdmin) setStoreFilter('전체');
-    setSort({ field: null, dir: 'asc' });
-    setPage(1);
+    window.location.reload();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -250,8 +265,9 @@ export default function AttendanceManagement() {
       case '등원': return styles.statusPresent;
       case '미출석': return styles.statusAbsent;
       case '외출': return styles.statusOuting;
-      case '조퇴': return styles.statusEarlyLeave;
       case '하원': return styles.statusLeft;
+      case '공석': return styles.statusVacant;
+      case '미확인': return styles.statusVacant;
       case '좌석이탈': return styles.statusSeatLeave;
       default: return '';
     }
@@ -384,7 +400,7 @@ export default function AttendanceManagement() {
               검색
             </button>
             <button className={f.resetButton} type="button" onClick={handleReset}>
-              초기화
+              새로고침
             </button>
           </div>
         </div>

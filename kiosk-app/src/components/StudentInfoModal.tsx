@@ -81,8 +81,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
   const [detailView, setDetailView] = useState<DetailView | null>(null);
   const [detailPage, setDetailPage] = useState(1);
 
-  const todayDate = String(new Date().getDate());
-  const todayMeals = (student.mealApplications ?? []).filter((m) => m.day === todayDate);
+  const todayDate = new Date().getDate();
+  const todayMeals = (student.mealApplications ?? []).filter((m) => Number(m.day) === todayDate);
   const receipts = student.receipts ?? [];
   const attendance = student.attendanceSummary;
   const allSeatChangeRequests = student.seatChangeRequests ?? [];
@@ -374,9 +374,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
             {(() => {
               const now = new Date();
               const todayLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
-              const meal = todayMeals[0];
-              const hasLunch = meal?.mealType === '점심' || meal?.mealType === '점심/저녁';
-              const hasDinner = meal?.mealType === '저녁' || meal?.mealType === '점심/저녁';
+              const hasLunch = todayMeals.some((m) => ['중식', '점심', '중식/석식', '점심/저녁', 'LUNCH'].includes(m.mealType));
+              const hasDinner = todayMeals.some((m) => ['석식', '저녁', '중식/석식', '점심/저녁', 'DINNER'].includes(m.mealType));
               return (
                 <table className={`${styles.table} ${styles.mealTable}`}>
                   <thead>

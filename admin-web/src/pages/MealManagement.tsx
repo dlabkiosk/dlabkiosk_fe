@@ -56,7 +56,7 @@ function compareMealRecord(a: MealRecord, b: MealRecord, field: SortField, dir: 
 /* ── 엑셀 다운로드 ── */
 
 function downloadCsv(rows: MealRecord[], dateStr: string) {
-  const header = '이름,번호,좌석,점심신청,점심체크,저녁신청,저녁체크';
+  const header = '이름,번호,좌석,중식신청,중식체크,석식신청,석식체크';
   const lines = rows.map((r) => {
     const lunch = r.lunchApplied ? 'O' : '미신청';
     const lunchCheck = r.lunchChecked ? `O ${r.lunchCheckedTime ?? ''}` : '';
@@ -74,6 +74,11 @@ function downloadCsv(rows: MealRecord[], dateStr: string) {
   link.download = `급식명단_${dateStr}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** 시간 문자열에서 밀리초 제거 — "12:30:45.123" → "12:30:45" */
+function trimMillis(time: string): string {
+  return time.replace(/\.\d+$/, '');
 }
 
 /* ── Page ── */
@@ -173,12 +178,7 @@ export default function MealManagement() {
   };
 
   const handleReset = () => {
-    setSearchName('');
-    setSearchNumber('');
-    setSearchDate(today);
-    if (isAdmin) setStoreFilter('전체');
-    setSort({ field: null, dir: 'asc' });
-    setPage(1);
+    window.location.reload();
   };
 
   const handleSort = (field: SortField) => {
@@ -287,13 +287,13 @@ export default function MealManagement() {
             />
           </div>
           <div className={f.filterGroup}>
-            <span className={f.filterLabel}>기간</span>
+            <span className={f.filterLabel}>날짜</span>
             <FilterDatePicker value={searchDate} onChange={setSearchDate} />
           </div>
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>새로고침</button>
           </div>
         </div>
       </div>
@@ -321,16 +321,16 @@ export default function MealManagement() {
                 좌석 <SortIcon field="seatLabel" />
               </th>
               <th className={styles.sortableCol} onClick={() => handleSort('lunchApplied')}>
-                점심신청 <SortIcon field="lunchApplied" />
+                중식 신청 <SortIcon field="lunchApplied" />
               </th>
               <th className={styles.sortableCol} onClick={() => handleSort('lunchCheckedTime')}>
-                점심체크 <SortIcon field="lunchCheckedTime" />
+                중식 체크 <SortIcon field="lunchCheckedTime" />
               </th>
               <th className={styles.sortableCol} onClick={() => handleSort('dinnerApplied')}>
-                저녁신청 <SortIcon field="dinnerApplied" />
+                석식 신청 <SortIcon field="dinnerApplied" />
               </th>
               <th className={styles.sortableCol} onClick={() => handleSort('dinnerCheckedTime')}>
-                저녁체크 <SortIcon field="dinnerCheckedTime" />
+                석식 체크 <SortIcon field="dinnerCheckedTime" />
               </th>
             </tr>
           </thead>
@@ -360,19 +360,17 @@ export default function MealManagement() {
                   <td>{row.lunchApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
                     {row.lunchChecked ? (
-                      <>
-                        <span className={styles.tagMark}>O</span>
-                        {row.lunchCheckedTime && <span className={styles.tagTime}>{row.lunchCheckedTime}</span>}
-                      </>
+                      <span className={styles.checkedBadge}>{row.lunchCheckedTime ? trimMillis(row.lunchCheckedTime) : 'O'}</span>
+                    ) : row.lunchApplied ? (
+                      <span className={styles.uncheckedBadge}>미체크</span>
                     ) : '-'}
                   </td>
                   <td>{row.dinnerApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
                     {row.dinnerChecked ? (
-                      <>
-                        <span className={styles.tagMark}>O</span>
-                        {row.dinnerCheckedTime && <span className={styles.tagTime}>{row.dinnerCheckedTime}</span>}
-                      </>
+                      <span className={styles.checkedBadge}>{row.dinnerCheckedTime ? trimMillis(row.dinnerCheckedTime) : 'O'}</span>
+                    ) : row.dinnerApplied ? (
+                      <span className={styles.uncheckedBadge}>미체크</span>
                     ) : '-'}
                   </td>
                 </tr>

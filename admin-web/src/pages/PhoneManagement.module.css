@@ -435,6 +435,14 @@
   border-color: var(--color-primary);
 }
 
+.charCount {
+  display: block;
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+}
+
 /* ── Empty state ── */
 .emptyRow td {
   text-align: center;

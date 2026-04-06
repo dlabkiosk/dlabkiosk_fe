@@ -183,13 +183,21 @@ export default function PhoneManagement() {
       });
     }
 
+    // 이름/학번 실시간 필터
+    if (searchName) {
+      rows = rows.filter((r) => (r.studentName ?? '').includes(searchName));
+    }
+    if (searchNumber) {
+      rows = rows.filter((r) => (r.studentNumber ?? '').includes(searchNumber));
+    }
+
     // ADMIN 지점 필터
     if (isAdmin && storeFilter !== '전체') {
       rows = rows.filter((r) => studentStoreMap.get(r.studentId) === storeFilter);
     }
 
     return rows;
-  }, [allData, appliedFilters.date, isAdmin, storeFilter, studentStoreMap]);
+  }, [allData, appliedFilters.date, searchName, searchNumber, isAdmin, storeFilter, studentStoreMap]);
 
   useEffect(() => {
     fetchData();
@@ -202,13 +210,7 @@ export default function PhoneManagement() {
   };
 
   const handleReset = () => {
-    setSearchName('');
-    setSearchNumber('');
-    setSearchDate(today);
-    setAppliedFilters({ name: '', number: '', date: today });
-    if (isAdmin) setStoreFilter('전체');
-    setSort({ field: null, dir: 'asc' });
-    setPage(1);
+    window.location.reload();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -401,13 +403,13 @@ export default function PhoneManagement() {
             />
           </div>
           <div className={f.filterGroup}>
-            <label className={f.filterLabel} htmlFor="phone-date">기간</label>
-            <FilterDatePicker id="phone-date" value={searchDate} onChange={setSearchDate} />
+            <label className={f.filterLabel} htmlFor="phone-date">날짜</label>
+            <FilterDatePicker id="phone-date" value={searchDate} onChange={(d) => { setSearchDate(d); setAppliedFilters((prev) => ({ ...prev, date: d })); setPage(1); }} />
           </div>
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>새로고침</button>
           </div>
         </div>
       </div>
@@ -650,10 +652,12 @@ export default function PhoneManagement() {
                     <textarea
                       className={styles.editTextarea}
                       value={editForm.memo}
-                      onChange={(e) => setEditForm((f) => ({ ...f, memo: e.target.value }))}
+                      onChange={(e) => setEditForm((f) => ({ ...f, memo: e.target.value.slice(0, 50) }))}
+                      maxLength={50}
                       placeholder="메모를 입력하세요"
                       rows={4}
                     />
+                    <span className={styles.charCount}>{editForm.memo.length}/50</span>
                   </td>
                 </tr>
               </tbody>

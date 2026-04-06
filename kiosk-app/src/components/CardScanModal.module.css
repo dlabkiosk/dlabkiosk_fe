@@ -255,16 +255,9 @@
 }
 
 .successIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.8rem;
-  height: 2.8rem;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-bg-white);
-  font-size: var(--font-xl);
-  font-weight: var(--weight-bold);
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
 }
 
 .successMessage {
@@ -342,8 +335,17 @@
   margin-top: var(--space-4);
 }
 
-.pendingConfirmButton {
+.pendingRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  justify-content: center;
   width: 100%;
+}
+
+.pendingConfirmButton {
+  flex: 1;
+  min-width: 0;
   padding: var(--space-3h) var(--space-4);
   border: none;
   border-radius: var(--radius-md);

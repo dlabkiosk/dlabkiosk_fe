@@ -32,12 +32,14 @@ export interface TagResult {
 }
 
 /** action 코드 → 한글 라벨 매핑 (백엔드 actionLabel이 null일 때 fallback) */
-const ACTION_LABEL_MAP: Record<string, string> = {
+export const ACTION_LABEL_MAP: Record<string, string> = {
   S: '등원',
-  O: '하원',
+  T: '하원',
+  A: '지각',
   D: '외출',
-  R: '복귀',
+  N: '사유외출',
   C: '조퇴',
+  R: '복귀',
   M: '급식',
 };
 

@@ -244,10 +244,7 @@ export default function StudyTimeManagement() {
   }, [filtered, sort]);
 
   const handleReset = () => {
-    setFilterNumber('');
-    setFilterName('');
-    setSort({ field: null, dir: 'asc' });
-    setPage(0);
+    window.location.reload();
   };
 
   const handleSearch = () => {
@@ -360,7 +357,7 @@ export default function StudyTimeManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>새로고침</button>
           </div>
         </div>
       </div>

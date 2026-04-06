@@ -4,6 +4,7 @@ import blackCardAndQrImg from '../assets/black_card_and_qr.png';
 import { searchStudent, getStudentByPhone8 } from '../api/studentApi';
 import { getStudentMessages } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
+import { ACTION_LABEL_MAP } from '../api/tagApi';
 import type { MealInfo } from '../api/tagApi';
 import type { Student } from '../data/mockStudents';
 import type { CardScanResult } from '../hooks/useCardScanner';
@@ -15,6 +16,7 @@ import {
   VOICE_SCAN_AUTH_FAIL,
   VOICE_KEYPAD_NUMBER,
 } from '../constants/voiceGuide';
+import checkIcon from '../assets/check.png';
 import styles from './CardScanModal.module.css';
 
 const SECURE_CLOSE_TAPS = 5;
@@ -23,7 +25,7 @@ const PHONE_8_DIGITS_LENGTH = 8;
 const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 3000;
 const PENDING_ACTION_DISPLAY_MS = 10000;
-const ERROR_DISPLAY_MS = 2000;
+const ERROR_DISPLAY_MS = 4000;
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
 
 type KeypadMode = 'phone';
@@ -67,9 +69,11 @@ interface CardScanModalProps {
   onConfirmAction?: (params: { identifier: string; inputMethod: string; action: string }) => Promise<ScanActionResult>;
   /** 급식 태그 확인 */
   onMealConfirm?: (params: { identifier: string; inputMethod: string }) => Promise<ScanActionResult>;
+  /** 에러 발생 시 외부 에러 모달로 위임 (제공 시 내부 에러 표시 대신 호출) */
+  onError?: (message: string) => void;
 }
 
-export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm }: CardScanModalProps) {
+export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm, onError }: CardScanModalProps) {
   const { speak, timeoutMultiplier, highContrast } = useAccessibility();
   const [closeTapCount, setCloseTapCount] = useState(0);
   const closeTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,6 +94,17 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
   const processedQrRef = useRef<string | null>(null);
 
   const showError = useCallback((msg = '없는 학생입니다.') => {
+    // 에러 후 동일 카드/QR 재태깅 허용
+    processedCardRef.current = null;
+    processedQrRef.current = null;
+
+    // onError가 제공되면 외부 에러 모달로 위임
+    if (onError) {
+      setSearching(false);
+      onError(msg);
+      return;
+    }
+
     setErrorMessage(msg);
     // TTS: 키패드 모드에 따라 다른 실패 음성
     speak(keypadMode ? VOICE_KEYPAD_AUTH_FAIL : VOICE_SCAN_AUTH_FAIL);
@@ -118,8 +133,6 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
     const pending = result.pendingActions ?? [];
     const meal = result.mealInfo ?? null;
-    setActivePendingActions(pending);
-    setActiveMealInfo(meal);
     setConfirmIdentifier(result.identifier || '');
     setConfirmInputMethod(result.inputMethod || '');
 
@@ -129,14 +142,51 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       .map((m, i) => ({ id: -(i + 1), content: m } as StudentMessage));
     setStudentMessages(tagMsgs);
 
-    const hasPendingInteraction = pending.length > 0 || (meal && !meal.alreadyTagged && meal.applied);
     const hasMessages = tagMsgs.length > 0;
-    const baseMs = hasPendingInteraction
-      ? PENDING_ACTION_DISPLAY_MS
-      : hasMessages
-        ? SUCCESS_WITH_MSG_DISPLAY_MS
-        : SUCCESS_DISPLAY_MS;
-    startSuccessTimer(baseMs);
+
+    // 급식 신청 있고 미태그면 바로 급식 태그 처리 → 완료 모달 3초 후 닫힘
+    // pendingActions는 다음 태깅에서 처리 (이번에는 설정하지 않음)
+    if (meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
+      setActivePendingActions([]);
+      setActiveMealInfo(null);
+      onMealConfirm({ identifier: result.identifier, inputMethod: result.inputMethod || 'RFID' })
+        .then(() => {
+          setSuccessInfo({ name: result.name, action: '급식 태깅 완료' });
+          startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
+        })
+        .catch(() => {
+          startSuccessTimer(SUCCESS_DISPLAY_MS);
+        });
+      return;
+    }
+
+    // pendingAction 1개 + 식사시간 아님 → 자동 처리 (선택 모달 없이)
+    // mealInfo가 존재하면 식사시간이므로 선택 모달로 표시 (식사 미신청 안내 포함)
+    if (pending.length === 1 && !meal && onConfirmAction && result.identifier) {
+      setActivePendingActions([]);
+      setActiveMealInfo(null);
+      onConfirmAction({ identifier: result.identifier, inputMethod: result.inputMethod || 'RFID', action: pending[0].action })
+        .then((confirmResult) => {
+          setActivePendingActions([]);
+          showSuccess(confirmResult);
+        })
+        .catch((err) => {
+          showError(err?.message);
+        });
+      return;
+    }
+
+    // 급식 자동 처리가 아닌 경우에만 pending/meal 설정
+    setActivePendingActions(pending);
+    setActiveMealInfo(meal);
+
+    const hasPendingInteraction = pending.length > 0;
+
+    // pendingActions가 있으면 자동 닫힘 없이 사용자 선택 대기
+    if (!hasPendingInteraction) {
+      const baseMs = hasMessages ? SUCCESS_WITH_MSG_DISPLAY_MS : SUCCESS_DISPLAY_MS;
+      startSuccessTimer(baseMs);
+    }
 
     // 서버 메시지 추가 조회 — 태그 메시지와 중복 제거 후 이어붙임
     if (result.studentId) {
@@ -251,9 +301,14 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setConfirming(true);
     if (successTimer.current) clearTimeout(successTimer.current);
     onMealConfirm({ identifier: confirmIdentifier, inputMethod: confirmInputMethod })
-      .then((result) => {
+      .then(() => {
+        setConfirming(false);
+        // 급식 처리 완료 → mealInfo 제거
         setActiveMealInfo(null);
-        showSuccess(result);
+        // pendingActions가 남아있으면 선택 대기, 없으면 성공 타이머로 자동 닫힘
+        if (activePendingActions.length === 0) {
+          startSuccessTimer(SUCCESS_DISPLAY_MS);
+        }
       })
       .catch((err) => {
         setConfirming(false);
@@ -261,12 +316,15 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       });
   }, [onMealConfirm, confirmIdentifier, confirmInputMethod, showSuccess, showError]);
 
-  // pendingActions 무시 (닫기)
+  // pendingActions 무시 — 아무 처리 없이 모달 닫기
   const handleDismissPending = useCallback(() => {
     setActivePendingActions([]);
     setActiveMealInfo(null);
-    startSuccessTimer(SUCCESS_DISPLAY_MS);
-  }, [startSuccessTimer]);
+    setSuccessInfo(null);
+    setStudentMessages([]);
+    if (successTimer.current) clearTimeout(successTimer.current);
+    onClose();
+  }, [onClose]);
 
   const handleClose = useCallback(() => {
     if (!secureClose) {
@@ -331,40 +389,35 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
   // 성공 화면
   if (successInfo) {
-    const hasPendingInteraction = activePendingActions.length > 0 || (activeMealInfo && !activeMealInfo.alreadyTagged && activeMealInfo.applied);
+    const hasPendingInteraction = activePendingActions.length > 0;
 
     return (
       <div className={styles.overlay}>
         <div className={styles.modal}>
+          {hasPendingInteraction && (
+            <button type="button" className={styles.closeButton} onClick={handleDismissPending} aria-label="닫기">
+              &#x2715;
+            </button>
+          )}
           <div className={styles.successSection}>
-            <span className={styles.successIcon}>✓</span>
+            <img src={checkIcon} alt="성공" className={styles.successIcon} />
             <p className={styles.successMessage}>
               {successInfo.name} 학생
               <br />
               {successInfo.action}
             </p>
 
-            {/* 급식 정보 */}
+            {/* 급식 정보 — applied 급식은 자동 태그 처리되므로 안내만 표시 */}
             {activeMealInfo && (
               <div className={styles.mealInfoSection}>
                 <span className={styles.mealInfoLabel}>{activeMealInfo.mealLabel}</span>
                 <p className={styles.mealInfoMessage}>{activeMealInfo.message}</p>
-                {activeMealInfo.applied && !activeMealInfo.alreadyTagged && onMealConfirm && (
-                  <button
-                    type="button"
-                    className={styles.pendingConfirmButton}
-                    onClick={handleMealConfirmClick}
-                    disabled={confirming}
-                  >
-                    {confirming ? '처리 중...' : '급식 확인'}
-                  </button>
-                )}
               </div>
             )}
 
             {/* 외출/조퇴 확인 */}
             {activePendingActions.length > 0 && onConfirmAction && (
-              <div className={styles.pendingSection}>
+              <div className={styles.pendingRow}>
                 {activePendingActions.map((pa) => (
                   <button
                     key={pa.regCd}
@@ -373,23 +426,12 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
                     onClick={() => handlePendingActionClick(pa.action)}
                     disabled={confirming}
                   >
-                    {confirming ? '처리 중...' : pa.message}
+                    {confirming ? '처리 중...' : (ACTION_LABEL_MAP[pa.action] || pa.message)}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* pendingActions/mealInfo가 있으면 무시 버튼 표시 */}
-            {hasPendingInteraction && (
-              <button
-                type="button"
-                className={styles.pendingDismissButton}
-                onClick={handleDismissPending}
-                disabled={confirming}
-              >
-                닫기
-              </button>
-            )}
 
             {studentMessages.length > 0 && (
               <div className={styles.studentMessages}>

@@ -137,13 +137,24 @@
   color: var(--color-text-muted);
 }
 
-.tagMark {
-  margin-right: var(--spacing-xs-sm);
+.checkedBadge {
+  display: inline-block;
+  padding: var(--size-badge-padding-v, 2px) var(--size-badge-padding-h, 8px);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: #e3f2fd;
+  color: #1565c0;
 }
 
-.tagTime {
-  color: var(--color-text-secondary);
+.uncheckedBadge {
+  display: inline-block;
+  padding: var(--size-badge-padding-v, 2px) var(--size-badge-padding-h, 8px);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: #fdecea;
+  color: #d32f2f;
 }
 
 .needsConfirm {

@@ -150,7 +150,7 @@ function WeekMealCard({ title, monday, meals, onRegister, onEdit, onDelete }: We
           <thead>
             <tr>
               <th></th>
-              <th>점심</th>
+              <th>중식</th>
               <th>석식</th>
             </tr>
           </thead>
@@ -271,7 +271,7 @@ function MealScheduleModal({ title, monday, initialMeals, storeId, onClose, onSa
             <thead>
               <tr>
                 <th>날짜</th>
-                <th>점심</th>
+                <th>중식</th>
                 <th>석식</th>
                 <th>휴무</th>
               </tr>
@@ -296,7 +296,7 @@ function MealScheduleModal({ title, monday, initialMeals, storeId, onClose, onSa
                           <textarea
                             className={styles.editTextarea}
                             value={day.lunch}
-                            placeholder="점심 메뉴 입력"
+                            placeholder="중식 메뉴 입력"
                             onChange={(e) => handleChange(idx, 'lunch', e.target.value)}
                           />
                         </td>

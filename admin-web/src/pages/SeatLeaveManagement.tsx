@@ -172,14 +172,7 @@ export default function SeatLeaveManagement() {
   };
 
   const handleReset = () => {
-    setSearchName('');
-    setSearchNumber('');
-    setSearchStartDate(today);
-    setSearchEndDate(today);
-    setAppliedFilters({ name: '', number: '', start: today, end: today });
-    if (isAdmin) setStoreFilter('전체');
-    setSort({ field: null, dir: 'asc' });
-    setPage(1);
+    window.location.reload();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -210,15 +203,15 @@ export default function SeatLeaveManagement() {
   /* ── 클라이언트 필터 + 정렬 ── */
   const filteredData = useMemo(() => {
     return data.filter((row) => {
-      if (appliedFilters.name && !row.studentName.includes(appliedFilters.name)) return false;
-      if (appliedFilters.number && !(row.studentNumber ?? '').includes(appliedFilters.number)) return false;
+      if (searchName && !row.studentName.includes(searchName)) return false;
+      if (searchNumber && !(row.studentNumber ?? '').includes(searchNumber)) return false;
       if (isAdmin && storeFilter !== '전체') {
         const sName = studentStoreMap.get(row.studentId) ?? row.storeName;
         if (sName !== storeFilter) return false;
       }
       return true;
     });
-  }, [data, appliedFilters, isAdmin, storeFilter, studentStoreMap]);
+  }, [data, searchName, searchNumber, isAdmin, storeFilter, studentStoreMap]);
 
   const sortedData = useMemo(() => {
     if (!sort.field) return filteredData;
@@ -343,7 +336,7 @@ export default function SeatLeaveManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={handleReset}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={handleReset}>새로고침</button>
           </div>
         </div>
       </div>

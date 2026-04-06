@@ -6,9 +6,10 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
 /** mealType → lunch/dinner boolean */
 function parseMealType(mealType: string): { lunch: boolean; dinner: boolean } {
-  if (mealType === '점심/저녁') return { lunch: true, dinner: true };
-  if (mealType === '점심') return { lunch: true, dinner: false };
-  if (mealType === '저녁') return { lunch: false, dinner: true };
+  const t = mealType;
+  if (t === '중식/석식' || t === '점심/저녁') return { lunch: true, dinner: true };
+  if (t === '중식' || t === '점심' || t === 'LUNCH') return { lunch: true, dinner: false };
+  if (t === '석식' || t === '저녁' || t === 'DINNER') return { lunch: false, dinner: true };
   return { lunch: false, dinner: false };
 }
 

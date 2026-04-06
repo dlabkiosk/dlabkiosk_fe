@@ -16,6 +16,7 @@ import SeatChangeModal from '../components/SeatChangeModal';
 import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
 import { tag, tagConfirm, tagMealConfirm, resolveActionLabel } from '../api/tagApi';
+import cautionIcon from '../assets/caution.png';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
@@ -58,6 +59,8 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [scanResult, setScanResult] = useState<CardScanResult | null>(null);
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
+  const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
+  const errorModalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleScan = useCallback((result: CardScanResult) => {
     console.log('[MainPage] 카드 인식:', result.rawValue);
@@ -76,6 +79,17 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const isAnyModalOpen = !!(scanTarget || showAdmin || showRemoteApply || showSeatLeaveReason || showMealPlan || showSeatMap || phoneSubmissionStudent || seatChangeStudent || studentInfoTarget);
   const isAnyModalOpenRef = useRef(isAnyModalOpen);
   isAnyModalOpenRef.current = isAnyModalOpen;
+
+  // 에러 모달 표시 (4초 자동 닫힘) — CardScanModal 열지 않고 에러만 표시
+  const showErrorModal = useCallback((msg: string) => {
+    setScanTarget(null);
+    setErrorModalMessage(msg);
+    if (errorModalTimer.current) clearTimeout(errorModalTimer.current);
+    errorModalTimer.current = setTimeout(() => {
+      setErrorModalMessage(null);
+      errorModalTimer.current = null;
+    }, 4000);
+  }, []);
 
   // 메인화면에서 카드/QR 인식 시 자동으로 출결 태그 처리
   const lastAutoTagCardTime = useRef<number>(0);
@@ -199,6 +213,35 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       identifier: fallbackIdentifier,
       inputMethod,
     });
+
+    // action이 null이면 백엔드가 처리를 거부한 것
+    if (!result.action) {
+      const hasPending = result.pendingActions && result.pendingActions.length > 0;
+      const hasMeal = result.mealInfo && result.mealInfo.applied && !result.mealInfo.alreadyTagged;
+
+      // pendingActions 또는 급식 미확인이 있으면 선택 화면으로
+      if (hasPending || hasMeal) {
+        return {
+          name: result.studentName,
+          studentId: result.studentId,
+          message: result.messages?.[0] || '선택해주세요.',
+          identifier: fallbackIdentifier,
+          inputMethod,
+          pendingActions: result.pendingActions,
+          mealInfo: result.mealInfo,
+          messages: result.messages,
+        };
+      }
+      // 식사시간 + 식사신청 안 함 + 출결 신청 없음 → 두 메시지 카드로 표시
+      if (result.mealInfo && !result.mealInfo.applied) {
+        const mealMsg = result.mealInfo.message || '식사 신청내역 없음';
+        throw new Error(`${mealMsg}\n---\n출결 신청내역 없음`);
+      }
+      // 그 외 에러 — messages 우선, 최후 기본값
+      const msg = result.mealInfo?.message || result.messages?.[0] || '처리할 수 없습니다.';
+      throw new Error(msg);
+    }
+
     return {
       name: result.studentName,
       studentId: result.studentId,
@@ -346,6 +389,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           onAction={getScanAction()}
           onConfirmAction={scanTarget.actionId === 'tag' ? handleConfirmAction : undefined}
           onMealConfirm={scanTarget.actionId === 'tag' ? handleMealConfirm : undefined}
+          onError={scanTarget.actionId === 'tag' ? showErrorModal : undefined}
         />
       )}
 
@@ -388,6 +432,20 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
           onClose={() => setShowAdmin(false)}
           onLogout={onLogout}
         />
+      )}
+
+      {/* 에러 모달 */}
+      {errorModalMessage && (
+        <div className={styles.errorOverlay}>
+          <div className={styles.errorModal}>
+            <img src={cautionIcon} alt="경고" className={styles.errorIcon} />
+            {errorModalMessage.split('\n---\n').map((section, i) => (
+              <div key={i} className={styles.errorCard}>
+                <p className={styles.errorCardText}>{section.replace(/\.\s*/g, '\n')}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -84,8 +84,8 @@ export default function NoticeManagement() {
         const prefix = `[${category}]`;
         if (!n.title.startsWith(prefix)) return false;
       }
-      if (appliedSearch.trim()) {
-        if (!n.title.toLowerCase().includes(appliedSearch.toLowerCase())) return false;
+      if (searchText.trim()) {
+        if (!n.title.toLowerCase().includes(searchText.toLowerCase())) return false;
       }
       return true;
     });
@@ -102,7 +102,7 @@ export default function NoticeManagement() {
       }
       return 0;
     });
-  }, [notices, isAdmin, storeFilter, category, appliedSearch, sort]);
+  }, [notices, isAdmin, storeFilter, category, searchText, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / ITEMS_PER_PAGE));
   const pageNotices = filteredNotices.slice(
@@ -172,7 +172,7 @@ export default function NoticeManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={() => { setStoreFilter('전체'); setCategory('전체'); setSearchText(''); setAppliedSearch(''); }}>초기화</button>
+            <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
             <button
               type="button"
               className={styles.newButton}

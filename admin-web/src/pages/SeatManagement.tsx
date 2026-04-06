@@ -1164,7 +1164,7 @@ export default function SeatManagement() {
             </div>
             <div className={f.filterActions}>
               <button type="button" className={f.searchButton} onClick={handleWaitingSearch}>검색</button>
-              <button type="button" className={f.resetButton} onClick={handleWaitingReset}>초기화</button>
+              <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
             </div>
           </div>
         </div>

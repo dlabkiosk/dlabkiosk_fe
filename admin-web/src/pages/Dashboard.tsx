@@ -192,8 +192,8 @@ export default function Dashboard() {
                 mealRecords.slice(0, 5).map((row, idx) => (
                   <tr key={idx}>
                     <td>{row.studentName}</td>
-                    <td>{row.mealType}</td>
-                    <td>{row.taggedAt}</td>
+                    <td>{row.mealType === 'LUNCH' ? '중식' : row.mealType === 'DINNER' ? '석식' : row.mealType}</td>
+                    <td>{row.taggedAt?.replace(/^.*[T ]/, '').replace(/\.\d+$/, '')}</td>
                   </tr>
                 ))
               ) : (
