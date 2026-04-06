@@ -24,7 +24,6 @@ const SECURE_CLOSE_TIMEOUT_MS = 3000;
 const PHONE_8_DIGITS_LENGTH = 8;
 const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 3000;
-const _PENDING_ACTION_DISPLAY_MS = 10000;
 const ERROR_DISPLAY_MS = 4000;
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
 
@@ -295,26 +294,6 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       });
   }, [onConfirmAction, confirmIdentifier, confirmInputMethod, showSuccess, showError]);
 
-  // 급식 확인 버튼 클릭
-  const _handleMealConfirmClick = useCallback(() => {
-    if (!onMealConfirm || !confirmIdentifier) return;
-    setConfirming(true);
-    if (successTimer.current) clearTimeout(successTimer.current);
-    onMealConfirm({ identifier: confirmIdentifier, inputMethod: confirmInputMethod })
-      .then(() => {
-        setConfirming(false);
-        // 급식 처리 완료 → mealInfo 제거
-        setActiveMealInfo(null);
-        // pendingActions가 남아있으면 선택 대기, 없으면 성공 타이머로 자동 닫힘
-        if (activePendingActions.length === 0) {
-          startSuccessTimer(SUCCESS_DISPLAY_MS);
-        }
-      })
-      .catch((err) => {
-        setConfirming(false);
-        showError(err?.message);
-      });
-  }, [onMealConfirm, confirmIdentifier, confirmInputMethod, showSuccess, showError]);
 
   // pendingActions 무시 — 아무 처리 없이 모달 닫기
   const handleDismissPending = useCallback(() => {
