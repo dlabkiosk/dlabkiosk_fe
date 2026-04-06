@@ -196,6 +196,18 @@
   font-size: var(--font-size-xs);
 }
 
+.formFilterFull > div {
+  width: 100%;
+}
+
+.formFilterFull > div > button {
+  width: 100%;
+}
+
+.formFilterFull > div > ul {
+  width: 100%;
+}
+
 .formSelect {
   width: 100%;
   height: var(--size-input-height);

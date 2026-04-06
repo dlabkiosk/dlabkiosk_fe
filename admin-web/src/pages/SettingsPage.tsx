@@ -2711,18 +2711,15 @@ function StudentMessageSettings() {
               )}
 
               {!editTarget && msgTemplates.length > 0 && (
-                <div className={styles.formGroup}>
+                <div className={`${styles.formGroup} ${styles.formFilterFull}`}>
                   <label className={styles.formLabel}>템플릿 선택</label>
-                  <select
-                    className={styles.formSelect}
+                  <FilterSelect
                     value=""
-                    onChange={(e) => { if (e.target.value) setFormContent(e.target.value); }}
-                  >
-                    <option value="">-- 템플릿을 선택하세요 --</option>
-                    {msgTemplates.map((t) => (
-                      <option key={t.id} value={t.content}>{t.content}</option>
-                    ))}
-                  </select>
+                    options={['선택', ...msgTemplates.map((t) => t.content)]}
+                    placeholder="-- 템플릿을 선택하세요 --"
+                    defaultValue="선택"
+                    onChange={(v) => { if (v !== '선택') setFormContent(v); }}
+                  />
                 </div>
               )}
 

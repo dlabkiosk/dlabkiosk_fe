@@ -166,6 +166,11 @@
   color: #7b1fa2;
 }
 
+.statusAbsent {
+  background-color: #fdecea;
+  color: #d32f2f;
+}
+
 /* ── Clickable row ── */
 .clickableRow {
   cursor: pointer;

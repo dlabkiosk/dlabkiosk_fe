@@ -18,7 +18,7 @@ import FilterSelect from '../components/FilterSelect';
 
 /* ── 출결 상태 ── */
 
-const STATUS_OPTIONS = ['전체', '등원', '외출', '조퇴', '하원', '좌석이탈'];
+const STATUS_OPTIONS = ['전체', '등원', '미출석', '외출', '조퇴', '하원', '좌석이탈'];
 const PHONE_OPTIONS = ['전체', 'O', 'X'];
 
 const ITEMS_PER_PAGE = 15;
@@ -248,6 +248,7 @@ export default function AttendanceManagement() {
   const getStatusClass = (status: string) => {
     switch (status) {
       case '등원': return styles.statusPresent;
+      case '미출석': return styles.statusAbsent;
       case '외출': return styles.statusOuting;
       case '조퇴': return styles.statusEarlyLeave;
       case '하원': return styles.statusLeft;
