@@ -21,7 +21,7 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
         setAreas(list);
         if (list.length > 0) setSelectedAreaCd(list[0].areaCd);
       })
-      .catch((err) => {
+      .catch(() => {
         setErrorMsg('구역 정보를 불러올 수 없습니다.');
         setLoading(false);
       });

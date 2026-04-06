@@ -24,7 +24,7 @@ const SECURE_CLOSE_TIMEOUT_MS = 3000;
 const PHONE_8_DIGITS_LENGTH = 8;
 const SUCCESS_DISPLAY_MS = 2000;
 const SUCCESS_WITH_MSG_DISPLAY_MS = 3000;
-const PENDING_ACTION_DISPLAY_MS = 10000;
+const _PENDING_ACTION_DISPLAY_MS = 10000;
 const ERROR_DISPLAY_MS = 4000;
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'] as const;
 
@@ -296,7 +296,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
   }, [onConfirmAction, confirmIdentifier, confirmInputMethod, showSuccess, showError]);
 
   // 급식 확인 버튼 클릭
-  const handleMealConfirmClick = useCallback(() => {
+  const _handleMealConfirmClick = useCallback(() => {
     if (!onMealConfirm || !confirmIdentifier) return;
     setConfirming(true);
     if (successTimer.current) clearTimeout(successTimer.current);
