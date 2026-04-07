@@ -75,6 +75,48 @@
   margin: 0;
 }
 
+.errorCardSubtext {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.5;
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* 에러 모달 - 전달된 메시지 (success 모달과 동일 톤) */
+.errorStudentMessages {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.errorStudentMessagesLabel {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-hint);
+  text-align: left;
+  margin: 0 0 var(--space-1);
+}
+
+.errorStudentMessageBubble {
+  background: var(--color-bg-light);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.errorStudentMessageText {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .infoSection {
   display: flex;
   gap: var(--space-5);

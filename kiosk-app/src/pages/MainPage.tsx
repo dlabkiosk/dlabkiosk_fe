@@ -15,9 +15,11 @@ import PhoneSubmissionModal from '../components/PhoneSubmissionModal';
 import SeatChangeModal from '../components/SeatChangeModal';
 import SeatMapModal from '../components/SeatMapModal';
 import KioskAdminPanel from '../components/KioskAdminPanel';
-import { tag, tagConfirm, tagMealConfirm, resolveActionLabel } from '../api/tagApi';
+import { tag, tagConfirm, tagMealConfirm, resolveActionLabel, TagRejectedError } from '../api/tagApi';
 import cautionIcon from '../assets/caution.png';
 import { startSeatLeave, endSeatLeave } from '../api/seatLeaveApi';
+import { getStudentMessages } from '../api/studentMessageApi';
+import type { StudentMessage } from '../api/studentMessageApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import type { Student } from '../data/mockStudents';
 import { useCardScanner } from '../hooks/useCardScanner';
@@ -61,6 +63,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
   const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
   const [errorModalStudentName, setErrorModalStudentName] = useState<string | null>(null);
+  const [errorModalMessages, setErrorModalMessages] = useState<StudentMessage[]>([]);
   const errorModalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleScan = useCallback((result: CardScanResult) => {
@@ -80,17 +83,35 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   isAnyModalOpenRef.current = isAnyModalOpen;
 
   // 에러 모달 표시 (4초 자동 닫힘) — CardScanModal 열지 않고 에러만 표시
-  const showErrorModal = useCallback((msg: string, options?: { studentName?: string }) => {
+  const showErrorModal = useCallback((msg: string, options?: { studentName?: string; studentId?: number }) => {
     setScanTarget(null);
     setErrorModalMessage(msg);
     setErrorModalStudentName(options?.studentName ?? null);
+    setErrorModalMessages([]);
+    // TTS: 에러 모달 음성 안내 (학생명이 있으면 같이 읽음)
+    const voiceText = options?.studentName ? `${options.studentName} 학생, ${msg}` : msg;
+    speak(voiceText);
+
+    // 전달된 메시지 비동기 조회 — 도착 시 모달에 표시 + 음성 큐잉으로 이어 읽기
+    if (options?.studentId) {
+      getStudentMessages(options.studentId)
+        .then((msgs) => {
+          if (msgs.length === 0) return;
+          setErrorModalMessages(msgs);
+          const extraVoice = msgs.map((m) => m.content).join('. ');
+          speak(`전달된 메시지. ${extraVoice}`, false);
+        })
+        .catch(() => { /* 메시지 조회 실패는 무시 */ });
+    }
+
     if (errorModalTimer.current) clearTimeout(errorModalTimer.current);
     errorModalTimer.current = setTimeout(() => {
       setErrorModalMessage(null);
       setErrorModalStudentName(null);
+      setErrorModalMessages([]);
       errorModalTimer.current = null;
     }, 4000);
-  }, []);
+  }, [speak]);
 
   // 메인화면에서 카드/QR 인식 시 자동으로 출결 태그 처리
   const lastAutoTagCardTime = useRef<number>(0);
@@ -261,18 +282,20 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       }
       // 그 외 에러 — messages 우선, 최후 기본값
       const msg = result.mealInfo?.message || result.messages?.[0] || '처리할 수 없습니다.';
-      throw new Error(msg);
+      throw new TagRejectedError(msg, { studentId: result.studentId, studentName: result.studentName });
     }
 
     return {
       name: result.studentName,
       studentId: result.studentId,
+      action: result.action,
       message: `${resolveActionLabel(result)} 처리 되었습니다.`,
       identifier: fallbackIdentifier,
       inputMethod,
       pendingActions: result.pendingActions,
       mealInfo: result.mealInfo,
       messages: result.messages,
+      studyTimeMinutes: result.studyTimeMinutes,
     };
   }, [resolveInputMethod]);
 
@@ -282,12 +305,14 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     return {
       name: result.studentName,
       studentId: result.studentId,
+      action: result.action,
       message: `${resolveActionLabel(result)} 처리 되었습니다.`,
       identifier: params.identifier,
       inputMethod: params.inputMethod,
       pendingActions: result.pendingActions,
       mealInfo: result.mealInfo,
       messages: result.messages,
+      studyTimeMinutes: result.studyTimeMinutes,
     };
   }, []);
 
@@ -297,6 +322,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     return {
       name: result.studentName,
       studentId: result.studentId,
+      action: result.action,
       message: result.mealInfo?.message || '급식 확인이 완료되었습니다.',
       identifier: params.identifier,
       inputMethod: params.inputMethod,
@@ -464,11 +490,28 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
             {errorModalStudentName && (
               <p className={styles.errorStudentName}>{errorModalStudentName} 학생</p>
             )}
-            {errorModalMessage.split('\n---\n').map((section, i) => (
-              <div key={i} className={styles.errorCard}>
-                <p className={styles.errorCardText}>{section.replace(/\.\s*/g, '\n')}</p>
+            {errorModalMessage.split('\n---\n').map((section, i) => {
+              const lines = section.replace(/\.\s*/g, '\n').split('\n').filter((l) => l.length > 0);
+              return (
+                <div key={i} className={styles.errorCard}>
+                  {lines.map((line, j) => (
+                    <p key={j} className={j === 0 ? styles.errorCardText : styles.errorCardSubtext}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              );
+            })}
+            {errorModalMessages.length > 0 && (
+              <div className={styles.errorStudentMessages}>
+                <p className={styles.errorStudentMessagesLabel}>전달된 메시지</p>
+                {errorModalMessages.map((m) => (
+                  <div key={m.id} className={styles.errorStudentMessageBubble}>
+                    <p className={styles.errorStudentMessageText}>{m.content}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

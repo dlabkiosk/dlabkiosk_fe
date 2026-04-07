@@ -15,6 +15,7 @@ import {
   VOICE_KEYPAD_AUTH_FAIL,
   VOICE_SCAN_AUTH_FAIL,
   VOICE_KEYPAD_NUMBER,
+  getTagVoice,
 } from '../constants/voiceGuide';
 import checkIcon from '../assets/check.png';
 import styles from './CardScanModal.module.css';
@@ -44,12 +45,16 @@ export interface ScanActionResult {
   name: string;
   studentId?: number;
   message?: string;
+  /** 백엔드 action 코드 (S/T/A/D/N/C/R/M) — 음성 안내 매핑용 */
+  action?: string;
   identifier?: string;
   inputMethod?: string;
   pendingActions?: PendingActionItem[];
   mealInfo?: MealInfo | null;
   /** 태그 응답에 포함된 메시지 목록 */
   messages?: string[];
+  /** 금일 누적 공부시간(분) — 조퇴/하원 시 success 화면에 표시 */
+  studyTimeMinutes?: number;
 }
 
 interface CardScanModalProps {
@@ -69,7 +74,7 @@ interface CardScanModalProps {
   /** 급식 태그 확인 */
   onMealConfirm?: (params: { identifier: string; inputMethod: string }) => Promise<ScanActionResult>;
   /** 에러 발생 시 외부 에러 모달로 위임 (제공 시 내부 에러 표시 대신 호출) */
-  onError?: (message: string, options?: { studentName?: string }) => void;
+  onError?: (message: string, options?: { studentName?: string; studentId?: number }) => void;
 }
 
 export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm, onError }: CardScanModalProps) {
@@ -84,6 +89,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
   const [searching, setSearching] = useState(false);
   const [activePendingActions, setActivePendingActions] = useState<PendingActionItem[]>([]);
   const [activeMealInfo, setActiveMealInfo] = useState<MealInfo | null>(null);
+  const [studyTimeMinutes, setStudyTimeMinutes] = useState<number | null>(null);
   const [confirmIdentifier, setConfirmIdentifier] = useState('');
   const [confirmInputMethod, setConfirmInputMethod] = useState('');
   const [confirming, setConfirming] = useState(false);
@@ -92,7 +98,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
   const processedCardRef = useRef<string | null>(null);
   const processedQrRef = useRef<string | null>(null);
 
-  const showError = useCallback((msg = '없는 학생입니다.') => {
+  const showError = useCallback((msg = '없는 학생입니다.', errOptions?: { studentId?: number; studentName?: string }) => {
     // 에러 후 동일 카드/QR 재태깅 허용
     processedCardRef.current = null;
     processedQrRef.current = null;
@@ -100,7 +106,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     // onError가 제공되면 외부 에러 모달로 위임
     if (onError) {
       setSearching(false);
-      onError(msg);
+      onError(msg, errOptions);
       return;
     }
 
@@ -118,6 +124,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     successTimer.current = setTimeout(() => {
       setSuccessInfo(null);
       setStudentMessages([]);
+      setStudyTimeMinutes(null);
       onClose();
     }, ms * timeoutMultiplier);
   }, [onClose, timeoutMultiplier]);
@@ -127,19 +134,31 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setConfirming(false);
     const actionText = result.message || '출결 처리 되었습니다.';
     setSuccessInfo({ name: result.name, action: actionText });
-    // TTS: 성공 메시지 읽기
-    speak(`${result.name} 학생, ${actionText}`);
 
     const pending = result.pendingActions ?? [];
     const meal = result.mealInfo ?? null;
     setConfirmIdentifier(result.identifier || '');
     setConfirmInputMethod(result.inputMethod || '');
 
+    // 조퇴(C)/하원(T)일 때 금일 공부시간 표시
+    if ((result.action === 'C' || result.action === 'T') && typeof result.studyTimeMinutes === 'number') {
+      setStudyTimeMinutes(result.studyTimeMinutes);
+    } else {
+      setStudyTimeMinutes(null);
+    }
+
     // 태그 응답 메시지를 studentMessages로 통합 표시
     const tagMsgs = (result.messages ?? [])
       .filter((m) => m && m.trim().length > 0)
       .map((m, i) => ({ id: -(i + 1), content: m } as StudentMessage));
     setStudentMessages(tagMsgs);
+
+    // TTS: 성공 메시지 + 전달된 메시지를 한 번에 발화
+    //  - action 코드 매핑이 있으면 정형화된 안내문, 그 외(좌석 이탈/복귀 등)는 raw message 폴백
+    //  - tagMsgs(전달된 메시지)도 이어 읽기
+    const successVoice = getTagVoice(result.action, result.name) ?? `${result.name} 학생, ${actionText}`;
+    const tagMsgsVoice = tagMsgs.map((m) => m.content).join('. ');
+    speak(tagMsgsVoice ? `${successVoice} 전달된 메시지. ${tagMsgsVoice}` : successVoice);
 
     const hasMessages = tagMsgs.length > 0;
 
@@ -159,7 +178,11 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }
 
     // ── pending 0 + 급식 신청됨 + 미태그 → 자동 급식 태그 ──
-    if (pending.length === 0 && meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
+    // 단, 같은 태그에서 출결 액션(S/R/T 등)이 함께 처리된 경우엔 자동 진행하지 않는다.
+    // 조퇴/외출/미등원/좌석이탈 학생이 식사시간에 태그할 때 등원·복귀와 급식이
+    // 한 번에 처리되지 않도록, 첫 태그는 출결 처리만 하고 학생이 한 번 더 태그해야
+    // 급식 태그가 진행되도록 한다 (두 번째 태그에서는 action이 없으므로 이 분기로 진입).
+    if (pending.length === 0 && !result.action && meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
       setActivePendingActions([]);
       setActiveMealInfo(null);
       onMealConfirm({ identifier: result.identifier, inputMethod: result.inputMethod || 'RFID' })
@@ -173,13 +196,26 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
 
-    // ── 식사시간 + pending 0 + 미신청 → mealInfo 카드 + 사전신청내역 없음 안내 ──
+    // ── 식사시간 + pending 0 + 미신청 → 에러 모달로 위임 (alreadyTagged와 동일 처리) ──
     if (pending.length === 0 && meal && !meal.applied) {
+      if (onError) {
+        setSearching(false);
+        const mealCard = `${meal.mealLabel}\n${meal.message}`;
+        const backendMsgs = (result.messages ?? []).filter((m) => m && m.trim().length > 0);
+        const hasNoApplyAlready = backendMsgs.some((m) => m.includes('사전'));
+        const parts: string[] = [mealCard];
+        if (backendMsgs.length > 0) parts.push(backendMsgs.join('\n'));
+        if (!hasNoApplyAlready) parts.push('사전조퇴/사전외출 신청 내역이 없습니다.');
+        const fullMsg = parts.join('\n---\n');
+        onError(fullMsg, { studentName: result.name, studentId: result.studentId });
+        return;
+      }
+      // fallback (외부 onError 없을 때)
       setActivePendingActions([]);
       setActiveMealInfo(meal);
       setSuccessInfo({ name: result.name, action: '' });
-      const noApplyMsg = '사전 신청 내역이 없습니다.';
-      const hasNoApplyMsg = tagMsgs.some((m) => m.content.includes('사전신청'));
+      const noApplyMsg = '사전조퇴/사전외출 신청 내역이 없습니다.';
+      const hasNoApplyMsg = tagMsgs.some((m) => m.content.includes('사전'));
       if (!hasNoApplyMsg) {
         setStudentMessages((prev) => [...prev, { id: -999, content: noApplyMsg } as StudentMessage]);
       }
@@ -195,9 +231,13 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
         if (onError) {
           setSearching(false);
           const mealCard = `${meal.mealLabel}\n${meal.message}`;
-          const backendMsg = (result.messages ?? []).find((m) => m && m.trim().length > 0);
-          const fullMsg = backendMsg ? `${mealCard}\n---\n${backendMsg}` : mealCard;
-          onError(fullMsg, { studentName: result.name });
+          const backendMsgs = (result.messages ?? []).filter((m) => m && m.trim().length > 0);
+          const hasNoApplyAlready = backendMsgs.some((m) => m.includes('사전'));
+          const parts: string[] = [mealCard];
+          if (backendMsgs.length > 0) parts.push(backendMsgs.join('\n'));
+          if (!hasNoApplyAlready) parts.push('사전조퇴/사전외출 신청 내역이 없습니다.');
+          const fullMsg = parts.join('\n---\n');
+          onError(fullMsg, { studentName: result.name, studentId: result.studentId });
           return;
         }
         // fallback (외부 onError 없을 때) — 기존 동작 유지
@@ -238,6 +278,9 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
           const deduped = msgs.filter((m) => !tagContents.has(m.content.trim()));
           if (deduped.length > 0) {
             setStudentMessages((prev) => [...prev, ...deduped]);
+            // TTS: 추가 메시지는 진행 중인 발화를 끊지 않고 큐에 이어 붙임
+            const extraVoice = deduped.map((m) => m.content).join('. ');
+            speak(`전달된 메시지. ${extraVoice}`, false);
             if (!hasPendingInteraction) {
               startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
             }
@@ -277,7 +320,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     if (onAction) {
       onAction({ identifier })
         .then((result) => showSuccess(result))
-        .catch((err) => { setSearching(false); showError(err?.message); });
+        .catch((err) => { setSearching(false); showError(err?.message, { studentId: err?.studentId, studentName: err?.studentName }); });
     } else {
       searchStudent({ identifier })
         .then((data) => handleStudentFound(toStudent(data, identifier), 'RFID'))
@@ -291,7 +334,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     if (onAction) {
       onAction({ phone8 })
         .then((result) => showSuccess(result))
-        .catch((err) => { setSearching(false); showError(err?.message); });
+        .catch((err) => { setSearching(false); showError(err?.message, { studentId: err?.studentId, studentName: err?.studentName }); });
     } else {
       getStudentByPhone8(phone8)
         .then((data) => handleStudentFound(toStudent(data, phone8), 'PHONE'))
@@ -344,6 +387,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     setActiveMealInfo(null);
     setSuccessInfo(null);
     setStudentMessages([]);
+    setStudyTimeMinutes(null);
     if (successTimer.current) clearTimeout(successTimer.current);
     onClose();
   }, [onClose]);
@@ -379,8 +423,8 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
     if (key === '') return;
-    // TTS: 숫자 읽기 (cancel 없이 큐잉하여 자연스럽게 이어 읽기)
-    speak(VOICE_KEYPAD_NUMBER(key), false);
+    // TTS: 숫자 읽기 — 이전 안내 음성을 즉시 끊고 키 입력에 맞춰 즉시 발화
+    speak(VOICE_KEYPAD_NUMBER(key));
     setInputValue((prev) => {
       if (prev.length >= maxLength) return prev;
       return prev + key;
@@ -432,6 +476,16 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
                 </>
               )}
             </p>
+
+            {/* 금일 공부시간 — 조퇴/하원 시 표시 */}
+            {studyTimeMinutes !== null && (
+              <div className={styles.studyTimeSection}>
+                <span className={styles.studyTimeLabel}>오늘 공부시간</span>
+                <span className={styles.studyTimeValue}>
+                  {Math.floor(studyTimeMinutes / 60)}시간 {studyTimeMinutes % 60}분
+                </span>
+              </div>
+            )}
 
             {/* 급식 정보 — applied 급식은 자동 태그 처리되므로 안내만 표시 */}
             {activeMealInfo && (

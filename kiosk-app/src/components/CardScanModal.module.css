@@ -302,6 +302,29 @@
   margin: 0;
 }
 
+/* 금일 공부시간 (조퇴/하원 시) */
+.studyTimeSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3h) var(--space-4);
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+}
+
+.studyTimeLabel {
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+}
+
+.studyTimeValue {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
 /* 급식 정보 */
 .mealInfoSection {
   width: 100%;

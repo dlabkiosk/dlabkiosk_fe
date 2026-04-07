@@ -5,31 +5,33 @@
 /* ── TTS 토글 ── */
 export const VOICE_TTS_ON =
   '음성 안내를 시작합니다. 출결을 위해 화면 아래쪽 인식기에 카드나 큐알 코드를 대주세요. 위치를 찾기 어렵거나 도움이 필요하시면 기기 오른쪽 하단의 호출벨을 눌러주세요.';
-export const VOICE_TTS_OFF = '음성 안내가 종료되었습니다.';
 
-/* ── 출결 결과 ── */
-export const VOICE_TAG_CHECKIN = (name: string) => `${name}학생, 등원 처리 되었습니다.`;
-export const VOICE_TAG_CHECKOUT = (name: string) => `${name}학생, 하원 처리 되었습니다.`;
-export const VOICE_TAG_OUTING = (name: string) => `${name}학생, 외출 처리 되었습니다.`;
-export const VOICE_TAG_EARLY_LEAVE = (name: string) => `${name}학생, 조퇴 처리 되었습니다.`;
-export const VOICE_TAG_SEAT_LEAVE = (name: string) => `${name}학생, 좌석 이탈 신청이 완료되었습니다. 꼭 복귀 처리를 해주세요.`;
-export const VOICE_TAG_RETURN = (name: string) => `${name}학생, 좌석 복귀가 완료되었습니다.`;
-export const VOICE_TAG_MEAL = (name: string, mealLabel: string) => `${name}학생, ${mealLabel} 확인이 완료되었습니다.`;
-export const VOICE_TAG_NO_PENDING = (name: string) => `${name}학생, 신청 내역이 없습니다. 데스크로 문의하세요.`;
-export const VOICE_TAG_DEFAULT = (name: string, actionLabel: string) => `${name}학생, ${actionLabel} 처리 되었습니다.`;
+/* ── 출결 결과 ──
+ * action 코드는 tagApi.ts의 ACTION_LABEL_MAP과 동일하게 유지할 것 (S/T/A/D/N/C/R/M)
+ */
+export const VOICE_TAG_CHECKIN = (name: string) => `${name} 학생, 등원 처리 되었습니다.`;
+export const VOICE_TAG_CHECKOUT = (name: string) => `${name} 학생, 하원 처리 되었습니다.`;
+export const VOICE_TAG_LATE = (name: string) => `${name} 학생, 지각 처리 되었습니다.`;
+export const VOICE_TAG_OUTING = (name: string) => `${name} 학생, 외출 처리 되었습니다.`;
+export const VOICE_TAG_OUTING_REASON = (name: string) => `${name} 학생, 사유 외출 처리 되었습니다.`;
+export const VOICE_TAG_EARLY_LEAVE = (name: string) => `${name} 학생, 조퇴 처리 되었습니다.`;
+export const VOICE_TAG_RETURN = (name: string) => `${name} 학생, 복귀 처리 되었습니다.`;
+export const VOICE_TAG_MEAL_DONE = (name: string) => `${name} 학생, 급식 확인이 완료되었습니다.`;
 
-/** action 코드 → 음성 메시지 매핑 */
 const ACTION_VOICE_MAP: Record<string, (name: string) => string> = {
-  S: VOICE_TAG_CHECKIN,      // 등원
-  O: VOICE_TAG_CHECKOUT,     // 하원
-  D: VOICE_TAG_OUTING,       // 외출
-  C: VOICE_TAG_EARLY_LEAVE,  // 조퇴
-  R: VOICE_TAG_RETURN,       // 복귀(외출→복귀)
+  S: VOICE_TAG_CHECKIN,
+  T: VOICE_TAG_CHECKOUT,
+  A: VOICE_TAG_LATE,
+  D: VOICE_TAG_OUTING,
+  N: VOICE_TAG_OUTING_REASON,
+  C: VOICE_TAG_EARLY_LEAVE,
+  R: VOICE_TAG_RETURN,
+  M: VOICE_TAG_MEAL_DONE,
 };
 
-export function getTagVoice(action: string | undefined, name: string, actionLabel?: string): string {
+export function getTagVoice(action: string | undefined, name: string): string | null {
   if (action && ACTION_VOICE_MAP[action]) return ACTION_VOICE_MAP[action](name);
-  return VOICE_TAG_DEFAULT(name, actionLabel || '출결');
+  return null;
 }
 
 /* ── 퀵메뉴 버튼 클릭 ── */

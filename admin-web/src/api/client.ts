@@ -94,18 +94,31 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return json.data;
 }
 
+// 동시 401 재발급 요청을 직렬화 — refresh token rotation 백엔드에서
+// 병렬 refresh가 서로의 토큰을 무효화하는 경쟁 상태 방지
+let refreshInFlight: Promise<boolean> | null = null;
+
 async function tryRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/admin/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    if (!res.ok) return false;
-    const json = (await res.json()) as ApiResponse;
-    return json.success;
-  } catch {
-    return false;
-  }
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) return false;
+      const json = (await res.json()) as ApiResponse;
+      return json.success;
+    } catch {
+      return false;
+    } finally {
+      // 다음 만료 시점까지 새 호출 가능하도록 microtask 후 해제
+      queueMicrotask(() => {
+        refreshInFlight = null;
+      });
+    }
+  })();
+  return refreshInFlight;
 }
 
 /* ── HTTP 메서드 헬퍼 ── */

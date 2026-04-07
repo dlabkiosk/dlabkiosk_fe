@@ -1,5 +1,20 @@
 import { apiPost, ApiError } from './client';
 
+/**
+ * 태깅 거부 에러 — 학생 식별은 됐지만 처리할 수 없는 경우 (예: 사전 신청 내역 없음).
+ * showErrorModal에서 학생 정보 + 전달된 메시지를 함께 표시하기 위해 컨텍스트를 함께 전달.
+ */
+export class TagRejectedError extends Error {
+  studentId?: number;
+  studentName?: string;
+  constructor(message: string, opts?: { studentId?: number; studentName?: string }) {
+    super(message);
+    this.name = 'TagRejectedError';
+    this.studentId = opts?.studentId;
+    this.studentName = opts?.studentName;
+  }
+}
+
 export interface PendingAction {
   action: string;
   message: string;

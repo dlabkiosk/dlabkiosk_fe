@@ -59,7 +59,11 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const speak = useCallback((text: string, cancelBefore = true) => {
     if (!state.ttsEnabled) return;
     if (cancelBefore) speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    // 발화 전 정규화:
+    //  - '/'를 '슬래시'로 읽는 문제 → 공백 치환
+    //  - 학생명 마스킹 '*' 제거 (예: '이*영' → '이영')
+    const spoken = text.replace(/\//g, ' ').replace(/\*/g, '');
+    const utterance = new SpeechSynthesisUtterance(spoken);
     utterance.lang = 'ko-KR';
     utterance.rate = 0.9;
     speechSynthesis.speak(utterance);
