@@ -50,6 +50,14 @@
   object-fit: contain;
 }
 
+.errorStudentName {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary, #1a1a1a);
+  margin: 0;
+  text-align: center;
+}
+
 .errorCard {
   width: 100%;
   background-color: #f8f9fa;
@@ -58,8 +66,8 @@
 }
 
 .errorCardText {
-  font-size: var(--font-lg, 1.1rem);
-  font-weight: var(--weight-semibold, 600);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-semibold);
   color: var(--color-text-primary, #1a1a1a);
   text-align: center;
   line-height: 1.6;

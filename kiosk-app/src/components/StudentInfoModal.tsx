@@ -14,7 +14,7 @@ function getPhoneSubmissionTypeLabel(type: string) {
   switch (type) {
     case 'DAILY': return '당일';
     case 'PERIOD': return '기간';
-    case 'PERMANENT': return '휴대폰없음';
+    case 'NO_PHONE': return '휴대폰 없음';
     default: return type;
   }
 }
@@ -137,7 +137,7 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
                 <td>{(detailPage - 1) * DETAIL_PAGE_SIZE + i + 1}</td>
                 <td>{formatDate(row.createdAt)}</td>
                 <td>{row.currentSeatLabel}</td>
-                <td>{row.desiredSeat1Label}</td>
+                <td>{[row.desiredSeat1Label, row.desiredSeat2Label, row.desiredSeat3Label].filter(Boolean).join(' / ')}</td>
                 <td>
                   <span className={`${styles.statusBadge} ${getStatusBadge(row.status)}`}>
                     {getStatusLabel(row.status)}
@@ -441,6 +441,7 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
                 <thead>
                   <tr>
                     <th>결석</th>
+                    <th>지각</th>
                     <th>조퇴</th>
                     <th>외출</th>
                   </tr>
@@ -450,6 +451,11 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
                     <td>
                       <span className={`${styles.typeBadge} ${attendance.absenceCount > 0 ? styles.typeBadgeAbsence : styles.typeBadgeDefault}`}>
                         {attendance.absenceCount}회
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.typeBadge} ${attendance.lateCount > 0 ? styles.typeBadgeLate : styles.typeBadgeDefault}`}>
+                        {attendance.lateCount}회
                       </span>
                     </td>
                     <td>
@@ -492,7 +498,7 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
                     <td>{i + 1}</td>
                     <td>{formatDate(row.createdAt)}</td>
                     <td>{row.currentSeatLabel}</td>
-                    <td>{row.desiredSeat1Label}</td>
+                    <td>{[row.desiredSeat1Label, row.desiredSeat2Label, row.desiredSeat3Label].filter(Boolean).join(' / ')}</td>
                     <td>
                       <span className={`${styles.statusBadge} ${getStatusBadge(row.status)}`}>
                         {getStatusLabel(row.status)}

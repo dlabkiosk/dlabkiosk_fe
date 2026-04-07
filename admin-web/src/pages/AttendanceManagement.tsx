@@ -443,7 +443,7 @@ export default function AttendanceManagement() {
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 7 : 6}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 7 : 6}>출결 내역이 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row) => (

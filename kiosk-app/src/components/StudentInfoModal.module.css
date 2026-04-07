@@ -283,7 +283,20 @@
 /* 출결사항 균등 컬럼 */
 .attendanceTable th,
 .attendanceTable td {
-  width: 33.33%;
+  width: 25%;
+}
+
+/* .table th:first-child / td:first-child 의 width:1.5rem, color:hint 가
+   출결사항 테이블의 첫 컬럼(결석)에 잘못 적용되는 것을 막기 위한 오버라이드 */
+.attendanceTable th:first-child {
+  width: 25%;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.attendanceTable td:first-child {
+  width: 25%;
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 
 /* 상태 뱃지 (비대면 신청) */

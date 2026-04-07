@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { LuArrowUp, LuArrowDown, LuChevronDown } from 'react-icons/lu';
+import { LuArrowUp, LuArrowDown, LuChevronDown, LuPencil, LuTrash2 } from 'react-icons/lu';
 import settingIcon from '../assets/setting_active.png';
-import editIcon from '../assets/edit.png';
-import trashIcon from '../assets/trash.png';
 import styles from './SettingsPage.module.css';
 import f from '../styles/filter.module.css';
 import {
@@ -880,10 +878,10 @@ function BannerManagement() {
                     <td>
                       <div className={styles.actionBtns}>
                         <button type="button" className={styles.iconBtn} onClick={() => openEdit(ad)}>
-                          <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                          <LuPencil />
                         </button>
-                        <button type="button" className={styles.iconBtn} onClick={() => handleDelete(ad.id)}>
-                          <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                        <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(ad.id)}>
+                          <LuTrash2 />
                         </button>
                       </div>
                     </td>
@@ -1255,7 +1253,7 @@ function ExamSchedule() {
                   <th>지점</th>
                   <th>상태</th>
                   <th>키오스크 <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>(최대 2개)</span></th>
-                  <th style={{ width: 50 }}>관리</th>
+                  <th style={{ width: 100 }}>관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -1290,7 +1288,12 @@ function ExamSchedule() {
                             {exam.active ? 'ON' : 'OFF'}
                           </button>
                         </td>
-                        <td><button type="button" className={styles.editBtn} onClick={() => openEditModal(exam)}><img src={editIcon} alt="편집" className={styles.actionIcon} /></button></td>
+                        <td>
+                          <div className={styles.actionBtns}>
+                            <button type="button" className={styles.iconBtn} onClick={() => openEditModal(exam)}><LuPencil /></button>
+                            <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(exam.id)}><LuTrash2 /></button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
@@ -1429,7 +1432,6 @@ function ExamSchedule() {
                   삭제
                 </button>
               )}
-              <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
             </div>
           </div>
         </div>
@@ -1625,9 +1627,9 @@ function SeatLeaveReasonSettings() {
                 <tr>
                   <th style={{ width: 40 }}></th>
                   <th style={{ width: 60 }}>순서</th>
-                  <th>사유명</th>
-                  <th style={{ width: 80 }}>상태</th>
-                  <th style={{ width: 100 }}>관리</th>
+                  <th style={{ width: '45%' }}>사유명</th>
+                  <th style={{ width: 100 }}>상태</th>
+                  <th style={{ width: 120 }}>관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -1656,10 +1658,10 @@ function SeatLeaveReasonSettings() {
                     <td>
                       <div className={styles.actionBtns}>
                         <button type="button" className={styles.iconBtn} onClick={() => openEdit(reason)}>
-                          <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                          <LuPencil />
                         </button>
-                        <button type="button" className={styles.iconBtn} onClick={() => handleDelete(reason.id)}>
-                          <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                        <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(reason.id)}>
+                          <LuTrash2 />
                         </button>
                       </div>
                     </td>
@@ -1735,7 +1737,6 @@ function SeatLeaveReasonSettings() {
                   삭제
                 </button>
               )}
-              <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
             </div>
           </div>
         </div>
@@ -2278,10 +2279,10 @@ function MessageTemplateSettings() {
                       <td>
                         <div className={styles.actionBtns}>
                           <button type="button" className={styles.iconBtn} onClick={() => openEdit(t)}>
-                            <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                            <LuPencil />
                           </button>
-                          <button type="button" className={styles.iconBtn} onClick={() => handleDelete(t.id)}>
-                            <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                          <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(t.id)}>
+                            <LuTrash2 />
                           </button>
                         </div>
                       </td>
@@ -2354,8 +2355,7 @@ function MessageTemplateSettings() {
                 <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
                   {editTarget ? '수정' : '등록'}
                 </button>
-                <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
-              </div>
+                </div>
             </div>
           </div>
         </div>
@@ -2618,10 +2618,10 @@ function StudentMessageSettings() {
                             <td>
                               <div className={styles.actionBtns}>
                                 <button type="button" className={styles.iconBtn} onClick={() => openEdit(msg)}>
-                                  <img src={editIcon} alt="수정" className={styles.actionIcon} />
+                                  <LuPencil />
                                 </button>
-                                <button type="button" className={styles.iconBtn} onClick={() => handleDelete(msg.id)}>
-                                  <img src={trashIcon} alt="삭제" className={styles.actionIcon} />
+                                <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(msg.id)}>
+                                  <LuTrash2 />
                                 </button>
                               </div>
                             </td>
@@ -2756,8 +2756,7 @@ function StudentMessageSettings() {
                 >
                   {editTarget ? '수정' : `${modalStudentIds.length}명에게 등록`}
                 </button>
-                <button type="button" className={styles.btnSecondary} onClick={closeModal}>취소</button>
-              </div>
+                </div>
             </div>
           </div>
         </div>

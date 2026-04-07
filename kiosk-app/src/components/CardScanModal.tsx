@@ -69,7 +69,7 @@ interface CardScanModalProps {
   /** 급식 태그 확인 */
   onMealConfirm?: (params: { identifier: string; inputMethod: string }) => Promise<ScanActionResult>;
   /** 에러 발생 시 외부 에러 모달로 위임 (제공 시 내부 에러 표시 대신 호출) */
-  onError?: (message: string) => void;
+  onError?: (message: string, options?: { studentName?: string }) => void;
 }
 
 export default function CardScanModal({ title, scanResult, qrResult, secureClose = false, keypadOnly = false, defaultKeypadMode, onClose, onStudentFound, onAction, onConfirmAction, onMealConfirm, onError }: CardScanModalProps) {
@@ -191,7 +191,16 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     if (meal && meal.alreadyTagged) {
       setActiveMealInfo(meal);
       if (pending.length === 0) {
-        // 이미 태그 + pending 없음 → mealInfo 카드 + 사전신청내역 없음 안내
+        // 이미 태그 + pending 없음 + 사전신청 없음 → 에러 모달로 위임
+        if (onError) {
+          setSearching(false);
+          const mealCard = `${meal.mealLabel}\n${meal.message}`;
+          const backendMsg = (result.messages ?? []).find((m) => m && m.trim().length > 0);
+          const fullMsg = backendMsg ? `${mealCard}\n---\n${backendMsg}` : mealCard;
+          onError(fullMsg, { studentName: result.name });
+          return;
+        }
+        // fallback (외부 onError 없을 때) — 기존 동작 유지
         setActivePendingActions([]);
         setSuccessInfo({ name: result.name, action: '' });
         const noApplyMsg = '사전 신청 내역이 없습니다.';
@@ -416,8 +425,12 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
             <img src={checkIcon} alt="성공" className={styles.successIcon} />
             <p className={styles.successMessage}>
               {successInfo.name} 학생
-              <br />
-              {successInfo.action}
+              {!hasPendingInteraction && successInfo.action && (
+                <>
+                  <br />
+                  {successInfo.action}
+                </>
+              )}
             </p>
 
             {/* 급식 정보 — applied 급식은 자동 태그 처리되므로 안내만 표시 */}
@@ -430,19 +443,22 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
             {/* 외출/조퇴 확인 */}
             {activePendingActions.length > 0 && onConfirmAction && (
-              <div className={styles.pendingRow}>
-                {activePendingActions.map((pa) => (
-                  <button
-                    key={pa.regCd}
-                    type="button"
-                    className={styles.pendingConfirmButton}
-                    onClick={() => handlePendingActionClick(pa.action)}
-                    disabled={confirming}
-                  >
-                    {confirming ? '처리 중...' : (ACTION_LABEL_MAP[pa.action] || pa.message)}
-                  </button>
-                ))}
-              </div>
+              <>
+                <p className={styles.pendingGuide}>항목을 선택해주세요.</p>
+                <div className={styles.pendingRow}>
+                  {activePendingActions.map((pa) => (
+                    <button
+                      key={pa.regCd}
+                      type="button"
+                      className={styles.pendingConfirmButton}
+                      onClick={() => handlePendingActionClick(pa.action)}
+                      disabled={confirming}
+                    >
+                      {confirming ? '처리 중...' : (ACTION_LABEL_MAP[pa.action] || pa.message)}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
 

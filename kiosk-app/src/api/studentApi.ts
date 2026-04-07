@@ -64,6 +64,7 @@ export interface AttendanceSummary {
   absenceCount: number;
   earlyLeaveCount: number;
   outingCount: number;
+  lateCount: number;
 }
 
 export interface PointRecord {

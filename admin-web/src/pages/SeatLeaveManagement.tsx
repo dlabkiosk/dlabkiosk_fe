@@ -190,7 +190,7 @@ export default function SeatLeaveManagement() {
 
   /* ── 강제 복귀 ── */
   const handleForceReturn = async (record: SeatLeaveRecord) => {
-    if (!await confirm(`${record.studentName} (${record.seatLabel}) 학생을 강제 복귀 처리하시겠습니까?`)) return;
+    if (!await confirm(`${record.studentName} 학생을 강제 복귀 처리하시겠습니까?`)) return;
     try {
       await forceReturnSeatLeave(record.id);
       await fetchData();
@@ -220,7 +220,7 @@ export default function SeatLeaveManagement() {
   /* ── EXCEL (현재 검색 결과만 CSV) ── */
   const handleExcel = () => {
     if (sortedData.length === 0) {
-      void alert('다운로드할 데이터가 없습니다.');
+      void alert('다운로드할 내역이 없습니다.');
       return;
     }
     const header = ['이름', '학번', '좌석', '이탈신청시간', '상태', '경과', '사유'];
@@ -381,7 +381,7 @@ export default function SeatLeaveManagement() {
               </tr>
             ) : sortedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 11 : 10}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 11 : 10}>이탈 내역이 없습니다.</td>
               </tr>
             ) : (
               sortedData.map((row) => {

@@ -164,7 +164,7 @@
 .returnButton {
   padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
   border: 1px solid var(--color-danger);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   color: var(--color-danger);
   background-color: var(--color-bg-card);

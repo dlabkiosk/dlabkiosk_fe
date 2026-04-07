@@ -60,6 +60,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const [qrResult, setQrResult] = useState<QrScanResult | null>(null);
   const [studentInfoTarget, setStudentInfoTarget] = useState<Student | null>(null);
   const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
+  const [errorModalStudentName, setErrorModalStudentName] = useState<string | null>(null);
   const errorModalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleScan = useCallback((result: CardScanResult) => {
@@ -79,12 +80,14 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   isAnyModalOpenRef.current = isAnyModalOpen;
 
   // 에러 모달 표시 (4초 자동 닫힘) — CardScanModal 열지 않고 에러만 표시
-  const showErrorModal = useCallback((msg: string) => {
+  const showErrorModal = useCallback((msg: string, options?: { studentName?: string }) => {
     setScanTarget(null);
     setErrorModalMessage(msg);
+    setErrorModalStudentName(options?.studentName ?? null);
     if (errorModalTimer.current) clearTimeout(errorModalTimer.current);
     errorModalTimer.current = setTimeout(() => {
       setErrorModalMessage(null);
+      setErrorModalStudentName(null);
       errorModalTimer.current = null;
     }, 4000);
   }, []);
@@ -222,7 +225,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
         return {
           name: result.studentName,
           studentId: result.studentId,
-          message: result.messages?.[0] || '선택해주세요.',
+          message: result.messages?.[0] || '태깅 항목을 선택해주세요.',
           identifier: fallbackIdentifier,
           inputMethod,
           pendingActions: result.pendingActions,
@@ -458,6 +461,9 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
         <div className={styles.errorOverlay}>
           <div className={styles.errorModal}>
             <img src={cautionIcon} alt="경고" className={styles.errorIcon} />
+            {errorModalStudentName && (
+              <p className={styles.errorStudentName}>{errorModalStudentName} 학생</p>
+            )}
             {errorModalMessage.split('\n---\n').map((section, i) => (
               <div key={i} className={styles.errorCard}>
                 <p className={styles.errorCardText}>{section.replace(/\.\s*/g, '\n')}</p>

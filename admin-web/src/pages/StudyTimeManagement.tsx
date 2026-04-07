@@ -400,7 +400,7 @@ export default function StudyTimeManagement() {
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>데이터가 없습니다.</td>
+                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>공부 시간 내역이 없습니다.</td>
                 </tr>
               ) : (
                 pagedData.map((row) => (

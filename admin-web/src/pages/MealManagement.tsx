@@ -341,7 +341,7 @@ export default function MealManagement() {
               </tr>
             ) : pageData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 9 : 8}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 9 : 8}>내역이 없습니다.</td>
               </tr>
             ) : (
               pageData.map((row) => (

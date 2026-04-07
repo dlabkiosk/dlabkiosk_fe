@@ -458,7 +458,7 @@ export default function PhoneManagement() {
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 8 : 7}>데이터가 없습니다.</td>
+                <td colSpan={isAdmin ? 8 : 7}>신청 내역이 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row: PhoneSubmission) => (

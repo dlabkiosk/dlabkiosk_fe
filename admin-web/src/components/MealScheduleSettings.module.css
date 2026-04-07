@@ -386,7 +386,7 @@
 
 .saveButton {
   padding: var(--size-btn-padding-v-md) var(--spacing-lg);
-  background-color: var(--color-primary);
+  background-color: var(--color-text-primary);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
