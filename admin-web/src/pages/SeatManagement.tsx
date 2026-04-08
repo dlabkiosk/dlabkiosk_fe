@@ -1140,7 +1140,7 @@ export default function SeatManagement() {
           </div>
         </div>
 
-        <div className={styles.contentCard}>
+        <div className={styles.waitingCard}>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
