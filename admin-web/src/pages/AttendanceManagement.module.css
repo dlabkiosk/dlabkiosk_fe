@@ -69,7 +69,11 @@
   font-size: var(--font-size-xs);
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.qrButton:hover {
+  background-color: var(--color-bg-page);
 }
 
 .qrButton:hover:not(:disabled) {
