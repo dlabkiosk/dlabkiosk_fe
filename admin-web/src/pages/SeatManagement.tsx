@@ -949,14 +949,6 @@ export default function SeatManagement() {
             {view === 'layout' ? <LuList /> : <LuLayoutGrid />}
             {view === 'layout' ? '좌석 대기 리스트 보기' : '배치도 보기'}
           </button>
-          {/* 좌석 편집 UI 제거 — DSA 기준 조회만 사용 */}
-          <button
-            type="button"
-            className={styles.refreshBtn}
-            onClick={() => (view === 'layout' ? loadLayout() : loadWaiting())}
-          >
-            새로고침
-          </button>
         </div>
       </div>
 
@@ -1013,13 +1005,22 @@ export default function SeatManagement() {
                 배정인원 : {occupiedCount}명
                 <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
               </div>
-              <button
-                type="button"
-                className={styles.printBtn}
-                onClick={() => window.print()}
-              >
-                인쇄 <img src={printerIcon} alt="" className={styles.printerIcon} />
-              </button>
+              <div className={styles.layoutHeaderActions}>
+                <button
+                  type="button"
+                  className={styles.printBtn}
+                  onClick={() => window.print()}
+                >
+                  인쇄 <img src={printerIcon} alt="" className={styles.printerIcon} />
+                </button>
+                <button
+                  type="button"
+                  className={f.resetButton}
+                  onClick={() => loadLayout()}
+                >
+                  새로고침
+                </button>
+              </div>
             </div>
 
             <div
@@ -1135,7 +1136,7 @@ export default function SeatManagement() {
             </div>
             <div className={f.filterActions}>
               <button type="button" className={f.searchButton} onClick={handleWaitingSearch}>검색</button>
-              <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
+              <button type="button" className={f.resetButton} onClick={() => loadWaiting()}>새로고침</button>
             </div>
           </div>
         </div>

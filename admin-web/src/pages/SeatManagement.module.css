@@ -959,9 +959,15 @@
 }
 
 /* ── Print Button ── */
-.printBtn {
+.layoutHeaderActions {
   position: absolute;
   right: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.printBtn {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -1001,7 +1007,8 @@
 
   .pageHeader,
   .areaTabs,
-  .printBtn {
+  .printBtn,
+  .layoutHeaderActions {
     display: none !important;
   }
 
