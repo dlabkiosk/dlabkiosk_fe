@@ -13,7 +13,7 @@ export default function NoCardModal({ onClose, onSelect }: NoCardModalProps) {
           ✕
         </button>
 
-        <h2 className={styles.title}>카드 미소지</h2>
+        <h2 className={styles.title}>휴대폰번호 출결</h2>
         <p className={styles.subtitle}>인증 방법을 선택해주세요</p>
 
         <div className={styles.buttonGroup}>

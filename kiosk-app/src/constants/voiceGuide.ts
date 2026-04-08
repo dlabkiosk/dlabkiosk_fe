@@ -36,7 +36,7 @@ export function getTagVoice(action: string | undefined, name: string): string | 
 
 /* ── 퀵메뉴 버튼 클릭 ── */
 export const VOICE_MENU_NO_CARD =
-  '카드 미소지 버튼을 클릭했습니다. 휴대폰 번호인증입니다. 화면 중앙에서 번호 8자리를 입력한 후, 하단의 입력 완료를 눌러주세요.';
+  '휴대폰번호 출결 버튼을 클릭했습니다. 휴대폰 번호인증입니다. 화면 중앙에서 번호 8자리를 입력한 후, 하단의 입력 완료를 눌러주세요.';
 
 export const VOICE_MENU_SEAT_LEAVE =
   '좌석 이탈 신청입니다. 화면 중앙에 나열된 사유 버튼 중 하나를 선택해 주세요.';

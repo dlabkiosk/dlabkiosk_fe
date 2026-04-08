@@ -403,7 +403,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
 
       <AccessibilityBar />
 
-      {/* 카드 미소지 → 휴대폰 뒤 8자리 키패드로 바로 진입 */}
+      {/* 휴대폰번호 출결 → 휴대폰 뒤 8자리 키패드로 바로 진입 */}
 
       {showSeatLeaveReason && (
         <SeatLeaveReasonModal
