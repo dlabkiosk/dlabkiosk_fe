@@ -30,6 +30,7 @@ export default function LoginPage() {
         const me = await getMe();
         sessionStorage.setItem('adminName', me.name);
         sessionStorage.setItem('storeName', me.storeName);
+        sessionStorage.setItem('adminRole', me.role);
       } catch { /* me 실패해도 로그인은 진행 */ }
 
       navigate('/');

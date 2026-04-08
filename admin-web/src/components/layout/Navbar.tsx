@@ -78,6 +78,7 @@ export default function Navbar() {
     sessionStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('adminName');
     sessionStorage.removeItem('storeName');
+    sessionStorage.removeItem('adminRole');
     navigate('/login');
   };
 
@@ -98,7 +99,11 @@ export default function Navbar() {
     <header className={styles.navbar}>
       <div className={styles.logoArea}>
         <img src={logoImg} alt="D'Lab" className={styles.logoImage} />
-        <span className={styles.storeName}>{(sessionStorage.getItem('storeName') ?? '').replace(/^D'?LAB\s*/i, '')}</span>
+        <span className={styles.storeName}>
+          {sessionStorage.getItem('adminRole') === 'ADMIN'
+            ? '통합 관리자'
+            : (sessionStorage.getItem('storeName') ?? '').replace(/^D'?LAB\s*/i, '')}
+        </span>
       </div>
       <div className={styles.rightArea}>
         <div className={styles.searchBox} ref={searchRef}>
