@@ -38,12 +38,19 @@ export default function NoticeSection() {
       try {
         const allNotices = await getNotices();
         if (!cancelled) {
-          // [전체] 이외의 카테고리 prefix가 있는 공지는 과목 공지로 분류
+          // 분류 규칙:
+          //  1) 제목이 [전체] 으로 시작하면 → 전체 공지 (제목 본문에 [안내] 등 다른 대괄호가 있어도 무관)
+          //  2) 그 외 [xxx] 으로 시작하면 → 과목 공지 (xxx = 과목명)
+          //  3) 어떤 [xxx] 접두사도 없으면 → 전체 공지
           const generalOnly: Notice[] = [];
           const parsedSubject: SubjectNotice[] = [];
           for (const n of allNotices) {
-            const m = n.title.match(/^\[(.+?)\]\s*/);
-            if (m && m[1] !== '전체') {
+            if (/^\[전체\]\s*/.test(n.title)) {
+              generalOnly.push(n);
+              continue;
+            }
+            const m = n.title.match(/^\[([^\]]+)\]\s*/);
+            if (m) {
               parsedSubject.push({
                 id: n.id,
                 storeId: n.storeId,
