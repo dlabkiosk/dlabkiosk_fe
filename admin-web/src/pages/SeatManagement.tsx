@@ -947,7 +947,7 @@ export default function SeatManagement() {
             onClick={() => setView(view === 'layout' ? 'waiting' : 'layout')}
           >
             {view === 'layout' ? <LuList /> : <LuLayoutGrid />}
-            {view === 'layout' ? '좌석 대기 리스트 보기' : '배치도 보기'}
+            {view === 'layout' ? '좌석 변경 대기 리스트 보기' : '배치도 보기'}
           </button>
         </div>
       </div>
