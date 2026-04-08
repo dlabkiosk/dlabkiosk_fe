@@ -88,10 +88,19 @@ type StatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 /* ── Page ── */
 
 export default function SeatManagement() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialView = searchParams.get('view') === 'waiting' ? 'waiting' : 'layout';
   const { confirm, alert, ConfirmDialog } = useConfirm();
   const [view, setView] = useState<ViewMode>(initialView);
+
+  /* view 토글 시 URL search param도 갱신 → window.location.reload() 해도 view 유지 */
+  const changeView = (next: ViewMode) => {
+    setView(next);
+    const params = new URLSearchParams(searchParams);
+    if (next === 'waiting') params.set('view', 'waiting');
+    else params.delete('view');
+    setSearchParams(params, { replace: true });
+  };
 
   /* ── ADMIN 역할 + 지점 필터 ── */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -944,7 +953,7 @@ export default function SeatManagement() {
           <button
             type="button"
             className={`${styles.waitingListBtn} ${view === 'waiting' ? styles.waitingListBtnActive : ''}`}
-            onClick={() => setView(view === 'layout' ? 'waiting' : 'layout')}
+            onClick={() => changeView(view === 'layout' ? 'waiting' : 'layout')}
           >
             {view === 'layout' ? <LuList /> : <LuLayoutGrid />}
             {view === 'layout' ? '좌석 변경 대기 리스트 보기' : '배치도 보기'}
@@ -1136,7 +1145,7 @@ export default function SeatManagement() {
             </div>
             <div className={f.filterActions}>
               <button type="button" className={f.searchButton} onClick={handleWaitingSearch}>검색</button>
-              <button type="button" className={f.resetButton} onClick={() => loadWaiting()}>새로고침</button>
+              <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
             </div>
           </div>
         </div>
