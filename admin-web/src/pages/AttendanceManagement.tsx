@@ -6,10 +6,11 @@ import {
 } from 'react-icons/lu';
 import attendanceIcon from '../assets/attendance_active.png';
 import downloadIcon from '../assets/download.png';
+import qrDownloadIcon from '../assets/qr_download.png';
 import { getAttendances } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
-import { downloadStudentQr } from '../api/studentApi';
+import { downloadStudentQr, downloadStudentsQrBulk } from '../api/studentApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
@@ -226,13 +227,13 @@ export default function AttendanceManagement() {
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const pagedData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  /* 선택 */
-  const allChecked = pagedData.length > 0 && pagedData.every((r) => selectedIds.has(r.studentId));
+  /* 선택 — 검색 결과 전체(filteredData) 기준 */
+  const allChecked = filteredData.length > 0 && filteredData.every((r) => selectedIds.has(r.studentId));
   const toggleAll = () => {
     if (allChecked) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(pagedData.map((r) => r.studentId)));
+      setSelectedIds(new Set(filteredData.map((r) => r.studentId)));
     }
   };
   const toggleOne = (id: number) => {
@@ -291,6 +292,30 @@ export default function AttendanceManagement() {
     if (qrUrl) URL.revokeObjectURL(qrUrl);
     setQrStudent(null);
     setQrUrl(null);
+  };
+
+  /** 체크된 학생들의 QR을 ZIP으로 일괄 다운로드 */
+  const [bulkQrLoading, setBulkQrLoading] = useState(false);
+  const handleBulkQrDownload = async () => {
+    if (selectedIds.size === 0 || bulkQrLoading) return;
+    setBulkQrLoading(true);
+    try {
+      const blob = await downloadStudentsQrBulk(Array.from(selectedIds));
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().slice(0, 10);
+      link.download = `student-qr-${today}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('[bulk QR download] 실패', err);
+      alert('QR 일괄 다운로드에 실패했습니다.');
+    } finally {
+      setBulkQrLoading(false);
+    }
   };
 
   const handleQrDownload = () => {
@@ -409,7 +434,19 @@ export default function AttendanceManagement() {
       {/* Table */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData)}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <span className={styles.selectedCount}>
+            {selectedIds.size > 0 ? `${selectedIds.size}명 선택됨` : '선택된 학생 없음'}
+          </span>
+          <button
+            type="button"
+            className={styles.qrButton}
+            onClick={handleBulkQrDownload}
+            disabled={selectedIds.size === 0 || bulkQrLoading}
+          >
+            {bulkQrLoading ? 'QR 다운로드 중...' : '학생 QR 다운로드'}
+            <img src={qrDownloadIcon} alt="" className={styles.downloadIcon} />
+          </button>
+          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData)}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>

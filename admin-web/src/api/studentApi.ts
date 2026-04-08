@@ -77,3 +77,18 @@ export async function downloadStudentQr(studentId: number): Promise<Blob> {
   }
   return res.blob();
 }
+
+/** 여러 학생 QR 코드를 ZIP으로 일괄 다운로드 */
+export async function downloadStudentsQrBulk(studentIds: number[]): Promise<Blob> {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+  const res = await fetch(`${API_BASE_URL}/api/v1/admin/students/qr/bulk`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentIds }),
+  });
+  if (!res.ok) {
+    throw new Error(`QR 일괄 다운로드 실패: ${res.status}`);
+  }
+  return res.blob();
+}

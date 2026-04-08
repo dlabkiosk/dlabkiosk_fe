@@ -423,7 +423,7 @@ export default function PhoneManagement() {
       {/* 테이블 */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton} onClick={handleExcel}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.excelButton} onClick={handleExcel}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>

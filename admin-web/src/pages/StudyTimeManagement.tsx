@@ -364,7 +364,7 @@ export default function StudyTimeManagement() {
 
       <div className={styles.contentCard} ref={tableRef}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton}>엑셀다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.excelButton}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
 
         {/* 테이블 */}
