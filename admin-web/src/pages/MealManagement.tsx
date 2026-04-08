@@ -9,6 +9,7 @@ import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import FilterDatePicker from '../components/FilterDatePicker';
 import FilterSelect from '../components/FilterSelect';
+import useConfirm from '../hooks/useConfirm';
 import styles from './MealManagement.module.css';
 import f from '../styles/filter.module.css';
 
@@ -84,6 +85,7 @@ function trimMillis(time: string): string {
 /* ── Page ── */
 
 export default function MealManagement() {
+  const { confirm, alert, ConfirmDialog } = useConfirm();
   const today = new Date().toISOString().slice(0, 10);
 
   /* 필터 */
@@ -236,9 +238,17 @@ export default function MealManagement() {
 
     const key = `${row.studentId}-${row.date}-${mealType}`;
     if (togglingKey) return;
-    setTogglingKey(key);
 
     const currentlyChecked = mealType === 'LUNCH' ? row.lunchChecked : row.dinnerChecked;
+    const mealLabel = mealType === 'LUNCH' ? '중식' : '석식';
+    const actionLabel = currentlyChecked ? '체크 해제' : '체크';
+    const ok = await confirm(
+      `${row.studentName}(${row.studentNumber}) 학생의 ${mealLabel}을 ${actionLabel} 하시겠습니까?`,
+      { confirmLabel: actionLabel },
+    );
+    if (!ok) return;
+
+    setTogglingKey(key);
     try {
       const updated = currentlyChecked
         ? await uncheckMeal({ studentId: row.studentId, date: row.date, mealType })
@@ -253,7 +263,7 @@ export default function MealManagement() {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : '처리에 실패했습니다.';
-      alert(msg);
+      await alert(msg);
     } finally {
       setTogglingKey(null);
     }
@@ -277,6 +287,7 @@ export default function MealManagement() {
 
   return (
     <div className={styles.page}>
+      {ConfirmDialog}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
           <img src={mealIcon} alt="" className={styles.pageTitleIcon} />
