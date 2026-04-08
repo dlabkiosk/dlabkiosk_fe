@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
 import mealIcon from '../assets/meal_active.png';
 import downloadIcon from '../assets/download.png';
-import { getMeals } from '../api/mealApi';
-import type { MealRecord } from '../api/mealApi';
+import { getMeals, checkMeal, uncheckMeal } from '../api/mealApi';
+import type { MealRecord, MealType } from '../api/mealApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
@@ -110,6 +110,9 @@ export default function MealManagement() {
 
   /* 선택 */
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  /* 체크 토글 진행 중인 셀 (studentId-mealType) */
+  const [togglingKey, setTogglingKey] = useState<string | null>(null);
 
   useEffect(() => {
     getMe().then((me) => {
@@ -225,6 +228,35 @@ export default function MealManagement() {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleToggleMealCheck = async (row: MealRecord, mealType: MealType) => {
+    const applied = mealType === 'LUNCH' ? row.lunchApplied : row.dinnerApplied;
+    if (!applied) return; // 미신청은 체크 불가
+
+    const key = `${row.studentId}-${row.date}-${mealType}`;
+    if (togglingKey) return;
+    setTogglingKey(key);
+
+    const currentlyChecked = mealType === 'LUNCH' ? row.lunchChecked : row.dinnerChecked;
+    try {
+      const updated = currentlyChecked
+        ? await uncheckMeal({ studentId: row.studentId, date: row.date, mealType })
+        : await checkMeal({ studentId: row.studentId, date: row.date, mealType });
+
+      setRows((prev) =>
+        prev.map((r) =>
+          r.studentId === row.studentId && r.date === row.date
+            ? { ...r, ...updated, storeName: r.storeName }
+            : r,
+        ),
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '처리에 실패했습니다.';
+      alert(msg);
+    } finally {
+      setTogglingKey(null);
+    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -359,18 +391,38 @@ export default function MealManagement() {
                   <td>{row.seatLabel}</td>
                   <td>{row.lunchApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
-                    {row.lunchChecked ? (
-                      <span className={styles.checkedBadge}>{row.lunchCheckedTime ? trimMillis(row.lunchCheckedTime) : 'O'}</span>
-                    ) : row.lunchApplied ? (
-                      <span className={styles.uncheckedBadge}>미체크</span>
+                    {row.lunchApplied ? (
+                      <button
+                        type="button"
+                        className={styles.mealToggleBtn}
+                        onClick={() => handleToggleMealCheck(row, 'LUNCH')}
+                        disabled={togglingKey !== null}
+                        title={row.lunchChecked ? '클릭하여 체크 해제' : '클릭하여 체크'}
+                      >
+                        {row.lunchChecked ? (
+                          <span className={styles.checkedBadge}>{row.lunchCheckedTime ? trimMillis(row.lunchCheckedTime) : 'O'}</span>
+                        ) : (
+                          <span className={styles.uncheckedBadge}>미체크</span>
+                        )}
+                      </button>
                     ) : '-'}
                   </td>
                   <td>{row.dinnerApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
                   <td>
-                    {row.dinnerChecked ? (
-                      <span className={styles.checkedBadge}>{row.dinnerCheckedTime ? trimMillis(row.dinnerCheckedTime) : 'O'}</span>
-                    ) : row.dinnerApplied ? (
-                      <span className={styles.uncheckedBadge}>미체크</span>
+                    {row.dinnerApplied ? (
+                      <button
+                        type="button"
+                        className={styles.mealToggleBtn}
+                        onClick={() => handleToggleMealCheck(row, 'DINNER')}
+                        disabled={togglingKey !== null}
+                        title={row.dinnerChecked ? '클릭하여 체크 해제' : '클릭하여 체크'}
+                      >
+                        {row.dinnerChecked ? (
+                          <span className={styles.checkedBadge}>{row.dinnerCheckedTime ? trimMillis(row.dinnerCheckedTime) : 'O'}</span>
+                        ) : (
+                          <span className={styles.uncheckedBadge}>미체크</span>
+                        )}
+                      </button>
                     ) : '-'}
                   </td>
                 </tr>

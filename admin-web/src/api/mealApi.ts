@@ -1,4 +1,12 @@
-import { apiGet } from './client';
+import { apiGet, apiPost, apiDelete } from './client';
+
+export type MealType = 'LUNCH' | 'DINNER';
+
+export interface MealCheckRequest {
+  studentId: number;
+  date: string;
+  mealType: MealType;
+}
 
 /* ── 타입 ── */
 
@@ -42,4 +50,14 @@ export function getMeals(params?: MealParams): Promise<MealRecord[]> {
 
   const qs = query.toString();
   return apiGet<MealRecord[]>(`/api/v1/admin/meals${qs ? `?${qs}` : ''}`);
+}
+
+/** 급식 체크(수동) — 관리자가 직접 체크 처리 */
+export function checkMeal(data: MealCheckRequest): Promise<MealRecord> {
+  return apiPost<MealRecord>('/api/v1/admin/meals/check', data as unknown as Record<string, unknown>);
+}
+
+/** 급식 체크 취소(수동) — 관리자가 직접 체크 해제 */
+export function uncheckMeal(data: MealCheckRequest): Promise<MealRecord> {
+  return apiDelete<MealRecord>('/api/v1/admin/meals/check', data as unknown as Record<string, unknown>);
 }

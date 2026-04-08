@@ -137,6 +137,24 @@
   color: var(--color-text-muted);
 }
 
+.mealToggleBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.mealToggleBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mealToggleBtn:hover:not(:disabled) > span {
+  filter: brightness(0.95);
+}
+
 .checkedBadge {
   display: inline-block;
   padding: var(--size-badge-padding-v, 2px) var(--size-badge-padding-h, 8px);
