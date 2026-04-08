@@ -65,6 +65,10 @@ async function request<T>(
       });
       return handleResponse<T>(retryRes);
     }
+    // 토큰/세션이 모두 만료된 상태 → 로그인 페이지로 이동
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
     throw new ApiError('UNAUTHORIZED', '로그인이 필요합니다.');
   }
 

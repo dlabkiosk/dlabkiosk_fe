@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage';
 import BranchDetailPage from './pages/BranchDetailPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedRoute() {
   const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/notices/:noticeId" element={<NoticeDetail />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/branch/:storeId" element={<BranchDetailPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
       </Routes>
