@@ -63,6 +63,13 @@ async function request<T>(
           ...options.headers,
         },
       });
+      // 재시도도 401이면 인증 자체가 끊긴 것 → 로그인으로
+      if (retryRes.status === 401) {
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+        throw new ApiError('UNAUTHORIZED', '로그인이 필요합니다.');
+      }
       return handleResponse<T>(retryRes);
     }
     // 토큰/세션이 모두 만료된 상태 → 로그인 페이지로 이동
@@ -106,7 +113,7 @@ async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/auth/refresh`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       });
