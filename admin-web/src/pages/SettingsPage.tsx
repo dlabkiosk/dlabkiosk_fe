@@ -2452,6 +2452,8 @@ function StudentMessageSettings() {
     // 현재 선택된 학생이 있으면 미리 체크
     if (selectedStudentId) setModalStudentIds([selectedStudentId]);
     setShowModal(true);
+    // 템플릿 관리에서 새로 등록한 항목이 바로 반영되도록 모달 열 때 재조회
+    getMessageTemplates().then(setMsgTemplates).catch(() => {});
   };
 
   const openEdit = (msg: StudentMessage) => {
@@ -2459,6 +2461,7 @@ function StudentMessageSettings() {
     setFormContent(msg.content);
     setFormActive(msg.active);
     setShowModal(true);
+    getMessageTemplates().then(setMsgTemplates).catch(() => {});
   };
 
   const closeModal = () => {
