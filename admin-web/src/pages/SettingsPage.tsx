@@ -1252,7 +1252,7 @@ function ExamSchedule() {
                   </th>
                   <th>지점</th>
                   <th>상태</th>
-                  <th>키오스크 <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>(최대 2개)</span></th>
+                  <th>키오스크 <span style={{ fontWeight: 400, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>({isAdmin ? '지점별 최대 2개' : '최대 2개'})</span></th>
                   <th style={{ width: 100 }}>관리</th>
                 </tr>
               </thead>
