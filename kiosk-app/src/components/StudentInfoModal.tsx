@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Student } from '../data/mockStudents';
 import type { SeatChangeRequest, PhoneSubmission, SeatLeave, Receipt, PointRecord } from '../api/studentApi';
 import MealCalendarModal from './MealCalendarModal';
 import styles from './StudentInfoModal.module.css';
+
+const INACTIVITY_MS = 25000;   // 25초 후 카운트다운 시작
+const COUNTDOWN_SEC = 5;       // 5초 카운트다운
 
 interface StudentInfoModalProps {
   student: Student;
@@ -81,6 +84,51 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
   const [detailView, setDetailView] = useState<DetailView | null>(null);
   const [detailPage, setDetailPage] = useState(1);
 
+  /* ── 비활성 타이머 ── */
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearAllTimers = useCallback(() => {
+    if (inactivityTimer.current) { clearTimeout(inactivityTimer.current); inactivityTimer.current = null; }
+    if (countdownTimer.current) { clearInterval(countdownTimer.current); countdownTimer.current = null; }
+  }, []);
+
+  const startCountdown = useCallback(() => {
+    setCountdown(COUNTDOWN_SEC);
+    let remaining = COUNTDOWN_SEC;
+    countdownTimer.current = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearAllTimers();
+        onClose();
+      } else {
+        setCountdown(remaining);
+      }
+    }, 1000);
+  }, [clearAllTimers, onClose]);
+
+  const resetInactivityTimer = useCallback(() => {
+    clearAllTimers();
+    setCountdown(null);
+    inactivityTimer.current = setTimeout(() => {
+      startCountdown();
+    }, INACTIVITY_MS);
+  }, [clearAllTimers, startCountdown]);
+
+  useEffect(() => {
+    resetInactivityTimer();
+    return () => clearAllTimers();
+  }, [resetInactivityTimer, clearAllTimers]);
+
+  const handleActivity = useCallback(() => {
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
+
+  const handleExtend = useCallback(() => {
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
+
   const todayDate = new Date().getDate();
   const todayMeals = (student.mealApplications ?? []).filter((m) => Number(m.day) === todayDate);
   const receipts = student.receipts ?? [];
@@ -89,6 +137,17 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
   const allPhoneSubmissions = student.phoneSubmissions ?? [];
   const allSeatLeaves = student.seatLeaves ?? [];
   const points = student.points ?? [];
+
+  const countdownUI = countdown !== null ? (
+    <div className={styles.countdownFloat}>
+      <p className={styles.countdownText}>
+        <span className={styles.countdownNumber}>{countdown}</span>초 후 화면이 닫힙니다..
+      </p>
+      <button type="button" className={styles.countdownButton} onClick={handleExtend}>
+        계속 보기
+      </button>
+    </div>
+  ) : null;
 
   const openDetail = (view: DetailView) => {
     setDetailView(view);
@@ -285,8 +344,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
     const totalPages = Math.max(1, Math.ceil(totalItems / DETAIL_PAGE_SIZE));
 
     return (
-      <div className={styles.overlay} onClick={onClose}>
-        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.overlay} onClick={onClose} onTouchStart={handleActivity}>
+        <div className={styles.modal} onClick={(e) => { e.stopPropagation(); handleActivity(); }} onScroll={handleActivity}>
           <div className={styles.detailHeader}>
             <div className={styles.detailHeaderTop}>
               <button type="button" className={styles.backButton} onClick={closeDetail} aria-label="뒤로가기">
@@ -324,6 +383,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
               </div>
             )}
           </div>
+
+          {countdownUI}
         </div>
       </div>
     );
@@ -331,8 +392,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
 
   /* ── 메인 학적조회 ── */
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.overlay} onTouchStart={handleActivity}>
+      <div className={styles.modal} onClick={handleActivity} onScroll={handleActivity}>
         {/* 헤더 — 우측 상단 X */}
         <div className={styles.header}>
           <button type="button" className={styles.closeButton} onClick={onClose} aria-label="닫기">
@@ -618,6 +679,8 @@ export default function StudentInfoModal({ student, onClose }: StudentInfoModalP
             </table>
           </section>
         </div>
+
+        {countdownUI}
       </div>
     </div>
   );

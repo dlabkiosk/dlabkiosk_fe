@@ -62,6 +62,10 @@ export default function BranchDetailPage() {
 
   const handleUpdate = async () => {
     if (!store || submitting) return;
+    if (formKioskPin.length > 0 && formKioskPin.length !== 4) {
+      await alert('PIN은 숫자 4자리로 입력해주세요.');
+      return;
+    }
     setSubmitting(true);
     try {
       await updateStore(store.id, {
@@ -206,7 +210,10 @@ export default function BranchDetailPage() {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>키오스크 PIN</label>
             {isEditing ? (
-              <input className={styles.formInput} value={formKioskPin} onChange={(e) => setFormKioskPin(e.target.value)} placeholder={store.kioskPin || '변경 시 입력'} />
+              <input className={styles.formInput} value={formKioskPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setFormKioskPin(v); }} placeholder={store.kioskPin || '변경 시 입력'} maxLength={4} inputMode="numeric" />
+              {formKioskPin.length > 0 && formKioskPin.length !== 4 && (
+                <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>PIN은 숫자 4자리로 입력해주세요.</p>
+              )}
             ) : (
               <p className={styles.formValue}>{store.kioskPin || '-'}</p>
             )}

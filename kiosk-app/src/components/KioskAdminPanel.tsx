@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { kioskLogout } from '../api/kioskAuthApi';
+import { kioskLogin, kioskLogout } from '../api/kioskAuthApi';
 import type { KioskSession } from '../api/kioskAuthApi';
 import styles from './KioskAdminPanel.module.css';
 
-const ADMIN_PASSWORD = '0000';
+const PIN_LENGTH = 4;
 
 interface KioskAdminPanelProps {
   connected: boolean;
@@ -18,7 +18,10 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const handleKeyPress = (key: string) => {
+    if (loading) return;
     if (key === 'backspace') {
       setPassword((prev) => prev.slice(0, -1));
       setPasswordError(false);
@@ -26,19 +29,23 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
       setPassword('');
       setPasswordError(false);
     } else {
-      if (password.length >= ADMIN_PASSWORD.length) return;
+      if (password.length >= PIN_LENGTH) return;
       setPassword((prev) => prev + key);
       setPasswordError(false);
     }
   };
 
-  const handleSubmit = () => {
-    if (password.length < ADMIN_PASSWORD.length) return;
-    if (password === ADMIN_PASSWORD) {
+  const handleSubmit = async () => {
+    if (password.length < PIN_LENGTH || loading) return;
+    setLoading(true);
+    try {
+      await kioskLogin(session.storeCode, password);
       setAuthenticated(true);
-    } else {
+    } catch {
       setPasswordError(true);
       setPassword('');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +63,7 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           <p className={styles.passwordGuide}>비밀번호를 입력해주세요</p>
 
           <div className={styles.passwordDots}>
-            {Array.from({ length: ADMIN_PASSWORD.length }).map((_, i) => (
+            {Array.from({ length: PIN_LENGTH }).map((_, i) => (
               <span
                 key={i}
                 className={`${styles.dot} ${password.length > i ? styles.dotFilled : ''}`}
@@ -86,7 +93,7 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
             type="button"
             className={styles.submitButton}
             onClick={handleSubmit}
-            disabled={password.length < ADMIN_PASSWORD.length}
+            disabled={password.length < PIN_LENGTH}
           >
             입력 완료
           </button>

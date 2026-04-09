@@ -1919,6 +1919,10 @@ function BranchInfo() {
 
   const handleUpdate = async () => {
     if (!selectedStore || submitting) return;
+    if (formKioskPin.length > 0 && formKioskPin.length !== 4) {
+      await alert('PIN은 숫자 4자리로 입력해주세요.');
+      return;
+    }
     setSubmitting(true);
     try {
       await updateStore(selectedStore.id, {
@@ -1965,6 +1969,10 @@ function BranchInfo() {
 
   const handleCreate = async () => {
     if (!createStoreName.trim() || !createStoreCode.trim() || submitting) return;
+    if (createKioskPin.length > 0 && createKioskPin.length !== 4) {
+      await alert('PIN은 숫자 4자리로 입력해주세요.');
+      return;
+    }
     setSubmitting(true);
     try {
       await createStore({
@@ -2070,7 +2078,10 @@ function BranchInfo() {
         <>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>키오스크 PIN</label>
-            <input className={styles.formInput} value={formKioskPin} onChange={(e) => setFormKioskPin(e.target.value)} placeholder="변경 시 입력" />
+            <input className={styles.formInput} value={formKioskPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setFormKioskPin(v); }} placeholder="변경 시 입력" maxLength={4} inputMode="numeric" />
+            {formKioskPin.length > 0 && formKioskPin.length !== 4 && (
+              <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>PIN은 숫자 4자리로 입력해주세요.</p>
+            )}
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>DSA 학원코드</label>
@@ -2205,7 +2216,10 @@ function BranchInfo() {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>키오스크 PIN</label>
-                <input className={styles.formInput} value={createKioskPin} onChange={(e) => setCreateKioskPin(e.target.value)} />
+                <input className={styles.formInput} value={createKioskPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setCreateKioskPin(v); }} maxLength={4} inputMode="numeric" />
+                {createKioskPin.length > 0 && createKioskPin.length !== 4 && (
+                  <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>PIN은 숫자 4자리로 입력해주세요.</p>
+                )}
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>DSA 학원코드</label>
