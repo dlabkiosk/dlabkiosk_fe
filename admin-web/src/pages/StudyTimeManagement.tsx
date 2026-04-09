@@ -319,7 +319,7 @@ export default function StudyTimeManagement() {
             <label className={f.filterLabel}>기간</label>
             <FilterDatePicker id="st-start" value={startDate} onChange={setStartDate} maxDate={endDate} />
             <span className={f.dateSeparator}>~</span>
-            <FilterDatePicker id="st-end" value={endDate} onChange={setEndDate} minDate={startDate} />
+            <FilterDatePicker id="st-end" value={endDate} onChange={setEndDate} minDate={startDate} maxDate={formatDateKey(addDays(today, -1))} />
           </div>
 
           <div className={f.filterActions}>
