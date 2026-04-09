@@ -1,7 +1,4 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import { ko } from 'date-fns/locale/ko';
-import 'react-datepicker/dist/react-datepicker.css';
 import {
   LuArrowUpDown,
   LuArrowUp,
@@ -11,26 +8,15 @@ import studyIcon from '../assets/study_active.png';
 import downloadIcon from '../assets/download.png';
 import styles from './StudyTimeManagement.module.css';
 import f from '../styles/filter.module.css';
-import dp from '../components/FilterDatePicker.module.css';
-
-registerLocale('ko', ko);
-import { getStudyTimes } from '../api/studyTimeApi';
+import { getStudyTimes, exportStudyTimes } from '../api/studyTimeApi';
 import type { StudentStudyTime } from '../api/studyTimeApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import FilterSelect from '../components/FilterSelect';
+import FilterDatePicker from '../components/FilterDatePicker';
 
 /* ── 날짜 유틸 ── */
-
-function getMonday(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -50,10 +36,6 @@ function formatDateShort(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0');
   const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
   return `${m}/${d}(${dayLabels[date.getDay()]})`;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 /* ── 타입 ── */
@@ -93,11 +75,19 @@ function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function toRows(data: StudentStudyTime[], monday: Date): StudentStudyRow[] {
+function parseDate(str: string): Date {
+  const d = new Date(str + 'T00:00:00');
+  return d;
+}
+
+function toRows(data: StudentStudyTime[], startStr: string, endStr: string): StudentStudyRow[] {
+  const start = parseDate(startStr);
+  const end = parseDate(endStr);
+  const dayCount = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   return data.map((s, idx) => {
     const dailyTimes: Record<string, string> = {};
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(monday, i);
+    for (let i = 0; i < dayCount; i++) {
+      const d = addDays(start, i);
       const key = formatDateShort(d);
       const dateKey = formatDateKey(d);
       const found = s.dailyStudyTimes.find((dt) => dt.date === dateKey);
@@ -122,8 +112,8 @@ export default function StudyTimeManagement() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [selectedMonday, setSelectedMonday] = useState(() => getMonday(today));
-  const weekPickerRef = useRef<DatePicker>(null);
+  const [startDate, setStartDate] = useState(() => formatDateKey(addDays(today, -7)));
+  const [endDate, setEndDate] = useState(() => formatDateKey(addDays(today, -1)));
   const tableRef = useRef<HTMLDivElement>(null);
 
   // 필터
@@ -155,14 +145,17 @@ export default function StudyTimeManagement() {
     }
   }, [page]);
 
-  const startDate = selectedMonday;
-  const endDate = addDays(startDate, 6);
-
-  // 7일 날짜 헤더 (월요일부터)
-  const dayHeaders: Date[] = [];
-  for (let i = 0; i < 7; i++) {
-    dayHeaders.push(addDays(startDate, i));
-  }
+  // 날짜 헤더 (시작일~종료일)
+  const dayHeaders = useMemo(() => {
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+    const headers: Date[] = [];
+    const dayCount = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    for (let i = 0; i < dayCount; i++) {
+      headers.push(addDays(start, i));
+    }
+    return headers;
+  }, [startDate, endDate]);
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -190,8 +183,8 @@ export default function StudyTimeManagement() {
     setLoading(true);
     try {
       const commonParams = {
-        startDate: formatDateKey(startDate),
-        endDate: formatDateKey(endDate),
+        startDate,
+        endDate,
         studentName: filterName || undefined,
         studentNumber: filterNumber || undefined,
       };
@@ -204,15 +197,15 @@ export default function StudyTimeManagement() {
             return list.map((r) => ({ ...r, storeId: s.id, storeName: s.storeName }));
           }),
         );
-        setRows(toRows(results.flat(), startDate));
+        setRows(toRows(results.flat(), startDate, endDate));
       } else {
         const data = await getStudyTimes({ storeId: effectiveStoreId, ...commonParams });
         const selectedStore = stores.find((s) => s.id === effectiveStoreId);
         setRows(toRows(
-          selectedStore 
+          selectedStore
             ? data.map((r) => ({ ...r, storeId: selectedStore.id, storeName: selectedStore.storeName }))
-            : data, 
-          startDate
+            : data,
+          startDate, endDate
         ));
       }
     } catch {
@@ -222,13 +215,13 @@ export default function StudyTimeManagement() {
     }
   }, [isAdmin, stores, effectiveStoreId, startDate, endDate, filterName, filterNumber]);
 
-  // 주간 변경 시 자동 조회
+  // 날짜/지점 변경 시 자동 조회
   useEffect(() => {
     if (isAdmin && stores.length === 0) return;
     if (!isAdmin && storeId == null) return;
     setPage(0);
     fetchData();
-  }, [selectedMonday, effectiveStoreId, stores]);
+  }, [startDate, endDate, effectiveStoreId, stores]);
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
@@ -264,10 +257,6 @@ export default function StudyTimeManagement() {
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   }, [page, totalPages]);
-
-  const handleWeekChange = (date: Date | null) => {
-    if (date) setSelectedMonday(getMonday(date));
-  };
 
   const handleSort = (field: SortField) => {
     setSort((prev) => {
@@ -328,31 +317,9 @@ export default function StudyTimeManagement() {
           </div>
           <div className={f.filterGroup}>
             <label className={f.filterLabel}>기간</label>
-            <div className={styles.datePickerWrap} onClick={() => weekPickerRef.current?.setOpen(true)}>
-              <DatePicker
-                ref={weekPickerRef}
-                locale="ko"
-                selected={selectedMonday}
-                onChange={handleWeekChange}
-                showWeekPicker
-                showWeekNumbers={false}
-                calendarStartDay={1}
-                dateFormat="yyyy-MM-dd"
-                className={dp.input}
-                calendarClassName={`${dp.calendar} ${styles.weekCalendar}`}
-                dayClassName={() => dp.day}
-                popperClassName={dp.popper}
-                showPopperArrow={false}
-                customInput={
-                  <button type="button" className={styles.datePickerButton}>
-                    {formatDateKey(startDate)} ~ {formatDateKey(endDate)}
-                    <svg className={styles.calendarIcon} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                }
-              />
-            </div>
+            <FilterDatePicker id="st-start" value={startDate} onChange={setStartDate} maxDate={endDate} />
+            <span className={f.dateSeparator}>~</span>
+            <FilterDatePicker id="st-end" value={endDate} onChange={setEndDate} minDate={startDate} />
           </div>
 
           <div className={f.filterActions}>
@@ -364,7 +331,25 @@ export default function StudyTimeManagement() {
 
       <div className={styles.contentCard} ref={tableRef}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button
+            type="button"
+            className={f.excelButton}
+            onClick={async () => {
+              try {
+                await exportStudyTimes({
+                  storeId: effectiveStoreId,
+                  startDate,
+                  endDate,
+                  studentName: filterName || undefined,
+                  studentNumber: filterNumber || undefined,
+                });
+              } catch {
+                window.alert('엑셀 다운로드에 실패했습니다.');
+              }
+            }}
+          >
+            엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} />
+          </button>
         </div>
 
         {/* 테이블 */}
@@ -372,47 +357,47 @@ export default function StudyTimeManagement() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.checkboxCol}>
+                <th className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
                   <input type="checkbox" />
                 </th>
-                {isAdmin && <th>지점</th>}
-                <th className={styles.sortableCol} onClick={() => handleSort('name')}>
+                {isAdmin && <th className={styles.stickyCol} style={{ left: 50, width: 110, minWidth: 110, maxWidth: 110 }}>지점</th>}
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 160 : 50, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('name')}>
                   이름 <SortIcon field="name" />
                 </th>
-                <th className={styles.sortableCol} onClick={() => handleSort('studentNumber')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 260 : 150, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('studentNumber')}>
                   학번 <SortIcon field="studentNumber" />
                 </th>
-                <th className={styles.sortableCol} onClick={() => handleSort('seat')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 360 : 250, width: 80, minWidth: 80, maxWidth: 80 }} onClick={() => handleSort('seat')}>
                   좌석 <SortIcon field="seat" />
                 </th>
-                <th className={styles.sortableCol} onClick={() => handleSort('total')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 440 : 330, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('total')}>
                   합계 <SortIcon field="total" />
                 </th>
                 {dayHeaders.map((d) => (
-                  <th key={d.toISOString()}>{formatDateShort(d)}</th>
+                  <th key={d.toISOString()} style={{ minWidth: 90 }}>{formatDateShort(d)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>로딩 중...</td>
+                  <td colSpan={(isAdmin ? 6 : 5) + dayHeaders.length}>로딩 중...</td>
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr className={styles.emptyRow}>
-                  <td colSpan={isAdmin ? 6 + dayHeaders.length : 5 + dayHeaders.length}>공부 시간 내역이 없습니다.</td>
+                  <td colSpan={(isAdmin ? 6 : 5) + dayHeaders.length}>공부 시간 내역이 없습니다.</td>
                 </tr>
               ) : (
                 pagedData.map((row) => (
                   <tr key={row.id}>
-                    <td className={styles.checkboxCol}>
+                    <td className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
                       <input type="checkbox" />
                     </td>
-                    {isAdmin && <td>{row.storeName || '-'}</td>}
-                    <td>{row.name}</td>
-                    <td>{row.studentNumber}</td>
-                    <td>{row.seat}</td>
-                    <td>{row.total}</td>
+                    {isAdmin && <td className={styles.stickyCol} style={{ left: 50, width: 110, minWidth: 110, maxWidth: 110 }}>{row.storeName || '-'}</td>}
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 160 : 50, width: 100, minWidth: 100, maxWidth: 100 }}>{row.name}</td>
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 260 : 150, width: 100, minWidth: 100, maxWidth: 100 }}>{row.studentNumber}</td>
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 360 : 250, width: 80, minWidth: 80, maxWidth: 80 }}>{row.seat}</td>
+                    <td className={`${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 440 : 330, width: 100, minWidth: 100, maxWidth: 100 }}>{row.total}</td>
                     {dayHeaders.map((d) => {
                       const key = formatDateShort(d);
                       const val = row.dailyTimes[key];

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiDelete } from './client';
 
 /* ── 이탈 사유 타입 ── */
 
@@ -8,6 +8,8 @@ export interface SeatLeaveReason {
   reasonName: string;
   displayOrder: number;
   active: boolean;
+  /** 업로드된 아이콘 이미지 URL. 없으면 텍스트만 표시 */
+  iconUrl?: string | null;
 }
 
 /* ── 이탈 기록 타입 ── */
@@ -34,28 +36,108 @@ export function getSeatLeaveReasons(storeId?: number): Promise<SeatLeaveReason[]
   return apiGet<SeatLeaveReason[]>(`/api/v1/admin/seat-leave-reasons${query}`);
 }
 
-/** 이탈 사유 등록 */
-export function createSeatLeaveReason(params: {
+/** 아이콘 파일 크기 제한 (5MB) */
+const MAX_ICON_SIZE = 5 * 1024 * 1024;
+
+function validateIconFile(file: File) {
+  if (file.size > MAX_ICON_SIZE) {
+    throw new Error(`파일 크기가 너무 큽니다. (${(file.size / 1024 / 1024).toFixed(1)}MB, 최대 5MB)`);
+  }
+}
+
+async function handleReasonFormDataResponse(res: Response, fallbackMessage: string): Promise<SeatLeaveReason> {
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    if (res.status === 413) throw new Error('파일 크기가 서버 허용 용량을 초과했습니다.');
+    throw new Error(`서버 응답 오류 (${res.status}).`);
+  }
+  if (!res.ok || !json.success) {
+    throw new Error(json.error?.message ?? fallbackMessage);
+  }
+  return json.data;
+}
+
+function buildReasonQuery(params: Record<string, string | number | boolean | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : '';
+}
+
+/** 이탈 사유 등록 — icon: body(multipart, 선택), 나머지: query params */
+export async function createSeatLeaveReason(params: {
   reasonName: string;
   displayOrder: number;
   active: boolean;
   storeId?: number;
+  iconFile?: File;
 }): Promise<SeatLeaveReason> {
-  const query = params.storeId ? `?storeId=${params.storeId}` : '';
-  return apiPost<SeatLeaveReason>(`/api/v1/admin/seat-leave-reasons${query}`, {
+  if (params.iconFile) validateIconFile(params.iconFile);
+
+  const formData = new FormData();
+  if (params.iconFile) {
+    formData.append('iconFile', params.iconFile);
+  }
+
+  const query = buildReasonQuery({
     reasonName: params.reasonName,
     displayOrder: params.displayOrder,
     active: params.active,
-  } as Record<string, unknown>);
+    storeId: params.storeId,
+  });
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/admin/seat-leave-reasons${query}`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+  } catch {
+    throw new Error('서버에 연결할 수 없습니다. 네트워크를 확인해주세요.');
+  }
+
+  return handleReasonFormDataResponse(res, '이탈 사유 등록에 실패했습니다.');
 }
 
-/** 이탈 사유 수정 */
-export function updateSeatLeaveReason(id: number, params: {
+/** 이탈 사유 수정 — iconFile은 선택. 없으면 기존 아이콘 유지, 있으면 교체 */
+export async function updateSeatLeaveReason(id: number, params: {
   reasonName: string;
   displayOrder: number;
   active: boolean;
+  iconFile?: File;
 }): Promise<SeatLeaveReason> {
-  return apiPut<SeatLeaveReason>(`/api/v1/admin/seat-leave-reasons/${id}`, params as Record<string, unknown>);
+  if (params.iconFile) validateIconFile(params.iconFile);
+
+  const formData = new FormData();
+  if (params.iconFile) {
+    formData.append('iconFile', params.iconFile);
+  }
+
+  const query = buildReasonQuery({
+    reasonName: params.reasonName,
+    displayOrder: params.displayOrder,
+    active: params.active,
+  });
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/admin/seat-leave-reasons/${id}${query}`, {
+      method: 'PUT',
+      credentials: 'include',
+      body: formData,
+    });
+  } catch {
+    throw new Error('서버에 연결할 수 없습니다. 네트워크를 확인해주세요.');
+  }
+
+  return handleReasonFormDataResponse(res, '이탈 사유 수정에 실패했습니다.');
 }
 
 /** 이탈 사유 삭제 */

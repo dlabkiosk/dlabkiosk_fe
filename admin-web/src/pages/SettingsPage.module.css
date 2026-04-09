@@ -4,6 +4,30 @@
   gap: var(--spacing-md);
 }
 
+/* ── Sortable table column ── */
+.sortableCol {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableCol:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  opacity: 0.4;
+}
+
+.sortIconActive {
+  font-size: var(--font-size-xs);
+  vertical-align: middle;
+  margin-left: var(--spacing-xs);
+  color: var(--color-primary);
+}
+
 /* ── Page Header ── */
 .pageHeader {
   display: flex;
@@ -200,11 +224,11 @@
   width: 100%;
 }
 
-.formFilterFull > div > button {
+.formFilterFull button {
   width: 100%;
 }
 
-.formFilterFull > div > ul {
+.formFilterFull ul {
   width: 100%;
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { LuArrowUp, LuArrowDown, LuChevronDown, LuPencil, LuTrash2 } from 'react-icons/lu';
+import { LuArrowLeft, LuArrowUp, LuArrowDown, LuArrowUpDown, LuChevronDown, LuPencil, LuTrash2 } from 'react-icons/lu';
 import settingIcon from '../assets/setting_active.png';
 import styles from './SettingsPage.module.css';
 import f from '../styles/filter.module.css';
@@ -40,6 +40,7 @@ import {
   createStudentMessage,
   updateStudentMessage,
   deleteStudentMessage,
+  bulkDeleteStudentMessages,
 } from '../api/studentMessageApi';
 import type { StudentMessage } from '../api/studentMessageApi';
 import {
@@ -47,8 +48,10 @@ import {
   createMessageTemplate,
   updateMessageTemplate,
   deleteMessageTemplate,
+  getMessageTemplateEligibleStudents,
+  getMessageTemplateRecipients,
 } from '../api/messageTemplateApi';
-import type { MessageTemplate } from '../api/messageTemplateApi';
+import type { MessageTemplate, RecipientStudent } from '../api/messageTemplateApi';
 import { syncStudents, syncStores } from '../api/syncApi';
 import type { StudentSyncResult, StoreSyncResult } from '../api/syncApi';
 
@@ -1247,8 +1250,11 @@ function ExamSchedule() {
                     />
                   </th>
                   <th>시험명</th>
-                  <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={toggleDateSort}>
-                    날짜 {dateSortDir === 'asc' ? <LuArrowUp /> : <LuArrowDown />}
+                  <th className={styles.sortableCol} onClick={toggleDateSort}>
+                    날짜{' '}
+                    {dateSortDir === 'asc'
+                      ? <LuArrowUp className={styles.sortIconActive} />
+                      : <LuArrowDown className={styles.sortIconActive} />}
                   </th>
                   <th>지점</th>
                   <th>상태</th>
@@ -1452,6 +1458,11 @@ function SeatLeaveReasonSettings() {
   const [formName, setFormName] = useState('');
   const [formOrder, setFormOrder] = useState(1);
   const [formActive, setFormActive] = useState(true);
+  const [formIconFile, setFormIconFile] = useState<File | null>(null);
+  const [formIconPreview, setFormIconPreview] = useState<string | null>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_REASONS_PER_STORE = 9;
 
   /* ADMIN 역할 & 지점 필터 */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1479,10 +1490,13 @@ function SeatLeaveReasonSettings() {
 
   const currentStoreId = isAdmin ? selectedStoreId : undefined;
 
+  const [allReasons, setAllReasons] = useState<SeatLeaveReason[]>([]);
+
   const fetchReasons = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getSeatLeaveReasons();
+      setAllReasons(data);
       const filtered = currentStoreId ? data.filter((r) => r.storeId === currentStoreId) : data;
       setReasons(filtered.sort((a, b) => a.displayOrder - b.displayOrder));
     } catch (err) {
@@ -1498,10 +1512,16 @@ function SeatLeaveReasonSettings() {
     setFormName('');
     setFormOrder(reasons.length + 1);
     setFormActive(true);
+    setFormIconFile(null);
+    setFormIconPreview(null);
     setEditTarget(null);
   };
 
-  const openAdd = () => {
+  const openAdd = async () => {
+    if (reasons.length >= MAX_REASONS_PER_STORE) {
+      await alert(`이탈 사유는 최대 ${MAX_REASONS_PER_STORE}개까지 등록할 수 있습니다.`);
+      return;
+    }
     resetForm();
     setModalStoreId(undefined);
     setShowModal(true);
@@ -1512,6 +1532,8 @@ function SeatLeaveReasonSettings() {
     setFormName(reason.reasonName);
     setFormOrder(reason.displayOrder);
     setFormActive(reason.active);
+    setFormIconFile(null);
+    setFormIconPreview(reason.iconUrl ?? null);
     setShowModal(true);
   };
 
@@ -1519,6 +1541,18 @@ function SeatLeaveReasonSettings() {
     setShowModal(false);
     setEditTarget(null);
     resetForm();
+  };
+
+  const handleIconFileChange = (file: File | null) => {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      alert('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    setFormIconFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setFormIconPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async () => {
@@ -1530,19 +1564,30 @@ function SeatLeaveReasonSettings() {
           reasonName: formName.trim(),
           displayOrder: formOrder,
           active: formActive,
+          iconFile: formIconFile ?? undefined,
         });
       } else {
+        const targetStoreId = isAdmin ? modalStoreId : undefined;
+        const targetStoreReasons = targetStoreId
+          ? allReasons.filter((r) => r.storeId === targetStoreId)
+          : reasons;
+        if (targetStoreReasons.length >= MAX_REASONS_PER_STORE) {
+          await alert(`해당 지점은 이미 최대 ${MAX_REASONS_PER_STORE}개의 사유가 등록되어 있습니다.`);
+          return;
+        }
         await createSeatLeaveReason({
           reasonName: formName.trim(),
-          displayOrder: reasons.length + 1,
-          active: formActive,
-          storeId: isAdmin ? modalStoreId : undefined,
+          displayOrder: targetStoreReasons.length + 1,
+          active: true,
+          storeId: targetStoreId,
+          iconFile: formIconFile ?? undefined,
         });
       }
       closeModal();
       await fetchReasons();
     } catch (err) {
-      await alert('저장에 실패했습니다.');
+      const msg = err instanceof Error ? err.message : '저장에 실패했습니다.';
+      await alert(msg);
     }
   };
 
@@ -1599,26 +1644,27 @@ function SeatLeaveReasonSettings() {
   return (
     <>
       <div className={styles.section}>
-        <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeader} style={{ borderBottom: 'none' }}>
           <h3 className={styles.sectionTitle}>좌석 이탈 사유 관리</h3>
           <button type="button" className={styles.addBtn} onClick={openAdd}>+ 사유 추가</button>
         </div>
-
-        {isAdmin && (
-          <div style={{ paddingTop: 'var(--spacing-md)', paddingRight: 'var(--spacing-lg)', display: 'flex', justifyContent: 'flex-end' }}>
-            <FilterSelect
-              value={selectedStoreId && stores.length > 0 ? stores.find((s) => s.id === selectedStoreId)?.storeName || '' : ''}
-              options={stores.map((s) => s.storeName)}
-              defaultValue={stores.length > 0 ? stores[0].storeName : undefined}
-              onChange={(v: string) => {
-                const store = stores.find((s) => s.storeName === v);
-                setSelectedStoreId(store?.id);
-              }}
-            />
-          </div>
-        )}
-
         <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--spacing-sm)', marginTop: 'var(--spacing-xs)' }}>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+              ※ 최대 {MAX_REASONS_PER_STORE}개까지 등록할 수 있습니다.
+            </div>
+            {isAdmin && (
+              <FilterSelect
+                value={selectedStoreId && stores.length > 0 ? stores.find((s) => s.id === selectedStoreId)?.storeName || '' : ''}
+                options={stores.map((s) => s.storeName)}
+                defaultValue={stores.length > 0 ? stores[0].storeName : undefined}
+                onChange={(v: string) => {
+                  const store = stores.find((s) => s.storeName === v);
+                  setSelectedStoreId(store?.id);
+                }}
+              />
+            )}
+          </div>
           {loading ? (
             <p className={styles.placeholderText}>로딩 중...</p>
           ) : (
@@ -1627,8 +1673,8 @@ function SeatLeaveReasonSettings() {
                 <tr>
                   <th style={{ width: 40 }}></th>
                   <th style={{ width: 60 }}>순서</th>
-                  <th style={{ width: '45%' }}>사유명</th>
-                  <th style={{ width: 100 }}>상태</th>
+                  <th style={{ width: 100 }}>아이콘</th>
+                  <th>사유명</th>
                   <th style={{ width: 120 }}>관리</th>
                 </tr>
               </thead>
@@ -1649,12 +1695,16 @@ function SeatLeaveReasonSettings() {
                     >
                       <td className={styles.dragHandle}>&#x2630;</td>
                       <td>{reason.displayOrder}</td>
-                      <td>{reason.reasonName}</td>
                       <td>
-                      <span className={`${styles.statusBadge} ${reason.active ? styles.statusActive : styles.statusInactive}`}>
-                        {reason.active ? '활성' : '비활성'}
-                      </span>
-                    </td>
+                        {reason.iconUrl && (
+                          <img
+                            src={reason.iconUrl}
+                            alt={reason.reasonName}
+                            style={{ width: 32, height: 32, objectFit: 'contain', verticalAlign: 'middle' }}
+                          />
+                        )}
+                      </td>
+                      <td>{reason.reasonName}</td>
                     <td>
                       <div className={styles.actionBtns}>
                         <button type="button" className={styles.iconBtn} onClick={() => openEdit(reason)}>
@@ -1711,16 +1761,59 @@ function SeatLeaveReasonSettings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>활성 상태</label>
-                <label className={styles.radioLabel}>
+                <label className={styles.formLabel}>아이콘{editTarget ? ' (선택 시 교체)' : ''}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px dashed var(--color-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#fafafa',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {formIconPreview ? (
+                      <img
+                        src={formIconPreview}
+                        alt="아이콘 미리보기"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>미리보기</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={() => iconInputRef.current?.click()}
+                  >
+                    이미지 선택
+                  </button>
                   <input
-                    type="checkbox"
-                    checked={formActive}
-                    onChange={(e) => setFormActive(e.target.checked)}
-                  />{' '}
-                  활성
-                </label>
+                    ref={iconInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      handleIconFileChange(file);
+                      // 같은 파일을 다시 선택해도 onChange가 발화되도록 리셋
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  {editTarget
+                    ? '새 이미지를 선택하지 않으면 기존 아이콘이 유지됩니다. 정사각형 이미지 권장 (PNG/JPG/SVG, 최대 5MB).'
+                    : '정사각형 이미지 권장 (PNG/JPG/SVG, 최대 5MB).'}
+                </div>
               </div>
+
             </div>
 
             <div className={styles.modalActions}>
@@ -2154,6 +2247,61 @@ function MessageTemplateSettings() {
   const [tplPage, setTplPage] = useState(1);
   const TPL_PER_PAGE = 10;
 
+  // 템플릿 등록 학생 모달
+  const [studentsModalTemplate, setStudentsModalTemplate] = useState<MessageTemplate | null>(null);
+  const [tplStudents, setTplStudents] = useState<RecipientStudent[]>([]);
+  const [tplStudentsLoading, setTplStudentsLoading] = useState(false);
+  const [selectedTplStudentIds, setSelectedTplStudentIds] = useState<Set<number>>(new Set());
+  const [tplSortField, setTplSortField] = useState<'name' | 'studentNumber' | null>('studentNumber');
+  const [tplSortDir, setTplSortDir] = useState<'asc' | 'desc'>('asc');
+  const [tplStudentSearch, setTplStudentSearch] = useState('');
+  const [tplStudentPage, setTplStudentPage] = useState(1);
+  const TPL_STUDENT_PER_PAGE = 10;
+
+  const handleTplSort = (field: 'name' | 'studentNumber') => {
+    if (tplSortField === field) {
+      setTplSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setTplSortField(field);
+      setTplSortDir('asc');
+    }
+  };
+
+  const filteredTplStudents = useMemo(() => {
+    if (!tplStudentSearch.trim()) return tplStudents;
+    const keyword = tplStudentSearch.trim().toLowerCase();
+    return tplStudents.filter((s) =>
+      s.name.toLowerCase().includes(keyword) ||
+      (s.studentNumber ?? '').toLowerCase().includes(keyword),
+    );
+  }, [tplStudents, tplStudentSearch]);
+
+  const sortedTplStudents = useMemo(() => {
+    const arr = [...filteredTplStudents];
+    if (tplSortField) {
+      arr.sort((a, b) => {
+        const va = (a[tplSortField] ?? '').toString();
+        const vb = (b[tplSortField] ?? '').toString();
+        const cmp = va.localeCompare(vb, 'ko', { numeric: true });
+        return tplSortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return arr;
+  }, [filteredTplStudents, tplSortField, tplSortDir]);
+
+  const tplStudentTotalPages = Math.max(1, Math.ceil(sortedTplStudents.length / TPL_STUDENT_PER_PAGE));
+  const pagedTplStudents = sortedTplStudents.slice(
+    (tplStudentPage - 1) * TPL_STUDENT_PER_PAGE,
+    tplStudentPage * TPL_STUDENT_PER_PAGE,
+  );
+  const tplStudentPageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const start = Math.max(1, tplStudentPage - 2);
+    const end = Math.min(tplStudentTotalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }, [tplStudentPage, tplStudentTotalPages]);
+
   /* ADMIN 역할 & 지점 필터 */
   const [isAdmin, setIsAdmin] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
@@ -2206,6 +2354,8 @@ function MessageTemplateSettings() {
     try {
       if (editTarget) {
         await updateMessageTemplate(editTarget.id, { content: formContent.trim() });
+        // 해당 템플릿을 사용 중인 학생 메시지 리스트도 즉시 갱신되도록 알림
+        window.dispatchEvent(new CustomEvent('messageTemplateUpdated', { detail: { id: editTarget.id } }));
       } else {
         const storeIdToSend = isAdmin ? modalStoreId : myStoreId;
         await createMessageTemplate({ content: formContent.trim() }, storeIdToSend);
@@ -2221,11 +2371,247 @@ function MessageTemplateSettings() {
     if (!(await confirm('이 템플릿을 삭제하시겠습니까?'))) return;
     try {
       await deleteMessageTemplate(id);
+      if (studentsModalTemplate?.id === id) {
+        setStudentsModalTemplate(null);
+        setTplStudents([]);
+      }
       await fetchTemplates();
     } catch {
       await alert('삭제에 실패했습니다.');
     }
   };
+
+  const fetchTplStudents = useCallback(async (templateId: number) => {
+    setTplStudentsLoading(true);
+    try {
+      const page = await getMessageTemplateRecipients(templateId, { size: 1000 });
+      setTplStudents(page.content);
+    } catch {
+      setTplStudents([]);
+    } finally {
+      setTplStudentsLoading(false);
+    }
+  }, []);
+
+  const openStudentsModal = async (t: MessageTemplate) => {
+    setStudentsModalTemplate(t);
+    setTplStudents([]);
+    setSelectedTplStudentIds(new Set());
+    setTplStudentSearch('');
+    setTplStudentPage(1);
+    await fetchTplStudents(t.id);
+  };
+
+  const closeStudentsModal = () => {
+    setStudentsModalTemplate(null);
+    setTplStudents([]);
+    setSelectedTplStudentIds(new Set());
+  };
+
+  const toggleTplStudentSelect = (id: number) => {
+    setSelectedTplStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTplStudentSelectAll = () => {
+    setSelectedTplStudentIds((prev) => {
+      const visibleIds = sortedTplStudents.map((s) => s.messageId);
+      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        visibleIds.forEach((id) => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...visibleIds]);
+    });
+  };
+
+  const handleDeleteTplStudent = async (msgId: number) => {
+    if (!(await confirm('이 학생의 메시지를 삭제하시겠습니까?'))) return;
+    try {
+      await deleteStudentMessage(msgId);
+      setSelectedTplStudentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(msgId);
+        return next;
+      });
+      if (studentsModalTemplate) await fetchTplStudents(studentsModalTemplate.id);
+    } catch {
+      await alert('삭제에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteSelectedTplStudents = async () => {
+    if (selectedTplStudentIds.size === 0) return;
+    if (!(await confirm(`선택한 ${selectedTplStudentIds.size}명의 메시지를 삭제하시겠습니까?`))) return;
+    try {
+      await bulkDeleteStudentMessages(Array.from(selectedTplStudentIds));
+      setSelectedTplStudentIds(new Set());
+      if (studentsModalTemplate) await fetchTplStudents(studentsModalTemplate.id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '삭제에 실패했습니다.';
+      await alert(msg);
+    }
+  };
+
+  if (studentsModalTemplate) {
+    return (
+      <>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                onClick={closeStudentsModal}
+                style={{ fontSize: 'var(--font-size-lg)' }}
+              >
+                <LuArrowLeft />
+              </button>
+              <h3 className={styles.sectionTitle}>
+                {isAdmin && `[${studentsModalTemplate.storeName}] - `} [ {studentsModalTemplate.content} ]에 등록된 학생{' '}
+                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 400 }}>({tplStudents.length}명)</span>
+              </h3>
+            </div>
+          </div>
+
+          <div className={styles.sectionBody} style={{ padding: 'var(--spacing-md) var(--spacing-lg) var(--spacing-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--spacing-md)' }}>
+              <input
+                className={f.filterInput}
+                placeholder="이름 또는 학번 검색"
+                value={tplStudentSearch}
+                onChange={(e) => { setTplStudentSearch(e.target.value); setTplStudentPage(1); }}
+              />
+              <button
+                type="button"
+                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                disabled={selectedTplStudentIds.size === 0}
+                onClick={handleDeleteSelectedTplStudents}
+                style={{
+                  width: 'auto',
+                  padding: '0 var(--spacing-md)',
+                  gap: 'var(--spacing-xs)',
+                  opacity: selectedTplStudentIds.size === 0 ? 0.45 : 1,
+                  cursor: selectedTplStudentIds.size === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <LuTrash2 />
+                선택 삭제
+              </button>
+            </div>
+
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={sortedTplStudents.length > 0 && sortedTplStudents.every((s) => selectedTplStudentIds.has(s.messageId))}
+                      onChange={toggleTplStudentSelectAll}
+                    />
+                  </th>
+                  <th
+                    className={styles.sortableCol}
+                    style={{ textAlign: 'center' }}
+                    onClick={() => handleTplSort('name')}
+                  >
+                    학생명{' '}
+                    {tplSortField === 'name'
+                      ? (tplSortDir === 'asc'
+                        ? <LuArrowUp className={styles.sortIconActive} />
+                        : <LuArrowDown className={styles.sortIconActive} />)
+                      : <LuArrowUpDown className={styles.sortIcon} />}
+                  </th>
+                  <th
+                    className={styles.sortableCol}
+                    style={{ textAlign: 'center' }}
+                    onClick={() => handleTplSort('studentNumber')}
+                  >
+                    학번{' '}
+                    {tplSortField === 'studentNumber'
+                      ? (tplSortDir === 'asc'
+                        ? <LuArrowUp className={styles.sortIconActive} />
+                        : <LuArrowDown className={styles.sortIconActive} />)
+                      : <LuArrowUpDown className={styles.sortIcon} />}
+                  </th>
+                  <th style={{ width: 80 }}>삭제</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tplStudentsLoading ? (
+                  <tr><td colSpan={4} className={styles.emptyCell}>로딩 중...</td></tr>
+                ) : sortedTplStudents.length === 0 ? (
+                  <tr><td colSpan={4} className={styles.emptyCell}>{tplStudentSearch ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}</td></tr>
+                ) : (
+                  pagedTplStudents.map((sm) => (
+                    <tr key={sm.messageId}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedTplStudentIds.has(sm.messageId)}
+                          onChange={() => toggleTplStudentSelect(sm.messageId)}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>{sm.name}</td>
+                      <td style={{ textAlign: 'center' }}>{sm.studentNumber ?? '-'}</td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button
+                            type="button"
+                            className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                            onClick={() => handleDeleteTplStudent(sm.messageId)}
+                          >
+                            <LuTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            {sortedTplStudents.length > TPL_STUDENT_PER_PAGE && (
+              <div className={f.pagination}>
+                <button
+                  type="button"
+                  className={f.pageBtn}
+                  disabled={tplStudentPage <= 1}
+                  onClick={() => setTplStudentPage((p) => p - 1)}
+                >
+                  &lt;
+                </button>
+                {tplStudentPageNumbers.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`${f.pageBtn} ${tplStudentPage === p ? f.pageBtnActive : ''}`}
+                    onClick={() => setTplStudentPage(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={f.pageBtn}
+                  disabled={tplStudentPage >= tplStudentTotalPages}
+                  onClick={() => setTplStudentPage((p) => p + 1)}
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {TplConfirmDialog}
+      </>
+    );
+  }
 
   return (
     <>
@@ -2272,22 +2658,26 @@ function MessageTemplateSettings() {
                     <tr><td colSpan={4} className={styles.emptyCell}>등록된 템플릿이 없습니다.</td></tr>
                   ) : (
                     templates.slice((tplPage - 1) * TPL_PER_PAGE, tplPage * TPL_PER_PAGE).map((t) => (
-                    <tr key={t.id}>
-                      <td>{t.storeName}</td>
-                      <td style={{ textAlign: 'center' }}>{t.content}</td>
-                      <td>{new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
-                      <td>
-                        <div className={styles.actionBtns}>
-                          <button type="button" className={styles.iconBtn} onClick={() => openEdit(t)}>
-                            <LuPencil />
-                          </button>
-                          <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(t.id)}>
-                            <LuTrash2 />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                      <tr
+                        key={t.id}
+                        onClick={() => openStudentsModal(t)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td>{t.storeName}</td>
+                        <td style={{ textAlign: 'center' }}>{t.content}</td>
+                        <td>{new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <div className={styles.actionBtns}>
+                            <button type="button" className={styles.iconBtn} onClick={() => openEdit(t)}>
+                              <LuPencil />
+                            </button>
+                            <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(t.id)}>
+                              <LuTrash2 />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -2369,18 +2759,24 @@ function MessageTemplateSettings() {
 /* ── 학생 메시지 관리 ── */
 function StudentMessageSettings() {
   const { confirm, alert, ConfirmDialog: MsgConfirmDialog } = useConfirm();
-  const [students, setStudents] = useState<Student[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [allMsgTemplates, setAllMsgTemplates] = useState<MessageTemplate[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [studentSearch, setStudentSearch] = useState('');
   const [messages, setMessages] = useState<StudentMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [msgLoading, setMsgLoading] = useState(false);
 
+  // ADMIN 역할 & 지점 필터
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(undefined);
+  const [modalStoreId, setModalStoreId] = useState<number | undefined>(undefined);
+
   // 모달
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentMessage | null>(null);
   const [formContent, setFormContent] = useState('');
-  const [formActive, setFormActive] = useState(true);
   const [msgPage, setMsgPage] = useState(1);
   const MSG_PER_PAGE = 7;
 
@@ -2388,18 +2784,51 @@ function StudentMessageSettings() {
   const [modalStudentIds, setModalStudentIds] = useState<number[]>([]);
   const [modalStudentSearch, setModalStudentSearch] = useState('');
 
-  // 메시지 템플릿
-  const [msgTemplates, setMsgTemplates] = useState<MessageTemplate[]>([]);
+  // 모달에서 선택된 템플릿 (커스텀 메시지와 배타)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  // 선택된 템플릿 기준 발송 가능 학생 id 집합 (null이면 템플릿 미선택 = 전체 허용)
+  const [eligibleStudentIds, setEligibleStudentIds] = useState<Set<number> | null>(null);
+  const [eligibleLoading, setEligibleLoading] = useState(false);
 
-  // 학생 목록 로드
+  useEffect(() => {
+    getMe().then((me) => {
+      if (me.role === 'ADMIN') {
+        setIsAdmin(true);
+        getStores().then((list) => {
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+          if (activeStores.length > 0) setSelectedStoreId(activeStores[0].id);
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  // 학생 & 템플릿 목록 로드
   useEffect(() => {
     setLoading(true);
     getStudents()
-      .then(setStudents)
-      .catch(() => setStudents([]))
+      .then(setAllStudents)
+      .catch(() => setAllStudents([]))
       .finally(() => setLoading(false));
-    getMessageTemplates().then(setMsgTemplates).catch(() => {});
+    getMessageTemplates().then(setAllMsgTemplates).catch(() => {});
   }, []);
+
+  // 지점 필터 적용된 학생 / 템플릿
+  const students = useMemo(() => {
+    if (!isAdmin || !selectedStoreId) return allStudents;
+    return allStudents.filter((s) => s.storeId === selectedStoreId);
+  }, [allStudents, isAdmin, selectedStoreId]);
+
+  const msgTemplates = useMemo(() => {
+    if (!isAdmin || !modalStoreId) return allMsgTemplates;
+    return allMsgTemplates.filter((t) => t.storeId === modalStoreId);
+  }, [allMsgTemplates, isAdmin, modalStoreId]);
+
+  // 모달 내 학생 (지점 필터)
+  const modalStudents = useMemo(() => {
+    if (!isAdmin || !modalStoreId) return allStudents;
+    return allStudents.filter((s) => s.storeId === modalStoreId);
+  }, [allStudents, isAdmin, modalStoreId]);
 
   // 학생 검색 필터 (좌측 목록)
   const filteredStudents = useMemo(() => {
@@ -2412,12 +2841,12 @@ function StudentMessageSettings() {
 
   // 모달 내 학생 검색 필터
   const modalFilteredStudents = useMemo(() => {
-    if (!modalStudentSearch.trim()) return students;
+    if (!modalStudentSearch.trim()) return modalStudents;
     const q = modalStudentSearch.trim().toLowerCase();
-    return students.filter(
+    return modalStudents.filter(
       (s) => (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q)
     );
-  }, [students, modalStudentSearch]);
+  }, [modalStudents, modalStudentSearch]);
 
   // 선택된 학생의 메시지 로드
   const fetchMessages = useCallback(async (studentId: number) => {
@@ -2437,31 +2866,43 @@ function StudentMessageSettings() {
     else setMessages([]);
   }, [selectedStudentId, fetchMessages]);
 
+  // 메시지 템플릿이 수정되면 학생 메시지 리스트도 즉시 갱신
+  useEffect(() => {
+    const handler = () => {
+      if (selectedStudentId) fetchMessages(selectedStudentId);
+      // 모달에서 사용 중인 템플릿 선택지도 최신 content로 갱신
+      getMessageTemplates().then(setAllMsgTemplates).catch(() => {});
+    };
+    window.addEventListener('messageTemplateUpdated', handler);
+    return () => window.removeEventListener('messageTemplateUpdated', handler);
+  }, [selectedStudentId, fetchMessages]);
+
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   const resetForm = () => {
     setFormContent('');
-    setFormActive(true);
     setEditTarget(null);
     setModalStudentIds([]);
     setModalStudentSearch('');
+    setSelectedTemplateId(null);
+    setEligibleStudentIds(null);
   };
 
   const openAdd = () => {
     resetForm();
+    setModalStoreId(selectedStoreId);
     // 현재 선택된 학생이 있으면 미리 체크
     if (selectedStudentId) setModalStudentIds([selectedStudentId]);
     setShowModal(true);
     // 템플릿 관리에서 새로 등록한 항목이 바로 반영되도록 모달 열 때 재조회
-    getMessageTemplates().then(setMsgTemplates).catch(() => {});
+    getMessageTemplates().then(setAllMsgTemplates).catch(() => {});
   };
 
   const openEdit = (msg: StudentMessage) => {
     setEditTarget(msg);
     setFormContent(msg.content);
-    setFormActive(msg.active);
     setShowModal(true);
-    getMessageTemplates().then(setMsgTemplates).catch(() => {});
+    getMessageTemplates().then(setAllMsgTemplates).catch(() => {});
   };
 
   const closeModal = () => {
@@ -2469,15 +2910,23 @@ function StudentMessageSettings() {
     resetForm();
   };
 
+  const isStudentEligible = (id: number) => {
+    if (eligibleStudentIds === null) return true;
+    return eligibleStudentIds.has(id);
+  };
+
   const toggleModalStudent = (id: number) => {
+    if (!isStudentEligible(id)) return;
     setModalStudentIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
   const toggleAllModalStudents = () => {
-    const visibleIds = modalFilteredStudents.map((s) => s.id);
-    const allSelected = visibleIds.every((id) => modalStudentIds.includes(id));
+    const visibleIds = modalFilteredStudents
+      .map((s) => s.id)
+      .filter((id) => isStudentEligible(id));
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => modalStudentIds.includes(id));
     if (allSelected) {
       setModalStudentIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
     } else {
@@ -2485,16 +2934,54 @@ function StudentMessageSettings() {
     }
   };
 
+  // 템플릿 선택 변경
+  const handleSelectTemplate = async (templateId: number | null) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === null) {
+      setEligibleStudentIds(null);
+      return;
+    }
+    // 선택 즉시 기존에 입력된 커스텀 메시지 초기화 (배타)
+    setFormContent('');
+    setEligibleLoading(true);
+    try {
+      // 한 번에 충분히 가져오기 위해 큰 size 사용 (페이지네이션은 추후 도입 가능)
+      const page = await getMessageTemplateEligibleStudents(templateId, { page: 0, size: 1000 });
+      const ids = new Set(page.content.map((s) => s.studentId));
+      setEligibleStudentIds(ids);
+      // 이미 선택된 학생 중 발송 불가 대상은 해제
+      setModalStudentIds((prev) => prev.filter((id) => ids.has(id)));
+    } catch {
+      setEligibleStudentIds(new Set());
+    } finally {
+      setEligibleLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!editTarget && modalStudentIds.length === 0) { await alert('학생을 선택해주세요.'); return; }
-    if (!formContent.trim()) { await alert('템플릿을 선택하거나 메시지 내용을 입력해주세요.'); return; }
+    const selectedTemplate = selectedTemplateId != null
+      ? msgTemplates.find((t) => t.id === selectedTemplateId)
+      : null;
+    if (!selectedTemplate && !formContent.trim()) {
+      await alert('템플릿을 선택하거나 커스텀 메시지를 입력해주세요.');
+      return;
+    }
     try {
       if (editTarget) {
+        // 수정은 항상 커스텀 메시지(content) 기준
         await updateStudentMessage(editTarget.id, {
           content: formContent.trim(),
-          active: formActive,
+          active: true,
+        });
+      } else if (selectedTemplate) {
+        // 템플릿 등록: templateId만 전송 (content 제외)
+        await createStudentMessage({
+          studentIds: modalStudentIds,
+          templateId: selectedTemplate.id,
         });
       } else {
+        // 커스텀 메시지 등록: content만 전송
         await createStudentMessage({
           studentIds: modalStudentIds,
           content: formContent.trim(),
@@ -2517,18 +3004,6 @@ function StudentMessageSettings() {
     }
   };
 
-  const handleToggleActive = async (msg: StudentMessage) => {
-    try {
-      await updateStudentMessage(msg.id, {
-        content: msg.content,
-        active: !msg.active,
-      });
-      if (selectedStudentId) await fetchMessages(selectedStudentId);
-    } catch {
-      await alert('상태 변경에 실패했습니다.');
-    }
-  };
-
   return (
     <>
       <div className={styles.section}>
@@ -2536,6 +3011,22 @@ function StudentMessageSettings() {
           <h3 className={styles.sectionTitle}>학생 개인 메시지 관리</h3>
           <button type="button" className={styles.addBtn} onClick={openAdd}>+ 메시지 추가</button>
         </div>
+        {isAdmin && (
+          <div style={{ paddingTop: 'var(--spacing-md)', paddingRight: 'var(--spacing-lg)', display: 'flex', justifyContent: 'flex-end' }}>
+            <FilterSelect
+              value={selectedStoreId ? (stores.find((s) => s.id === selectedStoreId)?.storeName || '') : ''}
+              options={stores.map((s) => s.storeName)}
+              defaultValue={stores.length > 0 ? stores[0].storeName : undefined}
+              onChange={(v: string) => {
+                const store = stores.find((s) => s.storeName === v);
+                setSelectedStoreId(store?.id);
+                setSelectedStudentId(null);
+                setMessages([]);
+                setMsgPage(1);
+              }}
+            />
+          </div>
+        )}
         <div className={styles.sectionBody}>
           {/* 학생 선택 영역 */}
           <div className={styles.msgLayout}>
@@ -2597,39 +3088,45 @@ function StudentMessageSettings() {
                     <table className={styles.dataTable}>
                       <thead>
                         <tr>
+                          <th style={{ width: 110 }}>구분</th>
                           <th>내용</th>
-                          <th style={{ width: 80 }}>상태</th>
                           <th style={{ width: 150 }}>등록일</th>
                           <th style={{ width: 100 }}>관리</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {messages.slice((msgPage - 1) * MSG_PER_PAGE, msgPage * MSG_PER_PAGE).map((msg) => (
+                        {messages.slice((msgPage - 1) * MSG_PER_PAGE, msgPage * MSG_PER_PAGE).map((msg) => {
+                          const isTemplateMsg = msg.templateId != null;
+                          return (
                           <tr key={msg.id}>
-                            <td style={{ textAlign: 'left' }}>{msg.content}</td>
                             <td>
-                              <button
-                                type="button"
-                                className={`${styles.statusBadge} ${msg.active ? styles.statusActive : styles.statusInactive}`}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleToggleActive(msg)}
-                              >
-                                {msg.active ? '활성' : '비활성'}
-                              </button>
+                              {isTemplateMsg ? (
+                                <span className={styles.statusBadge} style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}>
+                                  템플릿
+                                </span>
+                              ) : (
+                                <span className={styles.statusBadge} style={{ backgroundColor: '#E6F8E8', color: '#048F11' }}>
+                                  커스텀
+                                </span>
+                              )}
                             </td>
+                            <td style={{ textAlign: 'center' }}>{msg.content}</td>
                             <td>{new Date(msg.createdAt).toLocaleDateString('ko-KR')}</td>
                             <td>
                               <div className={styles.actionBtns}>
-                                <button type="button" className={styles.iconBtn} onClick={() => openEdit(msg)}>
-                                  <LuPencil />
-                                </button>
+                                {!isTemplateMsg && (
+                                  <button type="button" className={styles.iconBtn} onClick={() => openEdit(msg)}>
+                                    <LuPencil />
+                                  </button>
+                                )}
                                 <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(msg.id)}>
                                   <LuTrash2 />
                                 </button>
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                     {messages.length > MSG_PER_PAGE && (
@@ -2665,9 +3162,80 @@ function StudentMessageSettings() {
             <h3 className={styles.modalTitle}>{editTarget ? '메시지 수정' : '메시지 추가'}</h3>
 
             <div className={styles.modalForm}>
-              {/* 복수 학생 선택 (신규 등록 시) */}
+              {/* ADMIN: 지점 선택 (신규 등록 시) */}
+              {!editTarget && isAdmin && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>지점</label>
+                  <FilterSelect
+                    value={modalStoreId ? (stores.find((s) => s.id === modalStoreId)?.storeName || '') : ''}
+                    options={stores.map((s) => s.storeName)}
+                    placeholder="지점 선택"
+                    onChange={(v: string) => {
+                      const store = stores.find((s) => s.storeName === v);
+                      setModalStoreId(store?.id);
+                      setSelectedTemplateId(null);
+                      setEligibleStudentIds(null);
+                      setModalStudentIds([]);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 템플릿 선택 (신규 등록 시) - 학생 목록 위에 배치 */}
+              {!editTarget && msgTemplates.length > 0 && (
+                <div className={`${styles.formGroup} ${styles.formFilterFull}`}>
+                  <label className={styles.formLabel}>템플릿 선택</label>
+                  <div
+                    style={
+                      formContent.length > 0
+                        ? { opacity: 0.45, pointerEvents: 'none' }
+                        : undefined
+                    }
+                    title={formContent.length > 0 ? '커스텀 메시지 입력 중에는 선택할 수 없습니다' : undefined}
+                  >
+                    <FilterSelect
+                      value={selectedTemplateId != null ? String(selectedTemplateId) : ''}
+                      options={msgTemplates.map((t) => String(t.id))}
+                      labelMap={Object.fromEntries(msgTemplates.map((t) => [String(t.id), t.content]))}
+                      placeholder="-- 템플릿을 선택하세요 --"
+                      onChange={(v) => {
+                        handleSelectTemplate(v === '' ? null : Number(v));
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 커스텀 메시지 입력 - 템플릿과 배타, 학생 목록 위에 배치 */}
               {!editTarget && (
                 <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>커스텀 메시지</label>
+                  <textarea
+                    className={styles.formInput}
+                    rows={4}
+                    maxLength={50}
+                    placeholder={selectedTemplateId != null ? '템플릿 선택 중에는 입력할 수 없습니다' : '학생에게 표시할 메시지를 입력하세요'}
+                    value={formContent}
+                    onChange={(e) => {
+                      if (selectedTemplateId != null) return;
+                      setFormContent(e.target.value);
+                    }}
+                    disabled={selectedTemplateId != null}
+                    style={{ resize: 'vertical' }}
+                  />
+                  <span className={styles.charCount}>{formContent.length}/50</span>
+                </div>
+              )}
+
+              {/* 복수 학생 선택 (신규 등록 시) */}
+              {!editTarget && (() => {
+                const messageReady = selectedTemplateId != null || formContent.trim().length > 0;
+                return (
+                <div
+                  className={styles.formGroup}
+                  style={!messageReady ? { opacity: 0.45, pointerEvents: 'none' } : undefined}
+                  title={!messageReady ? '템플릿을 선택하거나 커스텀 메시지를 입력해주세요' : undefined}
+                >
                   <label className={styles.formLabel}>
                     대상 학생 ({modalStudentIds.length}명 선택)
                   </label>
@@ -2683,22 +3251,39 @@ function StudentMessageSettings() {
                     <label className={styles.modalStudentCheckAll}>
                       <input
                         type="checkbox"
-                        checked={modalFilteredStudents.length > 0 && modalFilteredStudents.every((s) => modalStudentIds.includes(s.id))}
+                        checked={(() => {
+                          const selectable = modalFilteredStudents.filter((s) => isStudentEligible(s.id));
+                          return selectable.length > 0 && selectable.every((s) => modalStudentIds.includes(s.id));
+                        })()}
                         onChange={toggleAllModalStudents}
                       />
                       전체 선택
                     </label>
-                    {modalFilteredStudents.slice(0, 50).map((s) => (
-                      <label key={s.id} className={styles.modalStudentCheckItem}>
-                        <input
-                          type="checkbox"
-                          checked={modalStudentIds.includes(s.id)}
-                          onChange={() => toggleModalStudent(s.id)}
-                        />
-                        <span>{s.name}</span>
-                        <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
-                      </label>
-                    ))}
+                    {eligibleLoading && (
+                      <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
+                        대상 학생 조회 중...
+                      </p>
+                    )}
+                    {modalFilteredStudents.slice(0, 50).map((s) => {
+                      const eligible = isStudentEligible(s.id);
+                      return (
+                        <label
+                          key={s.id}
+                          className={styles.modalStudentCheckItem}
+                          style={!eligible ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                          title={!eligible ? '이미 해당 템플릿이 발송된 학생입니다' : undefined}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={modalStudentIds.includes(s.id)}
+                            disabled={!eligible}
+                            onChange={() => toggleModalStudent(s.id)}
+                          />
+                          <span>{s.name}</span>
+                          <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
+                        </label>
+                      );
+                    })}
                     {modalFilteredStudents.length > 50 && (
                       <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
                         외 {modalFilteredStudents.length - 50}명 — 검색으로 범위를 좁혀주세요
@@ -2706,50 +3291,27 @@ function StudentMessageSettings() {
                     )}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
-              {!editTarget && msgTemplates.length > 0 && (
-                <div className={`${styles.formGroup} ${styles.formFilterFull}`}>
-                  <label className={styles.formLabel}>템플릿 선택</label>
-                  <FilterSelect
-                    value=""
-                    options={['선택', ...msgTemplates.map((t) => t.content)]}
-                    placeholder="-- 템플릿을 선택하세요 --"
-                    defaultValue="선택"
-                    onChange={(v) => { if (v !== '선택') setFormContent(v); }}
-                  />
-                </div>
-              )}
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>내용</label>
-                <textarea
-                  className={styles.formInput}
-                  rows={4}
-                  maxLength={50}
-                  placeholder="학생에게 표시할 메시지를 입력하세요"
-                  value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  style={{ resize: 'vertical' }}
-                />
-                <span className={styles.charCount}>{formContent.length}/50</span>
-              </div>
-
+              {/* 수정 모드에서는 기존 커스텀 메시지 편집 */}
               {editTarget && (
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>상태</label>
-                  <div className={styles.radioGroup}>
-                    <label className={styles.radioLabel}>
-                      <input type="radio" checked={formActive} onChange={() => setFormActive(true)} />
-                      활성
-                    </label>
-                    <label className={styles.radioLabel}>
-                      <input type="radio" checked={!formActive} onChange={() => setFormActive(false)} />
-                      비활성
-                    </label>
-                  </div>
+                  <label className={styles.formLabel}>커스텀 메시지</label>
+                  <textarea
+                    className={styles.formInput}
+                    rows={4}
+                    maxLength={50}
+                    placeholder="학생에게 표시할 메시지를 입력하세요"
+                    value={formContent}
+                    onChange={(e) => setFormContent(e.target.value)}
+                    style={{ resize: 'vertical' }}
+                  />
+                  <span className={styles.charCount}>{formContent.length}/50</span>
                 </div>
               )}
+
+
 
               <div className={styles.modalActions}>
                 <button

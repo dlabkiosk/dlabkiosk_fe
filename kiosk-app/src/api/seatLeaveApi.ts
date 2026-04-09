@@ -28,6 +28,8 @@ export interface SeatLeaveReason {
   reasonName: string;
   displayOrder: number;
   active: boolean;
+  /** 업로드된 아이콘 이미지 URL. 없으면 텍스트만 표시 */
+  iconUrl?: string | null;
 }
 
 export interface SeatLeaveResult {

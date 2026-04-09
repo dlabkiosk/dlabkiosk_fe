@@ -35,113 +35,6 @@
   color: var(--color-text-primary);
 }
 
-/* ── Date Picker ── */
-.datePickerWrap {
-  position: relative;
-}
-
-.datePickerWrap :global(.react-datepicker-wrapper),
-.datePickerWrap :global(.react-datepicker__input-container) {
-  width: auto;
-  display: inline-block;
-}
-
-.datePickerButton {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--spacing-xl) 0 var(--spacing-sm);
-  height: var(--size-input-height);
-  box-sizing: border-box;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-family: var(--font-family);
-  font-weight: 400;
-  color: var(--color-text-primary);
-  background-color: #ffffff;
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 240px;
-  transition: border-color 0.15s;
-}
-
-.datePickerButton:hover {
-  border-color: var(--color-primary);
-}
-
-.calendarIcon {
-  position: absolute;
-  right: var(--spacing-sm);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-/* ── Week picker: 주간 선택 스타일 ── */
-.weekCalendar :global(.react-datepicker__month) :global(.react-datepicker__day.react-datepicker__day--selected) {
-  background-color: var(--color-primary-light) !important;
-  color: var(--color-text-primary) !important;
-  border-radius: 0 !important;
-  font-weight: 400 !important;
-  margin: 1px 0 !important;
-  width: calc(2rem + 2px) !important;
-}
-
-.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:first-child) {
-  background: linear-gradient(to right, transparent 50%, var(--color-primary-light) 50%) !important;
-  position: relative !important;
-  z-index: 0 !important;
-  border-radius: 0 !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-}
-
-.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:first-child)::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: var(--color-primary);
-  border-radius: 50%;
-  z-index: -1;
-}
-
-.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:last-child) {
-  background: linear-gradient(to left, transparent 50%, var(--color-primary-light) 50%) !important;
-  position: relative !important;
-  z-index: 0 !important;
-  border-radius: 0 !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-}
-
-.weekCalendar :global(.react-datepicker__week) :global(.react-datepicker__day.react-datepicker__day--selected:last-child)::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: var(--color-primary);
-  border-radius: 50%;
-  z-index: -1;
-}
-
-/* hover: 주 행 전체 하이라이트 */
-.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected)) {
-  background-color: var(--color-bg-page) !important;
-  border-radius: 0 !important;
-  margin: 1px 0 !important;
-  width: calc(2rem + 2px) !important;
-}
-
-.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected):first-child) {
-  border-radius: 50% 0 0 50% !important;
-}
-
-.weekCalendar :global(.react-datepicker__week:hover) :global(.react-datepicker__day:not(.react-datepicker__day--selected):last-child) {
-  border-radius: 0 50% 50% 0 !important;
-}
-
 /* ── Content Card ── */
 .contentCard {
   background-color: var(--color-bg-card);
@@ -168,12 +61,15 @@
 }
 
 .tableWrap {
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .table {
-  width: 100%;
-  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
 }
 
 .table th {
@@ -238,6 +134,29 @@
   vertical-align: middle;
   margin-left: var(--spacing-xs);
   color: var(--color-primary);
+}
+
+/* ── Sticky columns ── */
+.stickyCol {
+  position: sticky;
+  z-index: 2;
+  background-color: var(--color-bg-card);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table thead .stickyCol {
+  background-color: var(--color-bg-muted);
+  z-index: 3;
+}
+
+.table tbody tr:hover .stickyCol {
+  background-color: var(--color-primary-light);
+}
+
+.stickyColLast {
+  border-right: 2px solid var(--color-border);
 }
 
 .emptyCell {
