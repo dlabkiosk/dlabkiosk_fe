@@ -177,11 +177,8 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
 
-    // ── pending 0 + 급식 신청됨 + 미태그 → 자동 급식 태그 ──
-    // 단, 같은 태그에서 출결 액션(S/R/T 등)이 함께 처리된 경우엔 자동 진행하지 않는다.
-    // 조퇴/외출/미등원/좌석이탈 학생이 식사시간에 태그할 때 등원·복귀와 급식이
-    // 한 번에 처리되지 않도록, 첫 태그는 출결 처리만 하고 학생이 한 번 더 태그해야
-    // 급식 태그가 진행되도록 한다 (두 번째 태그에서는 action이 없으므로 이 분기로 진입).
+    // ── pending 0 + 급식 신청됨 + 미태그 + 출결 액션 없음 → 자동 급식 태그 ──
+    // pending이 있으면 자동 태그하지 않고 식사 태그 버튼 + pending 버튼을 함께 표시한다.
     if (pending.length === 0 && !result.action && meal && meal.applied && !meal.alreadyTagged && onMealConfirm && result.identifier) {
       setActivePendingActions([]);
       setActiveMealInfo(null);
@@ -259,11 +256,13 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     // ── 나머지 ──
     // pending 2개+: 항상 선택 모달
     // pending 1개 + mealInfo 있음 (식사시간): 식사 안내 + 선택 모달
+    // pending 0 + meal(applied, 미태그) 있음: 식사 태그 선택 모달
     // pending 0 + meal 없거나: 성공 표시 후 자동 닫힘
     setActivePendingActions(pending);
     setActiveMealInfo(meal);
 
-    const hasPendingInteraction = pending.length > 0;
+    const hasMealChoice = !!(meal && meal.applied && !meal.alreadyTagged && onMealConfirm);
+    const hasPendingInteraction = pending.length > 0 || hasMealChoice;
 
     if (!hasPendingInteraction) {
       const baseMs = hasMessages ? SUCCESS_WITH_MSG_DISPLAY_MS : SUCCESS_DISPLAY_MS;
@@ -380,6 +379,24 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       });
   }, [onConfirmAction, confirmIdentifier, confirmInputMethod, showSuccess, showError]);
 
+  // 급식 태그 버튼 클릭
+  const handleMealTagClick = useCallback(() => {
+    if (!onMealConfirm || !confirmIdentifier) return;
+    setConfirming(true);
+    if (successTimer.current) clearTimeout(successTimer.current);
+    onMealConfirm({ identifier: confirmIdentifier, inputMethod: confirmInputMethod })
+      .then(() => {
+        setActivePendingActions([]);
+        setActiveMealInfo(null);
+        setSuccessInfo((prev) => prev ? { ...prev, action: '급식 태깅 완료' } : prev);
+        startSuccessTimer(SUCCESS_WITH_MSG_DISPLAY_MS);
+      })
+      .catch((err) => {
+        setConfirming(false);
+        showError(err?.message);
+      });
+  }, [onMealConfirm, confirmIdentifier, confirmInputMethod, startSuccessTimer, showError]);
+
 
   // pendingActions 무시 — 아무 처리 없이 모달 닫기
   const handleDismissPending = useCallback(() => {
@@ -455,7 +472,8 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
   // 성공 화면
   if (successInfo) {
-    const hasPendingInteraction = activePendingActions.length > 0;
+    const hasMealChoice = !!(activeMealInfo && activeMealInfo.applied && !activeMealInfo.alreadyTagged && onMealConfirm);
+    const hasPendingInteraction = activePendingActions.length > 0 || hasMealChoice;
 
     return (
       <div className={styles.overlay}>
@@ -487,7 +505,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
               </div>
             )}
 
-            {/* 급식 정보 — applied 급식은 자동 태그 처리되므로 안내만 표시 */}
+            {/* 급식 정보 표시 */}
             {activeMealInfo && (
               <div className={styles.mealInfoSection}>
                 <span className={styles.mealInfoLabel}>{activeMealInfo.mealLabel}</span>
@@ -495,11 +513,21 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
               </div>
             )}
 
-            {/* 외출/조퇴 확인 */}
-            {activePendingActions.length > 0 && onConfirmAction && (
+            {/* 외출/조퇴/급식 선택 */}
+            {(activePendingActions.length > 0 || (activeMealInfo && activeMealInfo.applied && !activeMealInfo.alreadyTagged && onMealConfirm)) && (
               <>
                 <p className={styles.pendingGuide}>항목을 선택해주세요.</p>
                 <div className={styles.pendingRow}>
+                  {activeMealInfo && activeMealInfo.applied && !activeMealInfo.alreadyTagged && onMealConfirm && (
+                    <button
+                      type="button"
+                      className={styles.pendingConfirmButton}
+                      onClick={handleMealTagClick}
+                      disabled={confirming}
+                    >
+                      {confirming ? '처리 중...' : `${activeMealInfo.mealLabel} 태그`}
+                    </button>
+                  )}
                   {activePendingActions.map((pa) => (
                     <button
                       key={pa.regCd}
