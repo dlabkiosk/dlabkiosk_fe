@@ -193,8 +193,9 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
 
-    // ── 식사시간 + pending 0 + 미신청 → 에러 모달로 위임 (alreadyTagged와 동일 처리) ──
-    if (pending.length === 0 && meal && !meal.applied) {
+    // ── 식사시간 + pending 0 + 미신청 + 출결 액션 없음 → 에러 모달로 위임 ──
+    // result.action이 있으면 출결이 이미 처리된 것이므로 meal 에러를 표시하지 않는다.
+    if (pending.length === 0 && !result.action && meal && !meal.applied) {
       if (onError) {
         setSearching(false);
         const mealCard = `${meal.mealLabel}\n${meal.message}`;
@@ -220,8 +221,9 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
       return;
     }
 
-    // ── 식사시간 + 이미 태그됨 ──
-    if (meal && meal.alreadyTagged) {
+    // ── 식사시간 + 이미 태그됨 + 출결 액션 없음 ──
+    // result.action이 있으면 출결(복귀/등원 등)이 이미 처리된 것이므로 meal 에러를 표시하지 않는다.
+    if (!result.action && meal && meal.alreadyTagged) {
       setActiveMealInfo(meal);
       if (pending.length === 0) {
         // 이미 태그 + pending 없음 + 사전신청 없음 → 에러 모달로 위임
@@ -371,7 +373,8 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     onConfirmAction({ identifier: confirmIdentifier, inputMethod: confirmInputMethod, action })
       .then((result) => {
         setActivePendingActions([]);
-        showSuccess(result);
+        setActiveMealInfo(null);
+        showSuccess({ ...result, mealInfo: null });
       })
       .catch((err) => {
         setConfirming(false);
