@@ -7,10 +7,9 @@ import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
+import { getFormSubjects } from '../utils/noticeSubjects';
 import styles from './NoticeCreate.module.css';
 import f from '../styles/filter.module.css';
-
-const SUBJECT_OPTIONS = ['선택','전체', '국어', '수학', '과학', '사회', '한국사'];
 
 export default function NoticeCreate() {
   const navigate = useNavigate();
@@ -164,7 +163,7 @@ export default function NoticeCreate() {
             </button>
             {dropdownOpen && (
               <ul className={styles.dropdownMenu}>
-                {SUBJECT_OPTIONS.filter((o) => o !== '선택').map((opt) => (
+                {getFormSubjects().filter((o) => o !== '선택').map((opt) => (
                   <li key={opt}>
                     <button
                       type="button"

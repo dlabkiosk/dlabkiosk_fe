@@ -11,9 +11,8 @@ import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import useConfirm from '../hooks/useConfirm';
+import { getFormSubjects } from '../utils/noticeSubjects';
 import styles from './NoticeDetail.module.css';
-
-const SUBJECT_OPTIONS = ['선택', '전체', '국어', '수학', '과학', '사회', '한국사'];
 
 export default function NoticeDetail() {
   const { noticeId } = useParams<{ noticeId: string }>();
@@ -264,7 +263,7 @@ export default function NoticeDetail() {
                 </button>
                 {editDropdownOpen && (
                   <ul className={styles.dropdownMenu}>
-                    {SUBJECT_OPTIONS.filter((o) => o !== '선택').map((opt) => (
+                    {getFormSubjects().filter((o) => o !== '선택').map((opt) => (
                       <li key={opt}>
                         <button
                           type="button"

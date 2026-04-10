@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuPlus, LuArrowUpDown, LuArrowUp, LuArrowDown } from 'react-icons/lu';
+import { LuPlus, LuArrowUpDown, LuArrowUp, LuArrowDown, LuSettings } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
+import NoticeSettingsModal from '../components/NoticeSettingsModal';
+import { getSubjects } from '../utils/noticeSubjects';
 import styles from './NoticeManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
 
-const SUBJECT_OPTIONS = ['전체', '국어', '수학', '과학', '사회', '한국사'];
 const ITEMS_PER_PAGE = 10;
 
 export default function NoticeManagement() {
@@ -24,6 +25,8 @@ export default function NoticeManagement() {
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [subjectOptions, setSubjectOptions] = useState(getSubjects);
+  const [showSettings, setShowSettings] = useState(false);
 
   /* ADMIN 역할 & 지점 필터 */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -123,6 +126,12 @@ export default function NoticeManagement() {
 
   return (
     <div className={styles.page}>
+      {showSettings && (
+        <NoticeSettingsModal
+          onClose={() => setShowSettings(false)}
+          onSave={() => { setSubjectOptions(getSubjects()); setCategory('전체'); }}
+        />
+      )}
       {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
@@ -151,7 +160,7 @@ export default function NoticeManagement() {
             <span className={f.filterLabel}>구분</span>
             <FilterSelect
               value={category}
-              options={SUBJECT_OPTIONS}
+              options={subjectOptions}
               placeholder="전체"
               onChange={setCategory}
             />
@@ -172,7 +181,14 @@ export default function NoticeManagement() {
 
           <div className={f.filterActions}>
             <button type="button" className={f.searchButton} onClick={handleSearch}>검색</button>
-            <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
+            <button
+              type="button"
+              className={styles.settingsButton}
+              onClick={() => setShowSettings(true)}
+            >
+              <LuSettings />
+              <span>공지 설정</span>
+            </button>
             <button
               type="button"
               className={styles.newButton}
@@ -181,6 +197,7 @@ export default function NoticeManagement() {
               <LuPlus />
               <span>새 공지 작성</span>
             </button>
+            <button type="button" className={f.resetButton} onClick={() => window.location.reload()}>새로고침</button>
           </div>
         </div>
       </div>
