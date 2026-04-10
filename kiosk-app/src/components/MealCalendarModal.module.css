@@ -303,3 +303,13 @@
   color: #3490E1;
   font-weight: var(--weight-semibold);
 }
+
+/* ── 고대비 모드 ── */
+:global(html.high-contrast) .legendChip {
+  background-color: #111;
+  color: #ffff00;
+}
+
+:global(html.high-contrast) .legend {
+  color: #ffff00;
+}

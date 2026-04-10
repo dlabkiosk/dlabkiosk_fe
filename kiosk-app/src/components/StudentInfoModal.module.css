@@ -443,7 +443,7 @@
 }
 
 .countdownFloat {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -455,7 +455,7 @@
   align-items: center;
   gap: var(--space-4);
   box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.15);
-  z-index: 10;
+  z-index: calc(var(--z-modal-top) + 10);
 }
 
 /* 고대비 */
@@ -504,4 +504,8 @@
 }
 :global(html.high-contrast) .markX {
   color: #ff6666;
+}
+:global(html.high-contrast) .countdownFloat {
+  background: #111;
+  border: 1px solid #555;
 }
