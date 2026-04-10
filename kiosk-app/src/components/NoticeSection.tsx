@@ -25,7 +25,6 @@ export default function NoticeSection() {
   const [showList, setShowList] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<(Notice | SubjectNotice) | null>(null);
   const [selectedIsSubject, setSelectedIsSubject] = useState(false);
-  const [openedFromMain, setOpenedFromMain] = useState(false);
 
   /* 전체보기 (페이지네이션 포함) */
   const [fullViewType, setFullViewType] = useState<'general' | 'subject' | null>(null);
@@ -94,10 +93,9 @@ export default function NoticeSection() {
     setPage(0);
   };
 
-  const handleNoticeClick = (notice: Notice | SubjectNotice, isSubject: boolean, fromMain = false) => {
+  const handleNoticeClick = (notice: Notice | SubjectNotice, isSubject: boolean) => {
     setSelectedNotice(notice);
     setSelectedIsSubject(isSubject);
-    setOpenedFromMain(fromMain);
     setShowList(false);
     setFullViewType(null);
     speak(VOICE_NOTICE_DETAIL(notice.title));
@@ -105,7 +103,6 @@ export default function NoticeSection() {
 
   const handleBackToList = () => {
     setSelectedNotice(null);
-    setOpenedFromMain(false);
     if (fullViewType) {
       /* 전체보기 상태였으면 전체보기로 복귀 */
       speak(fullViewType === 'general' ? VOICE_NOTICE_FULL_GENERAL : VOICE_NOTICE_FULL_SUBJECT);
@@ -200,7 +197,7 @@ export default function NoticeSection() {
               <li
                 key={notice.id}
                 className={styles.item}
-                onClick={() => handleNoticeClick(notice, isSubject, true)}
+                onClick={() => handleNoticeClick(notice, isSubject)}
                 role="button"
                 tabIndex={0}
               >
