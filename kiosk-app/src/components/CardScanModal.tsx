@@ -272,7 +272,7 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
 
     // 서버 메시지 추가 조회 — 태그 메시지와 중복 제거 후 이어붙임
     if (result.studentId) {
-      const tagContents = new Set((result.messages ?? []).map((m) => m.trim()));
+      const tagContents = new Set((result.messages ?? []).filter((m) => m != null).map((m) => m.trim()));
       getStudentMessages(result.studentId)
         .then((msgs) => {
           const deduped = msgs.filter((m) => !tagContents.has(m.content.trim()));
