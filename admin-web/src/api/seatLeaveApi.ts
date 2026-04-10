@@ -16,6 +16,8 @@ export interface SeatLeaveReason {
 
 export interface SeatLeaveRecord {
   id: number;
+  storeId: number;
+  storeName: string;
   studentId: number;
   studentName: string;
   studentNumber?: string;
@@ -24,8 +26,6 @@ export interface SeatLeaveRecord {
   reasonName: string;
   startedAt: string;
   endedAt: string | null;
-  /** 프론트에서 ADMIN 전체 조회 시 주입 */
-  storeName?: string;
 }
 
 /* ── 이탈 사유 CRUD ── */

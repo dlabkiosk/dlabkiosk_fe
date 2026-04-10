@@ -6,6 +6,8 @@ export type SubmissionType = 'DAILY' | 'PERIOD' | 'PERMANENT' | 'NO_PHONE';
 
 export interface PhoneSubmission {
   id: number;
+  storeId: number;
+  storeName: string;
   studentId: number;
   studentName: string;
   studentNumber: string;
