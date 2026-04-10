@@ -1,4 +1,4 @@
-import { apiGet, apiDelete } from './client';
+import { apiGet, apiPost, apiDelete } from './client';
 
 /* ── 이탈 사유 타입 ── */
 
@@ -138,6 +138,11 @@ export async function updateSeatLeaveReason(id: number, params: {
   }
 
   return handleReasonFormDataResponse(res, '이탈 사유 수정에 실패했습니다.');
+}
+
+/** 이탈 사유 아이콘 삭제 */
+export function deleteSeatLeaveReasonIcon(id: number): Promise<string> {
+  return apiDelete<string>(`/api/v1/admin/seat-leave-reasons/${id}/icon`);
 }
 
 /** 이탈 사유 삭제 */

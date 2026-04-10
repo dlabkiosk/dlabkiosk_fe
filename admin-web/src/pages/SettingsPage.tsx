@@ -26,6 +26,7 @@ import {
   createSeatLeaveReason,
   updateSeatLeaveReason,
   deleteSeatLeaveReason,
+  deleteSeatLeaveReasonIcon,
 } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
 import useConfirm from '../hooks/useConfirm';
@@ -1459,6 +1460,7 @@ function SeatLeaveReasonSettings() {
   const [formActive, setFormActive] = useState(true);
   const [formIconFile, setFormIconFile] = useState<File | null>(null);
   const [formIconPreview, setFormIconPreview] = useState<string | null>(null);
+  const [formRemoveIcon, setFormRemoveIcon] = useState(false);
   const iconInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_REASONS_PER_STORE = 9;
@@ -1513,6 +1515,7 @@ function SeatLeaveReasonSettings() {
     setFormActive(true);
     setFormIconFile(null);
     setFormIconPreview(null);
+    setFormRemoveIcon(false);
     setEditTarget(null);
   };
 
@@ -1559,6 +1562,9 @@ function SeatLeaveReasonSettings() {
     if (!formName.trim()) { await alert('사유명을 입력해주세요.'); return; }
     try {
       if (editTarget) {
+        if (formRemoveIcon) {
+          await deleteSeatLeaveReasonIcon(editTarget.id);
+        }
         await updateSeatLeaveReason(editTarget.id, {
           reasonName: formName.trim(),
           displayOrder: formOrder,
@@ -1793,6 +1799,20 @@ function SeatLeaveReasonSettings() {
                   >
                     이미지 선택
                   </button>
+                  {formIconPreview && (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      style={{ color: '#dc2626' }}
+                      onClick={() => {
+                        setFormIconFile(null);
+                        setFormIconPreview(null);
+                        if (editTarget) setFormRemoveIcon(true);
+                      }}
+                    >
+                      이미지 제거
+                    </button>
+                  )}
                   <input
                     ref={iconInputRef}
                     type="file"
@@ -1801,6 +1821,7 @@ function SeatLeaveReasonSettings() {
                     onChange={(e) => {
                       const file = e.target.files?.[0] ?? null;
                       handleIconFileChange(file);
+                      setFormRemoveIcon(false);
                       // 같은 파일을 다시 선택해도 onChange가 발화되도록 리셋
                       e.target.value = '';
                     }}

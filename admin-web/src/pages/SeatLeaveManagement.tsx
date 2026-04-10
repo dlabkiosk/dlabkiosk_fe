@@ -195,7 +195,9 @@ export default function SeatLeaveManagement() {
       await forceReturnSeatLeave(record.id);
       await fetchData();
     } catch (err) {
-      await alert('강제 복귀에 실패했습니다.');
+      console.error('강제 복귀 에러:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      await alert(msg || '강제 복귀에 실패했습니다.');
     }
   };
 
