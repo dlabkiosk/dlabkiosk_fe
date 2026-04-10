@@ -243,35 +243,35 @@ export default function SeatManagement() {
   /* ── 로그인 정보 + 구역 목록 로드 ── */
   useEffect(() => {
     getMe()
-      .then((me) => {
+      .then(async (me) => {
         if (me.role === 'ADMIN') {
           setIsAdmin(true);
-          getStores().then((list) => {
-            const activeStores = list.filter((s) => s.active);
-            setStores(activeStores);
-            if (activeStores.length > 0 && !storeFilter) {
-              setStoreFilter(activeStores[0].storeName);
-            }
-          });
+          const list = await getStores();
+          const activeStores = list.filter((s) => s.active);
+          setStores(activeStores);
+          if (activeStores.length > 0 && !storeFilter) {
+            // storeFilter 세팅 → effectiveStoreId 변경 → 두 번째 effect에서 구역 로드
+            setStoreFilter(activeStores[0].storeName);
+          }
         } else {
           setMyStoreId(me.storeId);
-        }
-        return getSeatAreas(me.role === 'ADMIN' ? undefined : me.storeId);
-      })
-      .then((list) => {
-        setAreas(list);
-        if (list.length > 0 && !selectedAreaCd) {
-          setSelectedAreaCd(list[0].areaCd);
+          // 일반 사용자만 여기서 구역 로드 (ADMIN은 storeFilter 변경 effect에서 처리)
+          const areaList = await getSeatAreas(me.storeId);
+          setAreas(areaList);
+          if (areaList.length > 0 && !selectedAreaCd) {
+            setSelectedAreaCd(areaList[0].areaCd);
+          }
         }
       })
       .catch(() => setAreas([]));
   }, []);
 
   /* ADMIN: 지점 필터 변경 시 구역 다시 로드 */
+  const storeChangingRef = useRef(false);
   useEffect(() => {
     if (!isAdmin) return;
-    // 지점 전환 중 이전 areaCd로 loadLayout이 먼저 실행되지 않도록
-    // 영역을 비워서 loadLayout을 막고, 새 영역 목록 로드 후 선택
+    // ref는 동기적으로 반영되어 같은 렌더의 다른 effect에서도 즉시 읽힘
+    storeChangingRef.current = true;
     setSelectedAreaCd('');
     setSeats([]);
     getSeatAreas(effectiveStoreId)
@@ -281,7 +281,8 @@ export default function SeatManagement() {
           setSelectedAreaCd(list[0].areaCd);
         }
       })
-      .catch(() => setAreas([]));
+      .catch(() => setAreas([]))
+      .finally(() => { storeChangingRef.current = false; });
   }, [effectiveStoreId]);
 
   /* ── 배치도 로드: 좌석 + 좌석현황 + 출결 + 이탈 병합 ── */
@@ -370,7 +371,7 @@ export default function SeatManagement() {
   }, [selectedAreaCd, effectiveStoreId]);
 
   useEffect(() => {
-    if (view === 'layout') loadLayout();
+    if (view === 'layout' && !storeChangingRef.current) loadLayout();
   }, [view, loadLayout]);
 
   /* ── 대기 리스트 로드 ── */
