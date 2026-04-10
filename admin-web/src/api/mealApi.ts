@@ -19,9 +19,13 @@ export interface MealRecord {
   lunchApplied: boolean;
   lunchChecked: boolean;
   lunchCheckedTime: string | null;
+  lunchUnappliedDetected: boolean;
+  lunchUnappliedDetectedAt: string | null;
   dinnerApplied: boolean;
   dinnerChecked: boolean;
   dinnerCheckedTime: string | null;
+  dinnerUnappliedDetected: boolean;
+  dinnerUnappliedDetectedAt: string | null;
   /** 프론트에서 ADMIN 전체 조회 시 주입 */
   storeName?: string;
 }

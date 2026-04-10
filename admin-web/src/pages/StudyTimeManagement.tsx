@@ -360,17 +360,17 @@ export default function StudyTimeManagement() {
                 <th className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
                   <input type="checkbox" />
                 </th>
-                {isAdmin && <th className={styles.stickyCol} style={{ left: 50, width: 110, minWidth: 110, maxWidth: 110 }}>지점</th>}
-                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 160 : 50, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('name')}>
+                {isAdmin && <th className={styles.stickyCol} style={{ left: 50, width: 140, minWidth: 140, maxWidth: 140 }}>지점</th>}
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 190 : 50, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('name')}>
                   이름 <SortIcon field="name" />
                 </th>
-                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 260 : 150, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('studentNumber')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 290 : 150, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('studentNumber')}>
                   학번 <SortIcon field="studentNumber" />
                 </th>
-                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 360 : 250, width: 80, minWidth: 80, maxWidth: 80 }} onClick={() => handleSort('seat')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 390 : 250, width: 80, minWidth: 80, maxWidth: 80 }} onClick={() => handleSort('seat')}>
                   좌석 <SortIcon field="seat" />
                 </th>
-                <th className={`${styles.sortableCol} ${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 440 : 330, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('total')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('total')}>
                   합계 <SortIcon field="total" />
                 </th>
                 {dayHeaders.map((d) => (
@@ -393,11 +393,11 @@ export default function StudyTimeManagement() {
                     <td className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
                       <input type="checkbox" />
                     </td>
-                    {isAdmin && <td className={styles.stickyCol} style={{ left: 50, width: 110, minWidth: 110, maxWidth: 110 }}>{row.storeName || '-'}</td>}
-                    <td className={styles.stickyCol} style={{ left: isAdmin ? 160 : 50, width: 100, minWidth: 100, maxWidth: 100 }}>{row.name}</td>
-                    <td className={styles.stickyCol} style={{ left: isAdmin ? 260 : 150, width: 100, minWidth: 100, maxWidth: 100 }}>{row.studentNumber}</td>
-                    <td className={styles.stickyCol} style={{ left: isAdmin ? 360 : 250, width: 80, minWidth: 80, maxWidth: 80 }}>{row.seat}</td>
-                    <td className={`${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 440 : 330, width: 100, minWidth: 100, maxWidth: 100 }}>{row.total}</td>
+                    {isAdmin && <td className={styles.stickyCol} style={{ left: 50, width: 140, minWidth: 140, maxWidth: 140 }}>{row.storeName || '-'}</td>}
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 190 : 50, width: 100, minWidth: 100, maxWidth: 100 }}>{row.name}</td>
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 290 : 150, width: 100, minWidth: 100, maxWidth: 100 }}>{row.studentNumber}</td>
+                    <td className={styles.stickyCol} style={{ left: isAdmin ? 390 : 250, width: 80, minWidth: 80, maxWidth: 80 }}>{row.seat}</td>
+                    <td className={`${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 100, minWidth: 100, maxWidth: 100 }}>{row.total}</td>
                     {dayHeaders.map((d) => {
                       const key = formatDateShort(d);
                       const val = row.dailyTimes[key];

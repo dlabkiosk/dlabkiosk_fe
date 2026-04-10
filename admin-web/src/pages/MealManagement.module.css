@@ -182,6 +182,16 @@
   margin-left: var(--spacing-xs-sm);
 }
 
+.unappliedDetectedBadge {
+  display: inline-block;
+  padding: var(--size-badge-padding-v, 2px) var(--size-badge-padding-h, 8px);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
 /* ── Empty state ── */
 .emptyRow td {
   text-align: center;

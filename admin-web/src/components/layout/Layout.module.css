@@ -4,6 +4,8 @@
   padding: var(--spacing-lg);
   background-color: var(--color-bg-page);
   transition: margin-left 0.25s ease;
+  min-width: calc(95rem - var(--sidebar-width));
+  overflow-x: auto;
 }
 
 /* collapsed 상태: CSS 변수 오버라이드 */

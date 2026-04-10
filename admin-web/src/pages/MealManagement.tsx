@@ -60,9 +60,13 @@ function downloadCsv(rows: MealRecord[], dateStr: string) {
   const header = '이름,번호,좌석,중식신청,중식체크,석식신청,석식체크';
   const lines = rows.map((r) => {
     const lunch = r.lunchApplied ? 'O' : '미신청';
-    const lunchCheck = r.lunchChecked ? `O ${r.lunchCheckedTime ?? ''}` : '';
+    const lunchCheck = r.lunchApplied
+      ? (r.lunchChecked ? `O ${r.lunchCheckedTime ?? ''}` : '미체크')
+      : (r.lunchUnappliedDetected ? `확인 필요 ${r.lunchUnappliedDetectedAt ?? ''}` : '');
     const dinner = r.dinnerApplied ? 'O' : '미신청';
-    const dinnerCheck = r.dinnerChecked ? `O ${r.dinnerCheckedTime ?? ''}` : '';
+    const dinnerCheck = r.dinnerApplied
+      ? (r.dinnerChecked ? `O ${r.dinnerCheckedTime ?? ''}` : '미체크')
+      : (r.dinnerUnappliedDetected ? `확인 필요 ${r.dinnerUnappliedDetectedAt ?? ''}` : '');
     return `${r.studentName},${r.studentNumber},${r.seatLabel},${lunch},${lunchCheck},${dinner},${dinnerCheck}`;
   });
 
@@ -416,6 +420,10 @@ export default function MealManagement() {
                           <span className={styles.uncheckedBadge}>미체크</span>
                         )}
                       </button>
+                    ) : row.lunchUnappliedDetected ? (
+                      <span className={styles.unappliedDetectedBadge} title={row.lunchUnappliedDetectedAt ? trimMillis(row.lunchUnappliedDetectedAt) : ''}>
+                        확인 필요 {row.lunchUnappliedDetectedAt ? trimMillis(row.lunchUnappliedDetectedAt) : ''}
+                      </span>
                     ) : '-'}
                   </td>
                   <td>{row.dinnerApplied ? 'O' : <span className={styles.notRequested}>미신청</span>}</td>
@@ -434,6 +442,10 @@ export default function MealManagement() {
                           <span className={styles.uncheckedBadge}>미체크</span>
                         )}
                       </button>
+                    ) : row.dinnerUnappliedDetected ? (
+                      <span className={styles.unappliedDetectedBadge} title={row.dinnerUnappliedDetectedAt ? trimMillis(row.dinnerUnappliedDetectedAt) : ''}>
+                        확인 필요 {row.dinnerUnappliedDetectedAt ? trimMillis(row.dinnerUnappliedDetectedAt) : ''}
+                      </span>
                     ) : '-'}
                   </td>
                 </tr>

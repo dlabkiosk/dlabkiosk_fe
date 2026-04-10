@@ -1495,6 +1495,12 @@ export default function SeatManagement() {
                   <span className={styles.modalValue}>{modalItem.approvedSeatLabel}</span>
                 </div>
               )}
+              {modalItem.status === 'REJECTED' && modalItem.processedAt && (
+                <div className={styles.modalRow}>
+                  <span className={styles.modalLabel}>거절 일시</span>
+                  <span className={styles.modalValue}>{modalItem.processedAt.replace('T', ' ').slice(0, 16)}</span>
+                </div>
+              )}
             </div>
             {modalItem.status === 'PENDING' && (
               <>
