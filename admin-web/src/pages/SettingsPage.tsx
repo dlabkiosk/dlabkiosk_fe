@@ -1229,8 +1229,7 @@ function ExamSchedule() {
                 {selectedIds.size > 0 && (
                   <button
                     type="button"
-                    className={styles.addBtn}
-                    style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                    className={f.bulkActionButton}
                     onClick={handleBulkDelete}
                   >
                     선택 삭제 ({selectedIds.size})

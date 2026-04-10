@@ -286,8 +286,11 @@ export default function PhoneManagement() {
 
   /* ── EXCEL ── */
   const handleExcel = async () => {
-    if (filteredData.length > 0) {
-      downloadCsv(filteredData, appliedFilters.date || today);
+    const excelData = selectedIds.size > 0
+      ? filteredData.filter((r) => selectedIds.has(r.id))
+      : filteredData;
+    if (excelData.length > 0) {
+      downloadCsv(excelData, appliedFilters.date || today);
     } else {
       try {
         await exportPhoneSubmissions({
@@ -313,13 +316,13 @@ export default function PhoneManagement() {
     return sortedData.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedData, page]);
 
-  const allSelected = pagedData.length > 0 && pagedData.every((r: PhoneSubmission) => selectedIds.has(r.id));
+  const allSelected = sortedData.length > 0 && sortedData.every((r: PhoneSubmission) => selectedIds.has(r.id));
 
   const handleSelectAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(pagedData.map((r: PhoneSubmission) => r.id)));
+      setSelectedIds(new Set(sortedData.map((r: PhoneSubmission) => r.id)));
     }
   };
 
@@ -411,19 +414,13 @@ export default function PhoneManagement() {
         </div>
       </div>
 
-      {/* 일괄 삭제 */}
-      {selectedIds.size > 0 && (
-        <div>
-          <button type="button" className={styles.bulkDeleteButton} onClick={handleBulkDelete}>
-            선택 삭제 ({selectedIds.size}건)
-          </button>
-        </div>
-      )}
-
       {/* 테이블 */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton} onClick={handleExcel}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.bulkActionButton} onClick={handleBulkDelete} disabled={selectedIds.size === 0}>
+            선택 삭제{selectedIds.size > 0 ? ` (${selectedIds.size}건)` : ''}
+          </button>
+          <button type="button" className={f.excelButton} onClick={handleExcel}>{selectedIds.size > 0 ? `${selectedIds.size}명 엑셀 다운로드` : '전체 엑셀 다운로드'} <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>

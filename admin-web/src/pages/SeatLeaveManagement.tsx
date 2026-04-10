@@ -219,12 +219,15 @@ export default function SeatLeaveManagement() {
 
   /* ── EXCEL (현재 검색 결과만 CSV) ── */
   const handleExcel = () => {
-    if (sortedData.length === 0) {
+    const excelData = selectedIds.size > 0
+      ? sortedData.filter((r) => selectedIds.has(r.id))
+      : sortedData;
+    if (excelData.length === 0) {
       void alert('다운로드할 내역이 없습니다.');
       return;
     }
     const header = ['이름', '학번', '좌석', '이탈신청시간', '상태', '경과', '사유'];
-    const csvRows = sortedData.map((row) => {
+    const csvRows = excelData.map((row) => {
       const elapsed = getElapsedMinutes(row.startedAt, row.endedAt);
       return [
         row.studentName,
@@ -257,6 +260,7 @@ export default function SeatLeaveManagement() {
       setSelectedIds(new Set(sortedData.map((r) => r.id)));
     }
   };
+  const selectedAwayCount = sortedData.filter((r) => !r.endedAt && selectedIds.has(r.id)).length;
   const handleSelectRow = (id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -264,6 +268,21 @@ export default function SeatLeaveManagement() {
       else next.add(id);
       return next;
     });
+  };
+
+  /* ── 일괄 강제 복귀 ── */
+  const handleBulkForceReturn = async () => {
+    const awayIds = sortedData.filter((r) => !r.endedAt && selectedIds.has(r.id)).map((r) => r.id);
+    if (awayIds.length === 0) return;
+    if (!await confirm(`선택한 ${awayIds.length}명을 강제 복귀 처리하시겠습니까?`)) return;
+    try {
+      await Promise.all(awayIds.map((id) => forceReturnSeatLeave(id)));
+      setSelectedIds(new Set());
+      await fetchData();
+    } catch {
+      await alert('일부 학생 강제 복귀에 실패했습니다.');
+      await fetchData();
+    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -343,7 +362,10 @@ export default function SeatLeaveManagement() {
       {/* 테이블 */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton} onClick={handleExcel}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.bulkActionButton} onClick={handleBulkForceReturn} disabled={selectedAwayCount === 0}>
+            {selectedAwayCount > 0 ? `${selectedAwayCount}명 강제 복귀` : '선택 강제 복귀'}
+          </button>
+          <button type="button" className={f.excelButton} onClick={handleExcel}>{selectedIds.size > 0 ? `${selectedIds.size}명 엑셀 다운로드` : '전체 엑셀 다운로드'} <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>

@@ -150,6 +150,28 @@
   background-color: var(--color-bg-page);
 }
 
+.bulkActionButton {
+  padding: 0 var(--spacing-md);
+  height: var(--size-input-height);
+  background-color: var(--color-white);
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.bulkActionButton:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+.bulkActionButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Pagination ── */
 .pagination {
   display: flex;

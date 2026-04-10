@@ -133,6 +133,9 @@ export default function StudyTimeManagement() {
   const [stores, setStores] = useState<Store[]>([]);
   const [storeFilter, setStoreFilter] = useState('전체');
 
+  // 선택
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // 페이지네이션
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 15;
@@ -248,6 +251,23 @@ export default function StudyTimeManagement() {
   const totalPages = Math.max(1, Math.ceil(sortedData.length / PAGE_SIZE));
   const pagedData = sortedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  const allSelected = sortedData.length > 0 && sortedData.every((r) => selectedIds.has(r.id));
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedData.map((r) => r.id)));
+    }
+  };
+  const handleSelectRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     const current = page + 1;
@@ -348,7 +368,7 @@ export default function StudyTimeManagement() {
               }
             }}
           >
-            엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} />
+            {selectedIds.size > 0 ? `${selectedIds.size}명 엑셀 다운로드` : '전체 엑셀 다운로드'} <img src={downloadIcon} alt="" className={styles.downloadIcon} />
           </button>
         </div>
 
@@ -358,7 +378,7 @@ export default function StudyTimeManagement() {
             <thead>
               <tr>
                 <th className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
-                  <input type="checkbox" />
+                  <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
                 </th>
                 {isAdmin && <th className={styles.stickyCol} style={{ left: 50, width: 140, minWidth: 140, maxWidth: 140 }}>지점</th>}
                 <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 190 : 50, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('name')}>
@@ -391,7 +411,7 @@ export default function StudyTimeManagement() {
                 pagedData.map((row) => (
                   <tr key={row.id}>
                     <td className={`${styles.checkboxCol} ${styles.stickyCol}`} style={{ left: 0, width: 50, minWidth: 50, maxWidth: 50 }}>
-                      <input type="checkbox" />
+                      <input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => handleSelectRow(row.id)} />
                     </td>
                     {isAdmin && <td className={styles.stickyCol} style={{ left: 50, width: 140, minWidth: 140, maxWidth: 140 }}>{row.storeName || '-'}</td>}
                     <td className={styles.stickyCol} style={{ left: isAdmin ? 190 : 50, width: 100, minWidth: 100, maxWidth: 100 }}>{row.name}</td>

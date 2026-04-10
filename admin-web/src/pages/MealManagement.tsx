@@ -219,12 +219,12 @@ export default function MealManagement() {
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const pageData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const allSelected = pageData.length > 0 && pageData.every((r) => selectedIds.has(r.studentId));
+  const allSelected = filteredData.length > 0 && filteredData.every((r) => selectedIds.has(r.studentId));
   const handleSelectAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(pageData.map((r) => r.studentId)));
+      setSelectedIds(new Set(filteredData.map((r) => r.studentId)));
     }
   };
   const handleSelectRow = (id: number) => {
@@ -348,7 +348,12 @@ export default function MealManagement() {
       {/* 테이블 */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData, searchDate)}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.excelButton} onClick={() => {
+            const rows = selectedIds.size > 0
+              ? filteredData.filter((r) => selectedIds.has(r.studentId))
+              : filteredData;
+            downloadCsv(rows, searchDate);
+          }}>{selectedIds.size > 0 ? `${selectedIds.size}명 엑셀 다운로드` : '전체 엑셀 다운로드'} <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>

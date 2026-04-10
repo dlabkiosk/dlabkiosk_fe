@@ -49,6 +49,7 @@
 .tableActions {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-sm);
 }
 
 .downloadIcon {
@@ -176,6 +177,24 @@
 .returnButton:hover {
   background-color: var(--color-danger);
   color: var(--color-bg-card);
+}
+
+/* ── Bulk Return ── */
+.bulkReturnButton {
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.bulkReturnButton:hover {
+  background-color: #fef2f2;
 }
 
 /* Empty state */

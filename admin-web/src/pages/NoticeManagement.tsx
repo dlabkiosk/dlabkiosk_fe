@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuPlus, LuArrowUpDown, LuArrowUp, LuArrowDown, LuSettings } from 'react-icons/lu';
 import noticeIcon from '../assets/notice_active.png';
-import { getNotices } from '../api/noticeApi';
+import { getNotices, deleteNotice } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
+import useConfirm from '../hooks/useConfirm';
 import NoticeSettingsModal from '../components/NoticeSettingsModal';
 import { getSubjects } from '../utils/noticeSubjects';
 import styles from './NoticeManagement.module.css';
@@ -16,6 +17,7 @@ import FilterSelect from '../components/FilterSelect';
 const ITEMS_PER_PAGE = 10;
 
 export default function NoticeManagement() {
+  const { confirm, alert, ConfirmDialog } = useConfirm();
   const navigate = useNavigate();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ export default function NoticeManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [subjectOptions, setSubjectOptions] = useState(getSubjects);
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   /* ADMIN 역할 & 지점 필터 */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -113,6 +116,23 @@ export default function NoticeManagement() {
     currentPage * ITEMS_PER_PAGE,
   );
 
+  const allSelected = filteredNotices.length > 0 && filteredNotices.every((n) => selectedIds.has(n.id));
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredNotices.map((n) => n.id)));
+    }
+  };
+  const handleSelectRow = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleSearch = () => {
     setAppliedSearch(searchText);
     setCurrentPage(1);
@@ -123,6 +143,19 @@ export default function NoticeManagement() {
   };
 
   const formatDate = (iso: string) => iso.slice(0, 10);
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!(await confirm(`선택한 ${selectedIds.size}건의 공지를 삭제하시겠습니까?`))) return;
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteNotice(id)));
+      setSelectedIds(new Set());
+      await fetchNotices();
+    } catch {
+      await alert('일부 공지 삭제에 실패했습니다.');
+      await fetchNotices();
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -204,6 +237,11 @@ export default function NoticeManagement() {
 
       {/* Content Card */}
       <div className={styles.contentCard}>
+        <div className={styles.tableActions}>
+          <button type="button" className={f.bulkActionButton} onClick={handleBulkDelete} disabled={selectedIds.size === 0}>
+            선택 삭제{selectedIds.size > 0 ? ` (${selectedIds.size}건)` : ''}
+          </button>
+        </div>
 
         {/* Table */}
         {loading ? (
@@ -222,7 +260,7 @@ export default function NoticeManagement() {
             <thead>
               <tr>
                 <th className={styles.checkboxCol}>
-                  <input type="checkbox" />
+                  <input type="checkbox" checked={allSelected} onChange={handleSelectAll} />
                 </th>
                 <th>No</th>
                 <th className={styles.sortableCol} style={{ textAlign: 'center' }} onClick={() => handleSort('title')}>
@@ -242,8 +280,8 @@ export default function NoticeManagement() {
               ) : (
                 pageNotices.map((notice, idx) => (
                   <tr key={notice.id} className={notice.pinned ? styles.pinnedRow : ''}>
-                    <td className={styles.checkboxCol}>
-                      <input type="checkbox" />
+                    <td className={styles.checkboxCol} onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selectedIds.has(notice.id)} onChange={() => handleSelectRow(notice.id)} />
                     </td>
                     <td>{(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
                     <td
@@ -278,6 +316,7 @@ export default function NoticeManagement() {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

@@ -46,6 +46,12 @@
   gap: var(--spacing-md);
 }
 
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
 /* ── Buttons ── */
 .newButton {
   display: flex;
@@ -200,5 +206,23 @@
   vertical-align: middle;
   margin-left: var(--spacing-xs);
   color: var(--color-primary);
+}
+
+/* ── Bulk Delete ── */
+.bulkDeleteButton {
+  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
+  border: 1px solid #dc2626;
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  color: #dc2626;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.bulkDeleteButton:hover {
+  background-color: #fef2f2;
 }
 

@@ -434,19 +434,21 @@ export default function AttendanceManagement() {
       {/* Table */}
       <div className={styles.contentCard}>
         <div className={styles.tableActions}>
-          <span className={styles.selectedCount}>
-            {selectedIds.size > 0 ? `${selectedIds.size}명 선택됨` : '선택된 학생 없음'}
-          </span>
           <button
             type="button"
             className={styles.qrButton}
             onClick={handleBulkQrDownload}
             disabled={selectedIds.size === 0 || bulkQrLoading}
           >
-            {bulkQrLoading ? 'QR 다운로드 중...' : '학생 QR 다운로드'}
+            {bulkQrLoading ? 'QR 다운로드 중...' : selectedIds.size > 0 ? `${selectedIds.size}명 QR 다운로드` : '전체 QR 다운로드'}
             <img src={qrDownloadIcon} alt="" className={styles.downloadIcon} />
           </button>
-          <button type="button" className={f.excelButton} onClick={() => downloadCsv(filteredData)}>엑셀 다운로드 <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
+          <button type="button" className={f.excelButton} onClick={() => {
+            const rows = selectedIds.size > 0
+              ? filteredData.filter((r) => selectedIds.has(r.studentId))
+              : filteredData;
+            downloadCsv(rows);
+          }}>{selectedIds.size > 0 ? `${selectedIds.size}명 엑셀 다운로드` : '전체 엑셀 다운로드'} <img src={downloadIcon} alt="" className={styles.downloadIcon} /></button>
         </div>
         <div className={styles.tableWrap}>
         <table className={styles.table}>
