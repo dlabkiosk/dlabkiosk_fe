@@ -2873,13 +2873,15 @@ function StudentMessageSettings() {
     );
   }, [students, studentSearch]);
 
-  // 모달 내 학생 검색 필터
+  // 모달 내 학생 검색 필터 (학번순 정렬)
   const modalFilteredStudents = useMemo(() => {
-    if (!modalStudentSearch.trim()) return modalStudents;
-    const q = modalStudentSearch.trim().toLowerCase();
-    return modalStudents.filter(
-      (s) => (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q)
-    );
+    const list = !modalStudentSearch.trim()
+      ? modalStudents
+      : modalStudents.filter((s) => {
+          const q = modalStudentSearch.trim().toLowerCase();
+          return (s.name ?? '').toLowerCase().includes(q) || (s.studentNumber ?? '').toLowerCase().includes(q);
+        });
+    return [...list].sort((a, b) => (a.studentNumber ?? '').localeCompare(b.studentNumber ?? ''));
   }, [modalStudents, modalStudentSearch]);
 
   // 선택된 학생의 메시지 로드
