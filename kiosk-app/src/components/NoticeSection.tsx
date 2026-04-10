@@ -25,6 +25,7 @@ export default function NoticeSection() {
   const [showList, setShowList] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<(Notice | SubjectNotice) | null>(null);
   const [selectedIsSubject, setSelectedIsSubject] = useState(false);
+  const [openedFromMain, setOpenedFromMain] = useState(false);
 
   /* 전체보기 (페이지네이션 포함) */
   const [fullViewType, setFullViewType] = useState<'general' | 'subject' | null>(null);
@@ -93,9 +94,10 @@ export default function NoticeSection() {
     setPage(0);
   };
 
-  const handleNoticeClick = (notice: Notice | SubjectNotice, isSubject: boolean) => {
+  const handleNoticeClick = (notice: Notice | SubjectNotice, isSubject: boolean, fromMain = false) => {
     setSelectedNotice(notice);
     setSelectedIsSubject(isSubject);
+    setOpenedFromMain(fromMain);
     setShowList(false);
     setFullViewType(null);
     speak(VOICE_NOTICE_DETAIL(notice.title));
@@ -103,6 +105,7 @@ export default function NoticeSection() {
 
   const handleBackToList = () => {
     setSelectedNotice(null);
+    setOpenedFromMain(false);
     if (fullViewType) {
       /* 전체보기 상태였으면 전체보기로 복귀 */
       speak(fullViewType === 'general' ? VOICE_NOTICE_FULL_GENERAL : VOICE_NOTICE_FULL_SUBJECT);
@@ -191,12 +194,21 @@ export default function NoticeSection() {
         ) : mainList.length === 0 ? (
           <li className={styles.item}>등록된 공지가 없습니다.</li>
         ) : (
-          mainList.slice(0, DEFAULT_COUNT).map((notice) => (
-            <li key={notice.id} className={styles.item}>
-              {'pinned' in notice && notice.pinned && <LuPin className={styles.pinIcon} />}
-              {notice.title}
-            </li>
-          ))
+          mainList.slice(0, DEFAULT_COUNT).map((notice) => {
+            const isSubject = !('pinned' in notice);
+            return (
+              <li
+                key={notice.id}
+                className={styles.item}
+                onClick={() => handleNoticeClick(notice, isSubject, true)}
+                role="button"
+                tabIndex={0}
+              >
+                {'pinned' in notice && notice.pinned && <LuPin className={styles.pinIcon} />}
+                {notice.title}
+              </li>
+            );
+          })
         )}
       </ul>
 
