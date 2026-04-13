@@ -1,73 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LuPin } from 'react-icons/lu';
 import { getNotices } from '../api/noticeApi';
-import type { Notice, SubjectNotice } from '../api/noticeApi';
+import type { Notice } from '../api/noticeApi';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
   VOICE_NOTICE_OPEN,
   VOICE_NOTICE_DETAIL,
-  VOICE_NOTICE_FULL_GENERAL,
-  VOICE_NOTICE_FULL_SUBJECT,
   VOICE_BACK_TO_MAIN,
 } from '../constants/voiceGuide';
 import plusButtonIcon from '../assets/plus-button.png';
 import styles from './NoticeSection.module.css';
 
 const DEFAULT_COUNT = 3;
-const MODAL_MAX = 5;
 const PAGE_SIZE = 10;
+
+/** 제목에서 [xxx] 말머리를 추출. 없으면 null */
+function extractPrefix(title: string): string | null {
+  const m = title.match(/^\[([^\]]+)\]\s*/);
+  return m ? m[1] : null;
+}
 
 export default function NoticeSection() {
   const { speak } = useAccessibility();
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [subjectNotices, setSubjectNotices] = useState<SubjectNotice[]>([]);
+  const [allNotices, setAllNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showList, setShowList] = useState(false);
-  const [selectedNotice, setSelectedNotice] = useState<(Notice | SubjectNotice) | null>(null);
-  const [selectedIsSubject, setSelectedIsSubject] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
-  /* 전체보기 (페이지네이션 포함) */
-  const [fullViewType, setFullViewType] = useState<'general' | 'subject' | null>(null);
-  const [page, setPage] = useState(0);
-  const [filter, setFilter] = useState<'all' | 'pinned' | 'normal'>('all');
+  /* 필터 & 페이지네이션 */
+  const [filterPrefix, setFilterPrefix] = useState<string>('전체 보기');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const allNotices = await getNotices();
-        if (!cancelled) {
-          // 분류 규칙:
-          //  1) 제목이 [전체] 으로 시작하면 → 전체 공지 (제목 본문에 [안내] 등 다른 대괄호가 있어도 무관)
-          //  2) 그 외 [xxx] 으로 시작하면 → 과목 공지 (xxx = 과목명)
-          //  3) 어떤 [xxx] 접두사도 없으면 → 전체 공지
-          const generalOnly: Notice[] = [];
-          const parsedSubject: SubjectNotice[] = [];
-          for (const n of allNotices) {
-            if (/^\[전체\]\s*/.test(n.title)) {
-              generalOnly.push(n);
-              continue;
-            }
-            const m = n.title.match(/^\[([^\]]+)\]\s*/);
-            if (m) {
-              parsedSubject.push({
-                id: n.id,
-                storeId: n.storeId,
-                subjectName: m[1],
-                title: n.title,
-                content: n.content,
-                active: n.active,
-                createdAt: n.createdAt,
-                updatedAt: n.updatedAt,
-              });
-            } else {
-              generalOnly.push(n);
-            }
-          }
-          setNotices(generalOnly);
-          setSubjectNotices(parsedSubject);
-        }
+        const data = await getNotices();
+        if (!cancelled) setAllNotices(data);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -75,45 +45,50 @@ export default function NoticeSection() {
     return () => { cancelled = true; };
   }, []);
 
-  const filteredNotices = notices.filter((n) => {
-    if (filter === 'pinned') return n.pinned;
-    if (filter === 'normal') return !n.pinned;
-    return true;
-  });
+  /* 말머리 목록 추출 (중복 제거, 순서 유지) */
+  const prefixOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const n of allNotices) {
+      const p = extractPrefix(n.title);
+      if (p && !seen.has(p)) {
+        seen.add(p);
+        result.push(p);
+      }
+    }
+    return result;
+  }, [allNotices]);
 
-  const FILTER_LABELS: Record<'all' | 'pinned' | 'normal', string> = {
-    all: '전체',
-    pinned: '고정 공지',
-    normal: '일반 공지',
-  };
+  /* 필터 적용된 목록 */
+  const filteredNotices = useMemo(() => {
+    if (filterPrefix === '전체 보기') return allNotices;
+    return allNotices.filter((n) => extractPrefix(n.title) === filterPrefix);
+  }, [allNotices, filterPrefix]);
 
-  const handleFilterChange = (value: 'all' | 'pinned' | 'normal') => {
-    setFilter(value);
+  const pagedNotices = filteredNotices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE));
+
+  /* 메인 화면용: 고정 우선 + 최신순, 상위 3개 */
+  const mainList = useMemo(() => {
+    const pinned = allNotices.filter((n) => n.pinned);
+    const nonPinned = allNotices.filter((n) => !n.pinned);
+    return [...pinned, ...nonPinned];
+  }, [allNotices]);
+
+  const handleFilterChange = (prefix: string) => {
+    setFilterPrefix(prefix);
     setFilterOpen(false);
     setPage(0);
   };
 
-  const handleNoticeClick = (notice: Notice | SubjectNotice, isSubject: boolean) => {
+  const handleNoticeClick = (notice: Notice) => {
     setSelectedNotice(notice);
-    setSelectedIsSubject(isSubject);
     setShowList(false);
-    setFullViewType(null);
     speak(VOICE_NOTICE_DETAIL(notice.title));
   };
 
   const handleBackToList = () => {
     setSelectedNotice(null);
-    if (fullViewType) {
-      /* 전체보기 상태였으면 전체보기로 복귀 */
-      speak(fullViewType === 'general' ? VOICE_NOTICE_FULL_GENERAL : VOICE_NOTICE_FULL_SUBJECT);
-    } else {
-      setShowList(true);
-      speak(VOICE_NOTICE_OPEN);
-    }
-  };
-
-  const handleBackToMain = () => {
-    setFullViewType(null);
     setShowList(true);
     speak(VOICE_NOTICE_OPEN);
   };
@@ -125,46 +100,29 @@ export default function NoticeSection() {
 
   const openModal = () => {
     setShowList(true);
-    setFullViewType(null);
+    setSelectedNotice(null);
     setPage(0);
-    setFilter('all');
+    setFilterPrefix('전체 보기');
     setFilterOpen(false);
     speak(VOICE_NOTICE_OPEN);
   };
 
-  const openFullView = (type: 'general' | 'subject') => {
-    setFullViewType(type);
+  const closeAll = () => {
     setShowList(false);
-    setPage(0);
-    setFilter('all');
-    setFilterOpen(false);
-    speak(type === 'general' ? VOICE_NOTICE_FULL_GENERAL : VOICE_NOTICE_FULL_SUBJECT);
+    setSelectedNotice(null);
+    speak(VOICE_BACK_TO_MAIN);
   };
 
-  /* 메인 화면용: 고정공지 우선 + 나머지는 전체/과목 통합 최신순 */
-  const mainList = (() => {
-    const pinned = notices.filter((n) => n.pinned);
-    const nonPinned: (Notice | SubjectNotice)[] = [
-      ...notices.filter((n) => !n.pinned),
-      ...subjectNotices,
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return [...pinned, ...nonPinned];
-  })();
-
-  /* 전체보기 목록 */
-  const fullList = fullViewType === 'general' ? filteredNotices : subjectNotices;
-  const pagedFullList = fullList.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
   /* ── 공지 아이템 렌더 헬퍼 ── */
-  const renderNoticeItem = (notice: Notice | SubjectNotice, isSubject: boolean) => (
+  const renderNoticeItem = (notice: Notice) => (
     <li key={notice.id} className={styles.modalListItem}>
       <button
         type="button"
         className={styles.modalItem}
-        onClick={() => handleNoticeClick(notice, isSubject)}
+        onClick={() => handleNoticeClick(notice)}
       >
         <span className={styles.modalItemTitle}>
-          {!isSubject && (notice as Notice).pinned && <LuPin className={styles.pinIcon} />}
+          {notice.pinned && <LuPin className={styles.pinIcon} />}
           {notice.title}
         </span>
         <span className={styles.modalItemDate}>{formatDate(notice.createdAt)}</span>
@@ -191,147 +149,83 @@ export default function NoticeSection() {
         ) : mainList.length === 0 ? (
           <li className={styles.item}>등록된 공지가 없습니다.</li>
         ) : (
-          mainList.slice(0, DEFAULT_COUNT).map((notice) => {
-            const isSubject = !('pinned' in notice);
-            return (
-              <li
-                key={notice.id}
-                className={styles.item}
-                onClick={() => handleNoticeClick(notice, isSubject)}
-                role="button"
-                tabIndex={0}
-              >
-                {'pinned' in notice && notice.pinned && <LuPin className={styles.pinIcon} />}
-                {notice.title}
-              </li>
-            );
-          })
+          mainList.slice(0, DEFAULT_COUNT).map((notice) => (
+            <li
+              key={notice.id}
+              className={styles.item}
+              onClick={() => handleNoticeClick(notice)}
+              role="button"
+              tabIndex={0}
+            >
+              {notice.pinned && <LuPin className={styles.pinIcon} />}
+              {notice.title}
+            </li>
+          ))
         )}
       </ul>
 
-      {/* ── 메인 모달: 두 섹션 동시 표시 ── */}
+      {/* ── 공지사항 목록 모달 ── */}
       {showList && (
-        <div className={styles.modalOverlay} onClick={() => { setShowList(false); speak(VOICE_BACK_TO_MAIN); }}>
+        <div className={styles.modalOverlay} onClick={closeAll}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>공지사항</h3>
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => { setShowList(false); speak(VOICE_BACK_TO_MAIN); }}
+                onClick={closeAll}
                 aria-label="닫기"
               >
                 &#x2715;
               </button>
             </div>
             <div className={styles.modalBody}>
-              {/* 전체 공지사항 섹션 */}
-              <div className={styles.sectionCard}>
-                <div className={styles.sectionHeader}>
-                  <h4 className={styles.sectionTitle}>전체 공지사항</h4>
-                  {notices.length > MODAL_MAX && (
-                    <button type="button" className={styles.sectionMore} onClick={() => openFullView('general')}>
-                      더보기 &#x203A;
-                    </button>
+              {/* 필터 드롭다운 */}
+              <div className={styles.filterRow}>
+                <div className={styles.filterWrapper}>
+                  <button
+                    type="button"
+                    className={styles.filterButton}
+                    onClick={() => setFilterOpen((v) => !v)}
+                  >
+                    {filterPrefix}
+                    <span className={`${styles.filterArrow} ${filterOpen ? styles.filterArrowOpen : ''}`}>
+                      &#x25BC;
+                    </span>
+                  </button>
+                  {filterOpen && (
+                    <div className={styles.filterDropdown}>
+                      <button
+                        type="button"
+                        className={`${styles.filterOption} ${filterPrefix === '전체 보기' ? styles.filterOptionActive : ''}`}
+                        onClick={() => handleFilterChange('전체 보기')}
+                      >
+                        전체 보기
+                      </button>
+                      {prefixOptions.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          className={`${styles.filterOption} ${filterPrefix === p ? styles.filterOptionActive : ''}`}
+                          onClick={() => handleFilterChange(p)}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-                {notices.length === 0 ? (
-                  <p className={styles.emptyText}>등록된 공지가 없습니다.</p>
-                ) : (
-                  <ul className={styles.modalList}>
-                    {notices.slice(0, MODAL_MAX).map((n) => renderNoticeItem(n, false))}
-                  </ul>
-                )}
               </div>
 
-              {/* 과목 공지사항 섹션 */}
-              <div className={styles.sectionCard}>
-                <div className={styles.sectionHeader}>
-                  <h4 className={styles.sectionTitle}>과목 공지사항</h4>
-                  {subjectNotices.length > MODAL_MAX && (
-                    <button type="button" className={styles.sectionMore} onClick={() => openFullView('subject')}>
-                      더보기 &#x203A;
-                    </button>
-                  )}
-                </div>
-                {subjectNotices.length === 0 ? (
-                  <p className={styles.emptyText}>등록된 과목 공지가 없습니다.</p>
-                ) : (
-                  <ul className={styles.modalList}>
-                    {subjectNotices.slice(0, MODAL_MAX).map((n) => renderNoticeItem(n, true))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 전체보기 모달 (페이지네이션) ── */}
-      {fullViewType && !selectedNotice && (
-        <div className={styles.modalOverlay} onClick={() => { setFullViewType(null); speak(VOICE_BACK_TO_MAIN); }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <button
-                type="button"
-                className={styles.backButton}
-                onClick={handleBackToMain}
-                aria-label="돌아가기"
-              >
-                &#x2039;
-              </button>
-              <h3 className={styles.modalTitle}>
-                {fullViewType === 'general' ? '전체 공지사항' : '과목 공지사항'}
-              </h3>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={() => { setFullViewType(null); speak(VOICE_BACK_TO_MAIN); }}
-                aria-label="닫기"
-              >
-                &#x2715;
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              {fullViewType === 'general' && (
-                <div className={styles.filterRow}>
-                  <div className={styles.filterWrapper}>
-                    <button
-                      type="button"
-                      className={styles.filterButton}
-                      onClick={() => setFilterOpen((v) => !v)}
-                    >
-                      {FILTER_LABELS[filter]}
-                      <span className={`${styles.filterArrow} ${filterOpen ? styles.filterArrowOpen : ''}`}>
-                        &#x25BC;
-                      </span>
-                    </button>
-                    {filterOpen && (
-                      <div className={styles.filterDropdown}>
-                        {(['all', 'pinned', 'normal'] as const).map((key) => (
-                          <button
-                            key={key}
-                            type="button"
-                            className={`${styles.filterOption} ${filter === key ? styles.filterOptionActive : ''}`}
-                            onClick={() => handleFilterChange(key)}
-                          >
-                            {FILTER_LABELS[key]}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {fullList.length === 0 ? (
+              {filteredNotices.length === 0 ? (
                 <p className={styles.emptyText}>해당하는 공지가 없습니다.</p>
               ) : (
                 <ul className={styles.modalList}>
-                  {pagedFullList.map((n) => renderNoticeItem(n, fullViewType === 'subject'))}
+                  {pagedNotices.map((n) => renderNoticeItem(n))}
                 </ul>
               )}
-              {fullList.length > PAGE_SIZE && (
+
+              {totalPages > 1 && (
                 <div className={styles.pagination}>
                   <button
                     type="button"
@@ -342,12 +236,12 @@ export default function NoticeSection() {
                     &#x2039;
                   </button>
                   <span className={styles.pageInfo}>
-                    {page + 1} / {Math.ceil(fullList.length / PAGE_SIZE)}
+                    {page + 1} / {totalPages}
                   </span>
                   <button
                     type="button"
                     className={styles.pageButton}
-                    disabled={(page + 1) * PAGE_SIZE >= fullList.length}
+                    disabled={page + 1 >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     &#x203A;
@@ -361,7 +255,7 @@ export default function NoticeSection() {
 
       {/* ── 공지사항 상세 모달 ── */}
       {selectedNotice && (
-        <div className={styles.modalOverlay} onClick={() => { setSelectedNotice(null); speak(VOICE_BACK_TO_MAIN); }}>
+        <div className={styles.modalOverlay} onClick={closeAll}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <button
@@ -372,13 +266,11 @@ export default function NoticeSection() {
               >
                 &#x2039;
               </button>
-              <h3 className={styles.modalTitle}>
-                {selectedIsSubject ? '과목 공지사항' : '공지사항'}
-              </h3>
+              <h3 className={styles.modalTitle}>공지사항</h3>
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => { setSelectedNotice(null); speak(VOICE_BACK_TO_MAIN); }}
+                onClick={closeAll}
                 aria-label="닫기"
               >
                 &#x2715;
@@ -387,7 +279,7 @@ export default function NoticeSection() {
             <div className={styles.modalBody}>
               <div className={styles.detailHeader}>
                 <h4 className={styles.detailTitle}>
-                  {!selectedIsSubject && (selectedNotice as Notice).pinned && <LuPin className={styles.pinIcon} />}
+                  {selectedNotice.pinned && <LuPin className={styles.pinIcon} />}
                   {selectedNotice.title}
                 </h4>
                 <span className={styles.detailDate}>{formatDate(selectedNotice.createdAt)}</span>

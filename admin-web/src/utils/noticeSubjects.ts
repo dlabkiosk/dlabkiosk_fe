@@ -8,7 +8,7 @@ export function getSubjects(): string[] {
     if (raw) {
       const parsed: string[] = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return ['전체', ...parsed];
+        return ['전체', ...parsed.filter((s) => s !== '전체')];
       }
     }
   } catch { /* ignore */ }
@@ -26,7 +26,7 @@ export function saveSubjects(subjects: string[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
-/** 폼에서 사용할 말머리 목록 ('선택' + 말머리들, '전체' 제외) */
+/** 폼에서 사용할 말머리 목록 ('선택' + 모든 말머리, '전체' 포함) */
 export function getFormSubjects(): string[] {
-  return ['선택', ...getSubjects().filter((s) => s !== '전체')];
+  return ['선택', ...getSubjects()];
 }

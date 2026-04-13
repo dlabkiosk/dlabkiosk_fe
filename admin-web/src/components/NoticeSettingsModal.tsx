@@ -65,6 +65,12 @@ export default function NoticeSettingsModal({ onClose, onSave }: Props) {
             <p className={styles.sectionHint}>드래그하여 순서를 변경할 수 있습니다.</p>
           </div>
 
+          {/* 전체(고정) */}
+          <div className={styles.fixedItem}>
+            <span className={styles.itemText}>전체</span>
+            <span className={styles.fixedLabel}>고정</span>
+          </div>
+
           <div className={styles.list} onDragOver={(e) => e.preventDefault()} onDrop={handleDragEnd}>
             {subjects.map((subject, idx) => (
               <div
