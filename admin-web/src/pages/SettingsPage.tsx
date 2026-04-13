@@ -2442,6 +2442,15 @@ function MessageTemplateSettings() {
     setSelectedTplStudentIds(new Set());
   };
 
+  // 학생 메시지 등록 시 현재 열린 템플릿 학생 목록 갱신
+  useEffect(() => {
+    const handler = () => {
+      if (studentsModalTemplate) fetchTplStudents(studentsModalTemplate.id);
+    };
+    window.addEventListener('studentMessageCreated', handler);
+    return () => window.removeEventListener('studentMessageCreated', handler);
+  }, [studentsModalTemplate, fetchTplStudents]);
+
   const toggleTplStudentSelect = (id: number) => {
     setSelectedTplStudentIds((prev) => {
       const next = new Set(prev);
@@ -2521,22 +2530,37 @@ function MessageTemplateSettings() {
                 value={tplStudentSearch}
                 onChange={(e) => { setTplStudentSearch(e.target.value); setTplStudentPage(1); }}
               />
-              <button
-                type="button"
-                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                disabled={selectedTplStudentIds.size === 0}
-                onClick={handleDeleteSelectedTplStudents}
-                style={{
-                  width: 'auto',
-                  padding: '0 var(--spacing-md)',
-                  gap: 'var(--spacing-xs)',
-                  opacity: selectedTplStudentIds.size === 0 ? 0.45 : 1,
-                  cursor: selectedTplStudentIds.size === 0 ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <LuTrash2 />
-                선택 삭제
-              </button>
+              <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                <button
+                  type="button"
+                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                  disabled={selectedTplStudentIds.size === 0}
+                  onClick={handleDeleteSelectedTplStudents}
+                  style={{
+                    width: 'auto',
+                    padding: '0 var(--spacing-md)',
+                    gap: 'var(--spacing-xs)',
+                    fontSize: 'var(--font-size-xs)',
+                    opacity: selectedTplStudentIds.size === 0 ? 0.45 : 1,
+                    cursor: selectedTplStudentIds.size === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <LuTrash2 />
+                  선택 삭제
+                </button>
+                <button
+                  type="button"
+                  className={styles.addBtn}
+                  style={{ fontSize: 'var(--font-size-xs)' }}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('openStudentMessageModal', {
+                      detail: { storeId: studentsModalTemplate!.storeId, templateId: studentsModalTemplate!.id },
+                    }));
+                  }}
+                >
+                  + 학생 추가
+                </button>
+              </div>
             </div>
 
             <table className={styles.dataTable}>
@@ -2913,6 +2937,41 @@ function StudentMessageSettings() {
     return () => window.removeEventListener('messageTemplateUpdated', handler);
   }, [selectedStudentId, fetchMessages]);
 
+  // 템플릿 등록 학생 목록에서 "학생 추가" 클릭 시 모달 열기
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const { storeId, templateId } = (e as CustomEvent).detail as { storeId: number; templateId: number };
+      // 폼 초기화
+      setFormContent('');
+      setEditTarget(null);
+      setModalStudentIds([]);
+      setModalStudentSearch('');
+      setEligibleStudentIds(null);
+      if (isAdmin) setModalStoreId(storeId);
+      setShowModal(true);
+      // 최신 템플릿 목록 로드 후 해당 템플릿 프리셋
+      try {
+        const tpls = await getMessageTemplates();
+        setAllMsgTemplates(tpls);
+      } catch { /* ignore */ }
+      setSelectedTemplateId(templateId);
+      setFormContent('');
+      // eligible 학생 조회
+      setEligibleLoading(true);
+      try {
+        const page = await getMessageTemplateEligibleStudents(templateId, { page: 0, size: 1000 });
+        const ids = new Set(page.content.map((s) => s.studentId));
+        setEligibleStudentIds(ids);
+      } catch {
+        setEligibleStudentIds(new Set());
+      } finally {
+        setEligibleLoading(false);
+      }
+    };
+    window.addEventListener('openStudentMessageModal', handler);
+    return () => window.removeEventListener('openStudentMessageModal', handler);
+  }, [isAdmin]);
+
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   const resetForm = () => {
@@ -3025,6 +3084,8 @@ function StudentMessageSettings() {
       }
       closeModal();
       if (selectedStudentId) await fetchMessages(selectedStudentId);
+      // 템플릿 등록 학생 목록이 열려있으면 갱신
+      window.dispatchEvent(new CustomEvent('studentMessageCreated'));
     } catch {
       await alert('저장에 실패했습니다.');
     }
@@ -3082,7 +3143,7 @@ function StudentMessageSettings() {
                   <p className={styles.placeholderText}>학생이 없습니다.</p>
                 ) : (
                   <>
-                    {filteredStudents.slice(0, 50).map((s) => (
+                    {filteredStudents.map((s) => (
                       <button
                         key={s.id}
                         type="button"
@@ -3093,11 +3154,6 @@ function StudentMessageSettings() {
                         <span className={styles.msgStudentNumber}>{s.studentNumber}</span>
                       </button>
                     ))}
-                    {filteredStudents.length > 50 && (
-                      <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
-                        외 {filteredStudents.length - 50}명 — 검색으로 범위를 좁혀주세요
-                      </p>
-                    )}
                   </>
                 )}
               </div>
@@ -3300,7 +3356,7 @@ function StudentMessageSettings() {
                         대상 학생 조회 중...
                       </p>
                     )}
-                    {modalFilteredStudents.slice(0, 50).map((s) => {
+                    {modalFilteredStudents.map((s) => {
                       const eligible = isStudentEligible(s.id);
                       return (
                         <label
@@ -3320,11 +3376,6 @@ function StudentMessageSettings() {
                         </label>
                       );
                     })}
-                    {modalFilteredStudents.length > 50 && (
-                      <p className={styles.placeholderText} style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-sm)' }}>
-                        외 {modalFilteredStudents.length - 50}명 — 검색으로 범위를 좁혀주세요
-                      </p>
-                    )}
                   </div>
                 </div>
                 );
