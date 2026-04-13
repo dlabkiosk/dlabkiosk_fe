@@ -366,7 +366,9 @@
 .detailFooter {
   display: flex;
   justify-content: center;
-  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-9);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .backToListButton {

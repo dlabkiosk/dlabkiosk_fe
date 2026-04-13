@@ -30,9 +30,10 @@ import {
 } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
 import useConfirm from '../hooks/useConfirm';
-import { getStores, getStore, createStore, updateStore, deleteStore } from '../api/storeApi';
+import { getStores, getStore, updateStore } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
-import { getMe } from '../api/authApi';
+import { getMe, updateMe } from '../api/authApi';
+import type { AdminInfo } from '../api/authApi';
 import FilterSelect from '../components/FilterSelect';
 import { getStudents } from '../api/studentApi';
 import type { Student } from '../api/studentApi';
@@ -55,9 +56,11 @@ import {
 import type { MessageTemplate, RecipientStudent } from '../api/messageTemplateApi';
 import { syncStudents, syncStores } from '../api/syncApi';
 import type { StudentSyncResult, StoreSyncResult } from '../api/syncApi';
+import { getUsers, createUser, updateUser, deleteUser } from '../api/userApi';
+import type { AdminUser } from '../api/userApi';
 
 /* ── 탭 목록 ── */
-const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리', '데이터 관리', '지점 정보'] as const;
+const TABS = ['배너 관리', '시험일정 관리', '식단표 관리', '이탈사유 관리', '메시지 관리', '데이터 관리', '지점 정보', '계정 관리', '내 정보'] as const;
 type TabId = typeof TABS[number];
 
 const MEDIA_TYPES = ['IMAGE', 'VIDEO'] as const;
@@ -90,12 +93,24 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 
 /* ── Page ── */
 
+const ADMIN_ONLY_TABS: ReadonlySet<TabId> = new Set(['계정 관리']);
+
 export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(
     tabParam && (TABS as readonly string[]).includes(tabParam) ? tabParam : '배너 관리',
   );
+  const [pageRole, setPageRole] = useState<string>('');
+
+  useEffect(() => {
+    getMe().then((me) => setPageRole(me.role)).catch(() => {});
+  }, []);
+
+  const visibleTabs = useMemo(() => {
+    if (pageRole === 'ADMIN') return TABS;
+    return TABS.filter((t) => !ADMIN_ONLY_TABS.has(t));
+  }, [pageRole]);
 
   useEffect(() => {
     if (tabParam && (TABS as readonly string[]).includes(tabParam) && tabParam !== activeTab) {
@@ -108,14 +123,14 @@ export default function SettingsPage() {
 
   const updateSlider = useCallback(() => {
     if (!tabBarRef.current) return;
-    const idx = TABS.indexOf(activeTab);
+    const idx = visibleTabs.indexOf(activeTab);
     const buttons = tabBarRef.current.querySelectorAll('button');
     const btn = buttons[idx];
     if (!btn) return;
     const barRect = tabBarRef.current.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
     setSliderStyle({ left: btnRect.left - barRect.left, width: btnRect.width });
-  }, [activeTab]);
+  }, [activeTab, visibleTabs]);
 
   useEffect(() => {
     updateSlider();
@@ -147,7 +162,7 @@ export default function SettingsPage() {
             width: sliderStyle.width,
           }}
         />
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab}
             type="button"
@@ -158,7 +173,7 @@ export default function SettingsPage() {
           </button>
         ))}
       </div>
-      
+
       {activeTab === '배너 관리' && <BannerManagement />}
       {activeTab === '시험일정 관리' && <ExamSchedule />}
       {activeTab === '식단표 관리' && <MealScheduleSettings />}
@@ -171,6 +186,8 @@ export default function SettingsPage() {
       )}
       {activeTab === '데이터 관리' && <DataManagement />}
       {activeTab === '지점 정보' && <BranchInfo />}
+      {activeTab === '계정 관리' && <AccountManagement />}
+      {activeTab === '내 정보' && <MyProfileSettings />}
     </div>
   );
 }
@@ -1873,7 +1890,6 @@ function BranchInfo() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // 수정 폼
   const [formStoreName, setFormStoreName] = useState('');
@@ -1885,15 +1901,6 @@ function BranchInfo() {
   const [formDsaClientId, setFormDsaClientId] = useState('');
   const [formDsaSecretId, setFormDsaSecretId] = useState('');
 
-  // 등록 폼
-  const [createStoreCode, setCreateStoreCode] = useState('');
-  const [createStoreName, setCreateStoreName] = useState('');
-  const [createAddress, setCreateAddress] = useState('');
-  const [createPhone, setCreatePhone] = useState('');
-  const [createKioskPin, setCreateKioskPin] = useState('');
-  const [createDsaAcadCd, setCreateDsaAcadCd] = useState('');
-  const [createDsaClientId, setCreateDsaClientId] = useState('');
-  const [createDsaSecretId, setCreateDsaSecretId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchStores = useCallback(async () => {
@@ -1965,55 +1972,6 @@ function BranchInfo() {
     }
   };
 
-  const handleDeleteStore = async (id: number) => {
-    if (!(await confirm('이 지점을 삭제하시겠습니까?'))) return;
-    try {
-      await deleteStore(id);
-      setShowModal(false);
-      await fetchStores();
-    } catch (err) {
-      await alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
-    }
-  };
-
-  const resetCreateForm = () => {
-    setCreateStoreCode('');
-    setCreateStoreName('');
-    setCreateAddress('');
-    setCreatePhone('');
-    setCreateKioskPin('');
-    setCreateDsaAcadCd('');
-    setCreateDsaClientId('');
-    setCreateDsaSecretId('');
-  };
-
-  const handleCreate = async () => {
-    if (!createStoreName.trim() || !createStoreCode.trim() || submitting) return;
-    if (createKioskPin.length > 0 && createKioskPin.length !== 4) {
-      await alert('PIN은 숫자 4자리로 입력해주세요.');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await createStore({
-        storeName: createStoreName,
-        storeCode: createStoreCode,
-        address: createAddress,
-        phone: createPhone,
-        kioskPin: createKioskPin,
-        dsaAcadCd: createDsaAcadCd,
-        dsaClientId: createDsaClientId,
-        dsaSecretId: createDsaSecretId,
-      });
-      setShowCreateModal(false);
-      resetCreateForm();
-      await fetchStores();
-    } catch (err) {
-      await alert(err instanceof Error ? err.message : '등록에 실패했습니다.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // MANAGER: 자기 지점만 바로 표시
   const isManager = role === 'MANAGER';
@@ -2127,17 +2085,7 @@ function BranchInfo() {
             <button type="button" className={styles.btnSecondary} onClick={() => setIsEditing(false)}>취소</button>
           </>
         ) : (
-          <>
-            <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              style={{ color: '#dc2626', borderColor: '#dc2626' }}
-              onClick={() => handleDeleteStore(store.id)}
-            >
-              삭제
-            </button>
-          </>
+          <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
         )}
       </div>
     </div>
@@ -2168,7 +2116,6 @@ function BranchInfo() {
       <div className={styles.section}>
         <div className={styles.sectionHeader} style={{ borderBottom: 'none' }}>
           <h3 className={styles.sectionTitle}>지점 정보</h3>
-          <button type="button" className={styles.addBtn} onClick={() => setShowCreateModal(true)}>+ 지점 추가</button>
         </div>
 
         <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
@@ -2210,59 +2157,6 @@ function BranchInfo() {
           </table>
         </div>
       </div>
-
-      {/* 등록 모달 */}
-      {showCreateModal && (
-        <div className={styles.overlay} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className={styles.modalClose} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>&#x2715;</button>
-            <h3 className={styles.modalTitle}>지점 등록</h3>
-            <div className={styles.modalForm}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>지점코드 *</label>
-                <input className={styles.formInput} placeholder="예: DS-001" value={createStoreCode} onChange={(e) => setCreateStoreCode(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>지점명 *</label>
-                <input className={styles.formInput} placeholder="예: 대성학원 강남점" value={createStoreName} onChange={(e) => setCreateStoreName(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>주소</label>
-                <input className={styles.formInput} value={createAddress} onChange={(e) => setCreateAddress(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>전화번호</label>
-                <input className={styles.formInput} value={createPhone} onChange={(e) => setCreatePhone(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>키오스크 PIN</label>
-                <input className={styles.formInput} value={createKioskPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setCreateKioskPin(v); }} maxLength={4} inputMode="numeric" />
-                {createKioskPin.length > 0 && createKioskPin.length !== 4 && (
-                  <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>PIN은 숫자 4자리로 입력해주세요.</p>
-                )}
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA 학원코드</label>
-                <input className={styles.formInput} value={createDsaAcadCd} onChange={(e) => setCreateDsaAcadCd(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA Client ID</label>
-                <input className={styles.formInput} value={createDsaClientId} onChange={(e) => setCreateDsaClientId(e.target.value)} />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>DSA Secret ID</label>
-                <input className={styles.formInput} value={createDsaSecretId} onChange={(e) => setCreateDsaSecretId(e.target.value)} />
-              </div>
-            </div>
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.btnPrimary} onClick={handleCreate} disabled={submitting}>
-                {submitting ? '등록 중...' : '등록'}
-              </button>
-              <button type="button" className={styles.btnSecondary} onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>취소</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {StoreConfirmDialog}
     </>
@@ -3430,5 +3324,550 @@ function PlaceholderTab({ label }: { label: string }) {
         <p className={styles.placeholderText}>{label} 내용이 여기에 표시됩니다.</p>
       </div>
     </div>
+  );
+}
+
+/* ── 계정 관리 (ADMIN 전용) ── */
+const ACCT_PER_PAGE = 15;
+
+/* 비밀번호 눈 아이콘 SVG */
+const EyeOpenSvg = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const EyeClosedSvg = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+const ChevronDownSvg = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+/* 드롭다운 아이템 클래스 헬퍼 */
+function dropItemCls(active: boolean): string {
+  return `${styles.dropItem} ${active ? styles.dropItemActive : ''}`;
+}
+
+const eyeBtnStyle: React.CSSProperties = {
+  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+  color: 'var(--color-text-secondary, #6b7280)', display: 'flex', alignItems: 'center',
+};
+
+function AccountManagement() {
+  const { confirm, alert, ConfirmDialog: AcctConfirmDialog } = useConfirm();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [acctPage, setAcctPage] = useState(1);
+  const [acctSearch, setAcctSearch] = useState('');
+
+  // 등록 모달
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formLoginId, setFormLoginId] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formStoreId, setFormStoreId] = useState<number | ''>('');
+  const [formRole, setFormRole] = useState<'MANAGER' | 'ADMIN'>('MANAGER');
+  const [submitting, setSubmitting] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
+
+  // 수정 모달
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editStoreId, setEditStoreId] = useState<number | ''>('');
+  const [editRole, setEditRole] = useState<'MANAGER' | 'ADMIN'>('MANAGER');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // 드롭다운 open 상태 (등록)
+  const [storeDropOpen, setStoreDropOpen] = useState(false);
+  const [roleDropOpen, setRoleDropOpen] = useState(false);
+  const storeDropRef = useRef<HTMLDivElement>(null);
+  const roleDropRef = useRef<HTMLDivElement>(null);
+
+  // 드롭다운 open 상태 (수정)
+  const [editStoreDropOpen, setEditStoreDropOpen] = useState(false);
+  const [editRoleDropOpen, setEditRoleDropOpen] = useState(false);
+  const editStoreDropRef = useRef<HTMLDivElement>(null);
+  const editRoleDropRef = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (storeDropRef.current && !storeDropRef.current.contains(e.target as Node)) setStoreDropOpen(false);
+      if (roleDropRef.current && !roleDropRef.current.contains(e.target as Node)) setRoleDropOpen(false);
+      if (editStoreDropRef.current && !editStoreDropRef.current.contains(e.target as Node)) setEditStoreDropOpen(false);
+      if (editRoleDropRef.current && !editRoleDropRef.current.contains(e.target as Node)) setEditRoleDropOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getUsers();
+      setUsers(data);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+    getStores().then(setStores).catch(() => {});
+  }, [fetchUsers]);
+
+  /* ── 등록 폼 ── */
+  const resetForm = () => {
+    setFormLoginId(''); setFormPassword(''); setShowPassword(false);
+    setFormName(''); setFormStoreId(''); setFormRole('MANAGER'); setFormTouched(false);
+  };
+
+  const formErrors = {
+    loginId: formTouched && !formLoginId.trim() ? '로그인 ID를 입력해주세요.' : formLoginId.trim() && users.some((u) => u.loginId === formLoginId.trim()) ? '이미 사용 중인 로그인 ID입니다.' : '',
+    password: formTouched && !formPassword.trim() ? '비밀번호를 입력해주세요.' : formTouched && formPassword.length < 8 ? '비밀번호는 8자 이상이어야 합니다.' : '',
+    name: formTouched && !formName.trim() ? '이름을 입력해주세요.' : '',
+    storeId: formTouched && formRole === 'MANAGER' && formStoreId === '' ? '소속 지점을 선택해주세요.' : '',
+  };
+
+  const handleCreate = async () => {
+    setFormTouched(true);
+    if (!formLoginId.trim() || users.some((u) => u.loginId === formLoginId.trim()) || !formPassword.trim() || formPassword.length < 8 || !formName.trim() || (formRole === 'MANAGER' && formStoreId === '') || submitting) return;
+    setSubmitting(true);
+    try {
+      await createUser({ loginId: formLoginId.trim(), password: formPassword, name: formName.trim(), storeId: formRole === 'ADMIN' ? 0 : (formStoreId as number), role: formRole });
+      setShowCreateModal(false);
+      resetForm();
+      await fetchUsers();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '등록에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ── 수정 모달 ── */
+  const openEdit = (user: AdminUser) => {
+    setEditTarget(user);
+    setEditName(user.name);
+    setEditPassword('');
+    setShowEditPassword(false);
+    setEditStoreId(user.storeId);
+    setEditRole(user.role as 'MANAGER' | 'ADMIN');
+  };
+  const closeEdit = () => { setEditTarget(null); };
+
+  const handleUpdate = async () => {
+    if (!editTarget || editSubmitting) return;
+    setEditSubmitting(true);
+    try {
+      await updateUser(editTarget.id, {
+        name: editName.trim() || null,
+        password: editPassword || null,
+        storeId: editStoreId !== '' ? editStoreId : null,
+        role: editRole,
+      });
+      closeEdit();
+      await fetchUsers();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '수정에 실패했습니다.');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  /* ── 삭제 ── */
+  const handleDelete = async (user: AdminUser) => {
+    if (!(await confirm(`"${user.name}" 계정을 삭제하시겠습니까?`))) return;
+    try {
+      await deleteUser(user.id);
+      await fetchUsers();
+      const totalPages = Math.max(1, Math.ceil((users.length - 1) / ACCT_PER_PAGE));
+      if (acctPage > totalPages) setAcctPage(totalPages);
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
+    }
+  };
+
+  const filteredUsers = useMemo(() => {
+    const q = acctSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) => u.loginId.toLowerCase().includes(q) || u.name.toLowerCase().includes(q));
+  }, [users, acctSearch]);
+
+  const acctTotalPages = Math.max(1, Math.ceil(filteredUsers.length / ACCT_PER_PAGE));
+  const pagedUsers = filteredUsers.slice((acctPage - 1) * ACCT_PER_PAGE, acctPage * ACCT_PER_PAGE);
+
+  const selectedStoreName = formStoreId !== '' ? stores.find((s) => s.id === formStoreId)?.storeName ?? '' : '';
+  const editStoreName = editStoreId !== '' ? stores.find((s) => s.id === editStoreId)?.storeName ?? '' : '';
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader} style={{ borderBottom: 'none' }}>
+          <h3 className={styles.sectionTitle}>계정 관리</h3>
+          <button type="button" className={styles.addBtn} onClick={() => setShowCreateModal(true)}>+ 계정 등록</button>
+        </div>
+
+        <div className={styles.sectionBody} style={{ paddingTop: 'var(--spacing-sm)', paddingBottom: 'var(--spacing-lg)', paddingLeft: 'var(--spacing-lg)', paddingRight: 'var(--spacing-lg)' }}>
+          {loading ? (
+            <p className={styles.placeholderText}>로딩 중...</p>
+          ) : (
+            <>
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <input
+                  className={styles.formInput}
+                  placeholder="로그인 ID 또는 이름으로 검색"
+                  value={acctSearch}
+                  onChange={(e) => { setAcctSearch(e.target.value); setAcctPage(1); }}
+                  style={{ maxWidth: 300 }}
+                />
+              </div>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 60 }}>ID</th>
+                    <th>로그인 ID</th>
+                    <th>이름</th>
+                    <th style={{ width: 100 }}>역할</th>
+                    <th>소속 지점</th>
+                    <th style={{ width: 80 }}>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedUsers.length === 0 ? (
+                    <tr><td colSpan={6} className={styles.emptyCell}>등록된 계정이 없습니다.</td></tr>
+                  ) : (
+                    pagedUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.loginId}</td>
+                        <td>{user.name}</td>
+                        <td>
+                          <span className={`${styles.statusBadge} ${user.role === 'ADMIN' ? styles.statusActive : styles.statusInactive}`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td>{user.role === 'ADMIN' ? '-' : (user.storeName || '-')}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'center' }}>
+                            <button type="button" className={styles.iconBtn} onClick={() => openEdit(user)}><LuPencil /></button>
+                            <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDelete(user)}><LuTrash2 /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              {filteredUsers.length > ACCT_PER_PAGE && (
+                <div className={f.pagination}>
+                  <button type="button" className={f.pageBtn} disabled={acctPage === 1} onClick={() => setAcctPage(acctPage - 1)}>&lt;</button>
+                  {Array.from({ length: acctTotalPages }, (_, i) => (
+                    <button key={i + 1} type="button" className={`${f.pageBtn} ${acctPage === i + 1 ? f.pageBtnActive : ''}`} onClick={() => setAcctPage(i + 1)}>
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button type="button" className={f.pageBtn} disabled={acctPage >= acctTotalPages} onClick={() => setAcctPage(acctPage + 1)}>&gt;</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── 계정 등록 모달 ── */}
+      {showCreateModal && (
+        <div className={styles.overlay} onClick={() => { setShowCreateModal(false); resetForm(); }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={() => { setShowCreateModal(false); resetForm(); }}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>계정 등록</h3>
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>로그인 ID *</label>
+                <input className={styles.formInput} placeholder="예: manager01" value={formLoginId} onChange={(e) => setFormLoginId(e.target.value)} />
+                {formErrors.loginId && <p className={styles.formError}>{formErrors.loginId}</p>}
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>비밀번호 *</label>
+                <div style={{ position: 'relative' }}>
+                  <input className={styles.formInput} type={showPassword ? 'text' : 'password'} placeholder="비밀번호 입력" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} style={{ paddingRight: 40 }} />
+                  <button type="button" onClick={() => setShowPassword((p) => !p)} style={eyeBtnStyle} tabIndex={-1}>
+                    {showPassword ? <EyeClosedSvg /> : <EyeOpenSvg />}
+                  </button>
+                </div>
+                {formErrors.password && <p className={styles.formError}>{formErrors.password}</p>}
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>이름 *</label>
+                <input className={styles.formInput} placeholder="예: 홍길동" value={formName} onChange={(e) => setFormName(e.target.value)} />
+                {formErrors.name && <p className={styles.formError}>{formErrors.name}</p>}
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>역할 *</label>
+                <div ref={roleDropRef} style={{ position: 'relative' }}>
+                  <button type="button" className={styles.formInput} onClick={() => setRoleDropOpen((p) => !p)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                    <span>{formRole}</span>
+                    <ChevronDownSvg />
+                  </button>
+                  {roleDropOpen && (
+                    <ul className={styles.dropMenu}>
+                      {(['MANAGER', 'ADMIN'] as const).map((r) => (
+                        <li key={r}><button type="button" onClick={() => { setFormRole(r); if (r === 'ADMIN') setFormStoreId(''); setRoleDropOpen(false); }} className={dropItemCls(formRole === r)}>{r}</button></li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+              {formRole === 'MANAGER' && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>소속 지점 *</label>
+                  <div ref={storeDropRef} style={{ position: 'relative' }}>
+                    <button type="button" className={styles.formInput} onClick={() => setStoreDropOpen((p) => !p)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', textAlign: 'left', width: '100%', color: selectedStoreName ? 'inherit' : 'var(--color-text-secondary, #9ca3af)' }}>
+                      <span>{selectedStoreName || '지점 선택'}</span>
+                      <ChevronDownSvg />
+                    </button>
+                    {storeDropOpen && (
+                      <ul className={styles.dropMenu}>
+                        {stores.map((s) => (
+                          <li key={s.id}><button type="button" onClick={() => { setFormStoreId(s.id); setStoreDropOpen(false); }} className={dropItemCls(formStoreId === s.id)}>{s.storeName}</button></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  {formErrors.storeId && <p className={styles.formError}>{formErrors.storeId}</p>}
+                </div>
+              )}
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnPrimary} onClick={handleCreate} disabled={submitting}>{submitting ? '등록 중...' : '등록'}</button>
+              <button type="button" className={styles.btnSecondary} onClick={() => { setShowCreateModal(false); resetForm(); }}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 계정 수정 모달 ── */}
+      {editTarget && (
+        <div className={styles.overlay} onClick={closeEdit}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeEdit}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>계정 수정</h3>
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>로그인 ID</label>
+                <p className={styles.formValue}>{editTarget.loginId}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>이름</label>
+                <input className={styles.formInput} value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>비밀번호 변경</label>
+                <div style={{ position: 'relative' }}>
+                  <input className={styles.formInput} type={showEditPassword ? 'text' : 'password'} placeholder="변경 시 입력 (미입력 시 유지)" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} style={{ paddingRight: 40 }} />
+                  <button type="button" onClick={() => setShowEditPassword((p) => !p)} style={eyeBtnStyle} tabIndex={-1}>
+                    {showEditPassword ? <EyeClosedSvg /> : <EyeOpenSvg />}
+                  </button>
+                </div>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>역할</label>
+                <div ref={editRoleDropRef} style={{ position: 'relative' }}>
+                  <button type="button" className={styles.formInput} onClick={() => setEditRoleDropOpen((p) => !p)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                    <span>{editRole}</span>
+                    <ChevronDownSvg />
+                  </button>
+                  {editRoleDropOpen && (
+                    <ul className={styles.dropMenu}>
+                      {(['MANAGER', 'ADMIN'] as const).map((r) => (
+                        <li key={r}><button type="button" onClick={() => { setEditRole(r); if (r === 'ADMIN') setEditStoreId(''); setEditRoleDropOpen(false); }} className={dropItemCls(editRole === r)}>{r}</button></li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+              {editRole === 'MANAGER' && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>소속 지점</label>
+                  <div ref={editStoreDropRef} style={{ position: 'relative' }}>
+                    <button type="button" className={styles.formInput} onClick={() => setEditStoreDropOpen((p) => !p)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', textAlign: 'left', width: '100%', color: editStoreName ? 'inherit' : 'var(--color-text-secondary, #9ca3af)' }}>
+                      <span>{editStoreName || '지점 선택'}</span>
+                      <ChevronDownSvg />
+                    </button>
+                    {editStoreDropOpen && (
+                      <ul className={styles.dropMenu}>
+                        {stores.map((s) => (
+                          <li key={s.id}><button type="button" onClick={() => { setEditStoreId(s.id); setEditStoreDropOpen(false); }} className={dropItemCls(editStoreId === s.id)}>{s.storeName}</button></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnPrimary} onClick={handleUpdate} disabled={editSubmitting}>{editSubmitting ? '저장 중...' : '저장'}</button>
+              <button type="button" className={styles.btnSecondary} onClick={closeEdit}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {AcctConfirmDialog}
+    </>
+  );
+}
+
+/* ── 내 정보 수정 ── */
+function MyProfileSettings() {
+  const { alert, ConfirmDialog: ProfileConfirmDialog } = useConfirm();
+  const [me, setMe] = useState<AdminInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPw, setShowEditPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchMe = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getMe();
+      setMe(data);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchMe(); }, [fetchMe]);
+
+  const startEdit = () => {
+    if (!me) return;
+    setEditName(me.name);
+    setEditPassword('');
+    setShowEditPw(false);
+    setIsEditing(true);
+  };
+
+  const profilePwError = editPassword && editPassword.length < 8 ? '비밀번호는 8자 이상이어야 합니다.' : '';
+
+  const handleSave = async () => {
+    if (!me || submitting || profilePwError) return;
+    setSubmitting(true);
+    try {
+      const updated = await updateMe({
+        name: editName.trim() || null,
+        password: editPassword || null,
+      });
+      if (updated.name) {
+        sessionStorage.setItem('adminName', updated.name);
+        window.dispatchEvent(new Event('adminNameChanged'));
+      }
+      setIsEditing(false);
+      await fetchMe();
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : '수정에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}><h3 className={styles.sectionTitle}>내 정보</h3></div>
+        <div className={styles.sectionBody}><p className={styles.placeholderText}>로딩 중...</p></div>
+      </div>
+    );
+  }
+
+  if (!me) {
+    return (
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}><h3 className={styles.sectionTitle}>내 정보</h3></div>
+        <div className={styles.sectionBody}><p style={{ color: '#dc2626', fontWeight: 600 }}>정보를 불러올 수 없습니다.</p></div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>내 정보</h3>
+        </div>
+        <div className={styles.sectionBody}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>로그인 ID</label>
+            <p className={styles.formValue}>{me.loginId}</p>
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>이름</label>
+            {isEditing ? (
+              <input className={styles.formInput} value={editName} onChange={(e) => setEditName(e.target.value)} />
+            ) : (
+              <p className={styles.formValue}>{me.name}</p>
+            )}
+          </div>
+          {isEditing && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>비밀번호 변경</label>
+              <div style={{ position: 'relative' }}>
+                <input className={styles.formInput} type={showEditPw ? 'text' : 'password'} placeholder="변경 시 입력 (미입력 시 유지)" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} style={{ paddingRight: 40 }} />
+                <button type="button" onClick={() => setShowEditPw((p) => !p)} style={eyeBtnStyle} tabIndex={-1}>
+                  {showEditPw ? <EyeClosedSvg /> : <EyeOpenSvg />}
+                </button>
+              </div>
+              {profilePwError && <p className={styles.formError}>{profilePwError}</p>}
+            </div>
+          )}
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>역할</label>
+            <span className={`${styles.statusBadge} ${me.role === 'ADMIN' ? styles.statusActive : styles.statusInactive}`}>{me.role}</span>
+          </div>
+          {me.role !== 'ADMIN' && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>소속 지점</label>
+              <p className={styles.formValue}>{me.storeName || '-'}</p>
+            </div>
+          )}
+
+          <div className={styles.modalActions}>
+            {isEditing ? (
+              <>
+                <button type="button" className={styles.btnPrimary} onClick={handleSave} disabled={submitting}>
+                  {submitting ? '저장 중...' : '저장'}
+                </button>
+                <button type="button" className={styles.btnSecondary} onClick={() => setIsEditing(false)}>취소</button>
+              </>
+            ) : (
+              <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
+            )}
+          </div>
+        </div>
+      </div>
+      {ProfileConfirmDialog}
+    </>
   );
 }

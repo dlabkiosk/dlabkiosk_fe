@@ -145,6 +145,13 @@ export function apiPost<T>(path: string, body?: Record<string, unknown>, query?:
   }, query);
 }
 
+export function apiPatch<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+  return request<T>(path, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
 export function apiPut<T>(path: string, body?: Record<string, unknown>): Promise<T> {
   return request<T>(path, {
     method: 'PUT',

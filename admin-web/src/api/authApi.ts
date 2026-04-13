@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost, apiPatch } from './client';
 
 /* ── 타입 ── */
 
@@ -48,4 +48,9 @@ export function refreshToken(): Promise<string> {
 /** 현재 로그인된 관리자 정보 */
 export function getMe(): Promise<AdminInfo> {
   return apiGet<AdminInfo>('/api/v1/admin/auth/me');
+}
+
+/** 내 정보 수정 (이름, 비밀번호 — null이면 변경하지 않음) */
+export function updateMe(body: { name?: string | null; password?: string | null }): Promise<AdminInfo> {
+  return apiPatch<AdminInfo>('/api/v1/admin/auth/me', body as unknown as Record<string, unknown>);
 }

@@ -276,7 +276,7 @@ export default function NoticeSection() {
                 &#x2715;
               </button>
             </div>
-            <div className={styles.modalBody}>
+            <div className={styles.modalBody} style={{ flex: 1, overflowY: 'auto' }}>
               <div className={styles.detailHeader}>
                 <h4 className={styles.detailTitle}>
                   {selectedNotice.pinned && <LuPin className={styles.pinIcon} />}
@@ -287,15 +287,15 @@ export default function NoticeSection() {
               <div className={styles.detailContent}>
                 {selectedNotice.content}
               </div>
-              <div className={styles.detailFooter}>
-                <button
-                  type="button"
-                  className={styles.backToListButton}
-                  onClick={handleBackToList}
-                >
-                  목록으로
-                </button>
-              </div>
+            </div>
+            <div className={styles.detailFooter}>
+              <button
+                type="button"
+                className={styles.backToListButton}
+                onClick={handleBackToList}
+              >
+                목록으로
+              </button>
             </div>
           </div>
         </div>

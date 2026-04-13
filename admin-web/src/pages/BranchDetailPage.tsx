@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LuArrowLeft } from 'react-icons/lu';
 import settingIcon from '../assets/setting_active.png';
-import { getStore, updateStore, deleteStore } from '../api/storeApi';
+import { getStore, updateStore } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
 import styles from './SettingsPage.module.css';
@@ -10,7 +10,7 @@ import styles from './SettingsPage.module.css';
 export default function BranchDetailPage() {
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
-  const { confirm, alert, ConfirmDialog } = useConfirm();
+  const { alert, ConfirmDialog } = useConfirm();
 
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,17 +84,6 @@ export default function BranchDetailPage() {
       await alert(err instanceof Error ? err.message : '수정에 실패했습니다.');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!store) return;
-    if (!(await confirm('이 지점을 삭제하시겠습니까?'))) return;
-    try {
-      await deleteStore(store.id);
-      navigate('/settings?tab=지점 정보', { replace: true });
-    } catch (err) {
-      await alert(err instanceof Error ? err.message : '삭제에 실패했습니다.');
     }
   };
 
@@ -254,17 +243,7 @@ export default function BranchDetailPage() {
                 <button type="button" className={styles.btnSecondary} onClick={() => setIsEditing(false)}>취소</button>
               </>
             ) : (
-              <>
-                <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
-                  onClick={handleDelete}
-                >
-                  삭제
-                </button>
-              </>
+              <button type="button" className={styles.btnPrimary} onClick={startEdit}>수정</button>
             )}
           </div>
         </div>

@@ -104,7 +104,7 @@ export default function NoticeSettingsModal({ onClose, onSave }: Props) {
               <LuPlus /> 추가
             </button>
           </div>
-          <p className={styles.sectionHint}>추가 후 꼭 저장 버튼을 눌러주세요.</p>
+          <p className={styles.sectionHint}>추가/삭제 후 꼭 저장 버튼을 눌러주세요.</p>
         </div>
 
         <div className={styles.footer}>

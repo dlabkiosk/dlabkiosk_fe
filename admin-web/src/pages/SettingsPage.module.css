@@ -192,6 +192,57 @@
   border-color: var(--color-primary);
 }
 
+.formError {
+  color: #dc2626;
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
+}
+
+/* ── 커스텀 드롭다운 ── */
+.dropMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dropItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: inherit;
+  font-weight: 400;
+}
+
+.dropItem:hover {
+  background: var(--color-bg-secondary, #f3f4f6);
+}
+
+.dropItemActive {
+  background: var(--color-primary-light, #eff6ff);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.dropItemActive:hover {
+  background: var(--color-primary-light, #dbeafe);
+}
+
 .datePickerFullWidth {
   width: var(--size-filter-input);
 }
@@ -601,6 +652,7 @@
 .statusInactive {
   background-color: var(--color-bg-page);
   color: var(--color-text-muted);
+  border: none;
 }
 
 .actionBtns {

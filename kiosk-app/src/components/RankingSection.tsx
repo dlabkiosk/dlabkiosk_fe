@@ -33,7 +33,18 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
 
   useEffect(() => {
     getStudyRankings()
-      .then((res) => setStoreList(res.rankingList?.data ?? []))
+      .then((res) => {
+        const raw = res.rankingList?.data ?? [];
+        /* DSA 응답에 간혹 중복 데이터가 내려오므로 rank 기준 중복 제거 */
+        const seen = new Set<string>();
+        const unique = raw.filter((item) => {
+          const key = `${item.rank ?? ''}_${item.std_nm ?? ''}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setStoreList(unique);
+      })
       .catch(() => {})
       .finally(() => setStoreLoading(false));
   }, []);

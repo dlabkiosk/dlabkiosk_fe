@@ -30,6 +30,8 @@ const SEARCH_ITEMS: SearchItem[] = [
   { label: '설정 > 메시지 관리', keywords: ['메시지', '문자', 'message'], path: '/settings?tab=메시지 관리' },
   { label: '설정 > 데이터 관리', keywords: ['데이터', '학생', 'data'], path: '/settings?tab=데이터 관리' },
   { label: '설정 > 지점 정보', keywords: ['지점', '지점정보', '브랜치', 'branch', 'store'], path: '/settings?tab=지점 정보' },
+  { label: '설정 > 계정 관리', keywords: ['계정', '계정관리', '사용자', 'account', 'user'], path: '/settings?tab=계정 관리' },
+  { label: '설정 > 내 정보', keywords: ['내정보', '프로필', '내계정', 'profile', 'my'], path: '/settings?tab=내 정보' },
 ];
 
 export default function Navbar() {
@@ -37,9 +39,16 @@ export default function Navbar() {
   const [searchText, setSearchText] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [adminName, setAdminName] = useState(sessionStorage.getItem('adminName') ?? '선생님');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = () => setAdminName(sessionStorage.getItem('adminName') ?? '선생님');
+    window.addEventListener('adminNameChanged', handler);
+    return () => window.removeEventListener('adminNameChanged', handler);
+  }, []);
 
   const searchResults = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -142,7 +151,7 @@ export default function Navbar() {
             onClick={() => setDropdownOpen((prev) => !prev)}
           >
             <img src={profileImg} alt="" className={styles.userIcon} />
-            <span className={styles.userName}>{sessionStorage.getItem('adminName') ?? '선생님'}</span>
+            <span className={styles.userName}>{adminName}</span>
             <LuChevronDown className={`${styles.userChevron} ${dropdownOpen ? styles.userChevronOpen : ''}`} />
           </button>
 

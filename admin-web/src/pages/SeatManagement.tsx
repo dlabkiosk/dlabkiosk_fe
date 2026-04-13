@@ -300,10 +300,16 @@ export default function SeatManagement() {
       const DSA_CELL_W = 80;
       const DSA_CELL_H = 60;
 
-      const [dsaStatusList, seatLeaveResult] = await Promise.all([
+      const [dsaStatusList, seatLeaveResult, seatStatusList] = await Promise.all([
         dsaStatusPromise,
         getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
+        getSeatStatus(effectiveStoreId).catch((err) => { console.error('[SeatManagement] getSeatStatus FAILED:', err); return [] as SeatStatusItem[]; }),
       ]);
+
+      // 자체 백엔드 좌석현황 → seatLabel 기준 맵 (대기자 정보)
+      console.log('[SeatManagement] getSeatStatus result:', seatStatusList.length, 'items', seatStatusList.filter(s => s.waitingCount > 0));
+      const seatStatusMap = new Map<string, SeatStatusItem>();
+      seatStatusList.forEach((s) => seatStatusMap.set(s.seatLabel.trim(), s));
 
       // 활성 좌석이탈
       const activeLeaveBySeatLabel = new Map<string, string>();
@@ -343,25 +349,29 @@ export default function SeatManagement() {
             seatLeaveReason = activeLeaveBySeatLabel.get(seatLabel) ?? null;
           }
 
+          // 자체 백엔드에서 대기자 정보 가져오기
+          const backendSeat = seatStatusMap.get(seatLabel.trim());
+
           return {
-            id: 0,
+            id: backendSeat?.seatId ?? 0,
             storeId: myStoreId ?? 0,
             seatLabel,
-            seatType: 'INDIVIDUAL',
+            seatType: backendSeat?.seatType ?? 'INDIVIDUAL',
             xPos: dsa.xPos * DSA_CELL_W,
             yPos: dsa.yPos * DSA_CELL_H,
             active: true,
             areaCd: selectedAreaCd,
             areaNm: '',
             assignedStudentName: studentName,
-            assignedStudentNumber: null,
+            assignedStudentNumber: backendSeat?.assignedStudentNumber ?? dsa.studentNumber ?? null,
             assignedClassName: null,
-            waitingCount: 0,
-            waitingList: [],
+            waitingCount: backendSeat?.waitingCount ?? 0,
+            waitingList: backendSeat?.waitingList ?? [],
             attendanceLabel,
             seatLeaveReason,
           } as SeatWithStatus;
         });
+      console.log('[SeatManagement] merged seats with waiting:', merged.filter(s => s.waitingCount > 0).map(s => ({ label: s.seatLabel, wc: s.waitingCount, wl: s.waitingList.length })));
       setSeats(merged);
     } catch (err) {
 
@@ -1325,12 +1335,6 @@ export default function SeatManagement() {
                     <span className={styles.modalLabel}>좌석번호</span>
                     <span className={styles.modalValue}>{selectedSeat.seatLabel}</span>
                   </div>
-                  <div className={styles.modalRow}>
-                    <span className={styles.modalLabel}>좌석유형</span>
-                    <span className={styles.modalValue}>
-                      {selectedSeat.seatType === 'INDIVIDUAL' ? '개인석' : '그룹석'}
-                    </span>
-                  </div>
                   {selectedSeat.areaNm && (
                     <div className={styles.modalRow}>
                       <span className={styles.modalLabel}>구역</span>
@@ -1350,10 +1354,6 @@ export default function SeatManagement() {
                       <div className={styles.modalRow}>
                         <span className={styles.modalLabel}>학번</span>
                         <span className={styles.modalValue}>{selectedSeat.assignedStudentNumber ?? '-'}</span>
-                      </div>
-                      <div className={styles.modalRow}>
-                        <span className={styles.modalLabel}>반</span>
-                        <span className={styles.modalValue}>{selectedSeat.assignedClassName ?? '-'}</span>
                       </div>
                       {selectedSeat.attendanceLabel && (
                         <div className={styles.modalRow}>

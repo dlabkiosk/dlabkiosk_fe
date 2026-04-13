@@ -35,6 +35,7 @@ export interface SeatStatusByArea {
   state: 'S' | 'D' | 'N' | 'B' | 'A';
   away: boolean;
   studentName: string | null;
+  studentNumber: string | null;
   leaveReasonName: string | null;
 }
 
