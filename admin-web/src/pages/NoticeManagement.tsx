@@ -23,11 +23,11 @@ export default function NoticeManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [category, setCategory] = useState('전체');
+  const [category, setCategory] = useState('전체 보기');
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [subjectOptions, setSubjectOptions] = useState(getSubjects);
+  const [subjectOptions, setSubjectOptions] = useState(() => ['전체 보기', ...getSubjects()]);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
@@ -86,7 +86,7 @@ export default function NoticeManagement() {
       if (isAdmin && storeFilter !== '전체') {
         if (n.storeName !== storeFilter) return false;
       }
-      if (category !== '전체') {
+      if (category !== '전체 보기') {
         const prefix = `[${category}]`;
         if (!n.title.startsWith(prefix)) return false;
       }
@@ -162,7 +162,7 @@ export default function NoticeManagement() {
       {showSettings && (
         <NoticeSettingsModal
           onClose={() => setShowSettings(false)}
-          onSave={() => { setSubjectOptions(getSubjects()); setCategory('전체'); }}
+          onSave={() => { setSubjectOptions(['전체 보기', ...getSubjects()]); setCategory('전체 보기'); }}
         />
       )}
       {/* Header */}
@@ -194,7 +194,7 @@ export default function NoticeManagement() {
             <FilterSelect
               value={category}
               options={subjectOptions}
-              placeholder="전체"
+              placeholder="전체 보기"
               onChange={setCategory}
             />
           </div>

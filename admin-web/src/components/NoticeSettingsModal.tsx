@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LuPlus, LuX, LuGripVertical } from 'react-icons/lu';
-import { getEditableSubjects, saveSubjects } from '../utils/noticeSubjects';
+import { getSubjects, saveSubjects } from '../utils/noticeSubjects';
 import styles from './NoticeSettingsModal.module.css';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function NoticeSettingsModal({ onClose, onSave }: Props) {
-  const [subjects, setSubjects] = useState<string[]>(getEditableSubjects);
+  const [subjects, setSubjects] = useState<string[]>(getSubjects);
   const [newSubject, setNewSubject] = useState('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
@@ -65,12 +65,6 @@ export default function NoticeSettingsModal({ onClose, onSave }: Props) {
             <p className={styles.sectionHint}>드래그하여 순서를 변경할 수 있습니다.</p>
           </div>
 
-          {/* 전체(고정) */}
-          <div className={styles.fixedItem}>
-            <span className={styles.itemText}>전체</span>
-            <span className={styles.fixedLabel}>고정</span>
-          </div>
-
           <div className={styles.list} onDragOver={(e) => e.preventDefault()} onDrop={handleDragEnd}>
             {subjects.map((subject, idx) => (
               <div
@@ -104,12 +98,13 @@ export default function NoticeSettingsModal({ onClose, onSave }: Props) {
               value={newSubject}
               onChange={(e) => setNewSubject(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              maxLength={20}
+              maxLength={10}
             />
             <button type="button" className={styles.addBtn} onClick={handleAdd}>
               <LuPlus /> 추가
             </button>
           </div>
+          <p className={styles.sectionHint}>추가 후 꼭 저장 버튼을 눌러주세요.</p>
         </div>
 
         <div className={styles.footer}>
