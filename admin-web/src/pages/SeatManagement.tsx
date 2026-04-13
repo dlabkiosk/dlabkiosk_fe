@@ -21,6 +21,7 @@ import {
   getSeatAreas,
   getSeatStatusByArea,
   getSeatStatus,
+  getSeatStatusById,
   createSeat,
   updateSeat,
   deleteSeat,
@@ -43,6 +44,7 @@ import FilterSelect from '../components/FilterSelect';
 type SeatAttendanceLabel = '학습중' | '외출' | '하원' | '좌석이탈' | null;
 
 interface SeatWithStatus extends Seat {
+  seatCd: string;
   assignedStudentName: string | null;
   assignedStudentNumber: string | null;
   assignedClassName: string | null;
@@ -224,6 +226,7 @@ export default function SeatManagement() {
   const [editYPos, setEditYPos] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [showWaitingList, setShowWaitingList] = useState(false);
+  const [waitingPage, setWaitingPage] = useState(0);
 
   /* ── 대기 리스트 상태 ── */
   const [waitingData, setWaitingData] = useState<SeatChangeRequest[]>([]);
@@ -303,13 +306,16 @@ export default function SeatManagement() {
       const [dsaStatusList, seatLeaveResult, seatStatusList] = await Promise.all([
         dsaStatusPromise,
         getSeatLeaves({ startDate: today, endDate: today, page: 0, size: 500 }).catch(() => ({ content: [] })),
-        getSeatStatus(effectiveStoreId).catch((err) => { console.error('[SeatManagement] getSeatStatus FAILED:', err); return [] as SeatStatusItem[]; }),
+        getSeatStatus(effectiveStoreId).catch(() => [] as SeatStatusItem[]),
       ]);
 
-      // 자체 백엔드 좌석현황 → seatLabel 기준 맵 (대기자 정보)
-      console.log('[SeatManagement] getSeatStatus result:', seatStatusList.length, 'items', seatStatusList.filter(s => s.waitingCount > 0));
-      const seatStatusMap = new Map<string, SeatStatusItem>();
-      seatStatusList.forEach((s) => seatStatusMap.set(s.seatLabel.trim(), s));
+      // 자체 백엔드 좌석현황 → seatLabel + seatCd 기준 맵 (대기자 정보)
+      const seatStatusByLabel = new Map<string, SeatStatusItem>();
+      const seatStatusByCd = new Map<string, SeatStatusItem>();
+      seatStatusList.forEach((s) => {
+        seatStatusByLabel.set(s.seatLabel.trim(), s);
+        if (s.seatCd) seatStatusByCd.set(s.seatCd.trim(), s);
+      });
 
       // 활성 좌석이탈
       const activeLeaveBySeatLabel = new Map<string, string>();
@@ -349,12 +355,13 @@ export default function SeatManagement() {
             seatLeaveReason = activeLeaveBySeatLabel.get(seatLabel) ?? null;
           }
 
-          // 자체 백엔드에서 대기자 정보 가져오기
-          const backendSeat = seatStatusMap.get(seatLabel.trim());
+          // 자체 백엔드에서 대기자 정보 가져오기 (seatCd 우선 — seatLabel은 구역간 중복 가능)
+          const backendSeat = seatStatusByCd.get(dsa.seatCd.trim()) ?? seatStatusByLabel.get(seatLabel.trim());
 
           return {
             id: backendSeat?.seatId ?? 0,
             storeId: myStoreId ?? 0,
+            seatCd: dsa.seatCd,
             seatLabel,
             seatType: backendSeat?.seatType ?? 'INDIVIDUAL',
             xPos: dsa.xPos * DSA_CELL_W,
@@ -371,7 +378,6 @@ export default function SeatManagement() {
             seatLeaveReason,
           } as SeatWithStatus;
         });
-      console.log('[SeatManagement] merged seats with waiting:', merged.filter(s => s.waitingCount > 0).map(s => ({ label: s.seatLabel, wc: s.waitingCount, wl: s.waitingList.length })));
       setSeats(merged);
     } catch (err) {
 
@@ -773,6 +779,33 @@ export default function SeatManagement() {
     setSelectedSeat(seat);
     setEditMode(false);
     setShowWaitingList(false);
+    // 개별 좌석 대기자 정보를 서버에서 최신으로 조회 (seatCd가 유일한 식별자)
+    const cd = seat.seatCd;
+    if (seat.id > 0) {
+      getSeatStatusById(seat.id)
+        .then((fresh) => {
+          setSelectedSeat((prev) =>
+            prev && prev.seatCd === cd
+              ? { ...prev, waitingCount: fresh.waitingCount, waitingList: fresh.waitingList }
+              : prev,
+          );
+        })
+        .catch(() => { /* 실패 시 기존 데이터 유지 */ });
+    } else if (cd) {
+      // seatId가 없으면 전체 목록에서 seatCd로 매칭 시도
+      getSeatStatus(effectiveStoreId)
+        .then((list) => {
+          const match = list.find((s) => s.seatCd?.trim() === cd.trim());
+          if (match) {
+            setSelectedSeat((prev) =>
+              prev && prev.seatCd === cd
+                ? { ...prev, id: match.seatId, waitingCount: match.waitingCount, waitingList: match.waitingList }
+                : prev,
+            );
+          }
+        })
+        .catch(() => { /* 실패 시 기존 데이터 유지 */ });
+    }
   };
 
   const closeSeatDetail = () => {
@@ -1376,7 +1409,7 @@ export default function SeatManagement() {
                     <button
                       type="button"
                       className={styles.waitingListBtnSm}
-                      onClick={() => setShowWaitingList(true)}
+                      onClick={() => { setWaitingPage(0); setShowWaitingList(true); }}
                     >
                       목록 보기 ({selectedSeat.waitingCount}명)
                     </button>
@@ -1407,30 +1440,46 @@ export default function SeatManagement() {
             <div className={styles.modalBody}>
               {selectedSeat.waitingList.length === 0 ? (
                 <div className={styles.emptyState}>대기자가 없습니다.</div>
-              ) : (
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>순위</th>
-                        <th>이름</th>
-                        <th>학번</th>
-                        <th>신청일</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedSeat.waitingList.map((w) => (
-                        <tr key={w.requestId}>
-                          <td>{w.priority}순위</td>
-                          <td>{w.studentName}</td>
-                          <td>{w.studentNumber}</td>
-                          <td>{w.createdAt.slice(0, 10)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              ) : (() => {
+                const WAIT_PER_PAGE = 10;
+                const totalWaitPages = Math.ceil(selectedSeat.waitingList.length / WAIT_PER_PAGE);
+                const pagedList = selectedSeat.waitingList.slice(waitingPage * WAIT_PER_PAGE, (waitingPage + 1) * WAIT_PER_PAGE);
+                return (
+                  <>
+                    <div className={styles.tableWrap}>
+                      <table className={styles.table}>
+                        <thead>
+                          <tr>
+                            <th>순위</th>
+                            <th>이름</th>
+                            <th>학번</th>
+                            <th>신청일</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pagedList.map((w) => (
+                            <tr key={w.requestId}>
+                              <td>{w.priority}순위</td>
+                              <td>{w.studentName}</td>
+                              <td>{w.studentNumber}</td>
+                              <td>{w.createdAt.slice(0, 10)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {totalWaitPages > 1 && (
+                      <div className={styles.pagination}>
+                        <button type="button" className={styles.pageBtn} disabled={waitingPage === 0} onClick={() => setWaitingPage((p) => p - 1)}>&lsaquo;</button>
+                        {Array.from({ length: totalWaitPages }, (_, i) => (
+                          <button key={i} type="button" className={`${styles.pageBtn} ${i === waitingPage ? styles.pageBtnActive : ''}`} onClick={() => setWaitingPage(i)}>{i + 1}</button>
+                        ))}
+                        <button type="button" className={styles.pageBtn} disabled={waitingPage === totalWaitPages - 1} onClick={() => setWaitingPage((p) => p + 1)}>&rsaquo;</button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div className={styles.modalFooter}>
               <button

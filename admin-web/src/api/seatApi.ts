@@ -77,11 +77,12 @@ export interface SeatChangeRequest {
 /** 좌석 현황 - 좌석별 배정자 + 대기자 */
 export interface SeatStatusItem {
   seatId: number;
+  seatCd?: string;
   seatLabel: string;
   seatType: string;
   assignedStudentName: string | null;
-  assignedStudentNumber: string | null;
-  assignedClassName: string | null;
+  assignedStudentNumber?: string | null;
+  assignedClassName?: string | null;
   waitingCount: number;
   waitingList: SeatWaitingEntry[];
 }
@@ -185,6 +186,11 @@ export function getSeatChangeRequest(requestId: number): Promise<SeatChangeReque
 export function getSeatStatus(storeId?: number): Promise<SeatStatusItem[]> {
   const query = storeId ? `?storeId=${storeId}` : '';
   return apiGet<SeatStatusItem[]>(`/api/v1/admin/seat-change-requests/seat-status${query}`);
+}
+
+/** 특정 좌석의 현재 배정자 + PENDING 대기자 목록 조회 */
+export function getSeatStatusById(seatId: number): Promise<SeatStatusItem> {
+  return apiGet<SeatStatusItem>(`/api/v1/admin/seat-change-requests/seat-status/${seatId}`);
 }
 
 /** 좌석 변경 신청 승인 (seatCd: 승인할 좌석 코드) */
