@@ -13,7 +13,6 @@ import SeatManagement from './pages/SeatManagement';
 import SettingsPage from './pages/SettingsPage';
 import BranchDetailPage from './pages/BranchDetailPage';
 import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedRoute() {
@@ -26,7 +25,6 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />

@@ -97,10 +97,6 @@ export default function LoginPage() {
                 />
                 <span>로그인 상태 유지</span>
               </label>
-              <div className={styles.links}>
-                <button type="button" className={styles.link}>아이디찾기</button>
-                <button type="button" className={styles.link}>비밀번호 찾기</button>
-              </div>
             </div>
 
             {error && <p className={styles.error}>{error}</p>}
@@ -108,17 +104,6 @@ export default function LoginPage() {
             <button type="submit" className={styles.submitButton} disabled={isLoading}>
               {isLoading ? '로그인 중...' : '로그인'}
             </button>
-
-            <div style={{ textAlign: 'center', marginTop: '8px' }}>
-              <span style={{ fontSize: '13px', color: '#888' }}>계정이 없으신가요? </span>
-              <button
-                type="button"
-                onClick={() => navigate('/signup')}
-                style={{ fontSize: '13px', fontWeight: 600, color: '#4a7fba', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                회원가입
-              </button>
-            </div>
           </form>
         </div>
       </div>
