@@ -2061,6 +2061,9 @@ function BranchInfo() {
               <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>PIN은 숫자 4자리로 입력해주세요.</p>
             )}
           </div>
+          <p style={{ color: '#b45309', fontSize: 'var(--font-size-xs)', background: '#fef3c7', padding: 'var(--spacing-sm) var(--spacing-md)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--spacing-sm)', lineHeight: 1.6 }}>
+            DSA 학원코드, Client ID, Secret ID는 DSA에서 발급받아 정확히 입력해야 키오스크 및 관리자 페이지가 정상 작동합니다.
+          </p>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>DSA 학원코드</label>
             <input className={styles.formInput} value={formDsaAcadCd} onChange={(e) => setFormDsaAcadCd(e.target.value)} placeholder="변경 시 입력" />
