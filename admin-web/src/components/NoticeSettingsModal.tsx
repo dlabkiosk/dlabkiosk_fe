@@ -119,7 +119,7 @@ export default function NoticeSettingsModal({ isAdmin, stores = [], onClose, onS
 
         <div className={styles.body}>
           {isAdmin && (
-            <div className={styles.section}>
+            <div className={styles.section} style={{ marginBottom: 'var(--spacing-md)' }}>
               <label className={styles.sectionLabel}>지점 선택</label>
               <FilterSelect
                 value={selectedStoreId !== undefined ? stores.find((s) => s.id === selectedStoreId)?.storeName ?? '' : ''}
@@ -136,13 +136,15 @@ export default function NoticeSettingsModal({ isAdmin, stores = [], onClose, onS
 
           <div className={styles.section}>
             <label className={styles.sectionLabel}>말머리 관리</label>
-            <p className={styles.sectionHint}>드래그하여 순서를 변경할 수 있습니다.</p>
+            {categories.length > 0 && <p className={styles.sectionHint}>드래그하여 순서를 변경할 수 있습니다.</p>}
           </div>
 
           {error && <p style={{ color: '#dc2626', fontSize: 'var(--font-size-xs)', margin: '0 0 8px' }}>{error}</p>}
 
           {loading ? (
             <p style={{ textAlign: 'center', padding: '16px 0', color: 'var(--color-text-muted)' }}>로딩 중...</p>
+          ) : categories.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>등록된 말머리가 없습니다.</p>
           ) : (
             <div className={styles.list} onDragOver={(e) => e.preventDefault()} onDrop={handleDragEnd}>
               {categories.map((cat, idx) => (
@@ -184,7 +186,7 @@ export default function NoticeSettingsModal({ isAdmin, stores = [], onClose, onS
               <LuPlus /> 추가
             </button>
           </div>
-          <p className={styles.sectionHint}>순서를 변경한 경우 저장 버튼을 눌러주세요.</p>
+          {categories.length > 0 && <p className={styles.sectionHint}>순서를 변경한 경우 저장 버튼을 눌러주세요.</p>}
         </div>
 
         <div className={styles.footer}>

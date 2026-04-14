@@ -49,18 +49,20 @@
 
 .body {
   padding: var(--spacing-lg);
-  overflow-y: auto;
+  /* overflow-y: auto; */
   flex: 1;
 }
 
 .section {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
 }
 
 .sectionLabel {
+  display: block;
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
 }
 
 .sectionHint {
@@ -74,6 +76,8 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .item {
