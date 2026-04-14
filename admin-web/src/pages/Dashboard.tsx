@@ -116,7 +116,7 @@ export default function Dashboard() {
   const mealSummary = data?.mealTagSummary;
   const mealRecords = data?.mealTagSummary?.details ?? [];
   const seatChanges = data?.seatChangeRequests ?? [];
-  const notices = data?.notices ?? [];
+  const notices = [...(data?.notices ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const placeholder = loading ? '...' : '–';
 
