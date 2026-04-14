@@ -45,15 +45,26 @@ export default function NoticeManagement() {
     });
   }, []);
 
-  const fetchCategories = useCallback(() => {
-    getNoticeCategories()
-      .then((list) => setSubjectOptions(['전체 보기', ...list.map((c) => c.name)]))
+  const fetchCategories = useCallback((storeId?: number) => {
+    getNoticeCategories(storeId)
+      .then((list) => {
+        const names = list.map((c) => c.name);
+        setSubjectOptions(['전체 보기', ...names]);
+      })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
+
+  /* ADMIN: 지점 필터 변경 시 해당 지점 카테고리 로드 */
+  useEffect(() => {
+    if (!isAdmin) return;
+    const store = stores.find((s) => s.storeName === storeFilter);
+    fetchCategories(store?.id);
+    setCategory('전체 보기');
+  }, [isAdmin, storeFilter, stores, fetchCategories]);
 
   const fetchNotices = useCallback(async () => {
     setLoading(true);
@@ -172,7 +183,7 @@ export default function NoticeManagement() {
         <NoticeSettingsModal
           isAdmin={isAdmin}
           stores={stores}
-          onClose={() => setShowSettings(false)}
+          onClose={() => { setShowSettings(false); fetchCategories(); fetchNotices(); }}
           onSave={() => { fetchCategories(); setCategory('전체 보기'); }}
         />
       )}

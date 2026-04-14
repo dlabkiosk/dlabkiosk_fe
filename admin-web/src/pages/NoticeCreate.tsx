@@ -35,12 +35,22 @@ export default function NoticeCreate() {
       if (me.role === 'ADMIN') {
         setIsAdmin(true);
         getStores().then((list) => setStores(list.filter((s) => s.active)));
+      } else {
+        getNoticeCategories()
+          .then((list) => setCategoryOptions(list))
+          .catch(() => {});
       }
     });
-    getNoticeCategories()
-      .then((list) => setCategoryOptions(list))
-      .catch(() => {});
   }, []);
+
+  /* ADMIN: 지점 변경 시 해당 지점 카테고리 로드 */
+  useEffect(() => {
+    if (!isAdmin || !selectedStoreId) return;
+    setSelectedCategoryId(null);
+    getNoticeCategories(selectedStoreId)
+      .then((list) => setCategoryOptions(list))
+      .catch(() => setCategoryOptions([]));
+  }, [isAdmin, selectedStoreId]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -64,10 +74,6 @@ export default function NoticeCreate() {
       setError('지점을 선택해주세요.');
       return;
     }
-    if (!selectedCategoryId) {
-      setError('말머리를 선택해주세요.');
-      return;
-    }
     if (!title.trim()) {
       setError('제목을 입력해주세요.');
       return;
@@ -80,7 +86,7 @@ export default function NoticeCreate() {
     setIsLoading(true);
     try {
       await createNotice(
-        { categoryId: selectedCategoryId, title: title.trim(), content, pinned },
+        { categoryId: selectedCategoryId || null, title: title.trim(), content, pinned },
         isAdmin && selectedStoreId ? selectedStoreId : undefined,
       );
       navigate('/notices');
@@ -150,7 +156,7 @@ export default function NoticeCreate() {
           </div>
         )}
 
-        <div className={styles.field}>
+        {(!isAdmin || selectedStoreId !== null) && <div className={styles.field}>
           <label className={styles.label}>구분</label>
           <div className={styles.dropdown} ref={dropdownRef}>
             <button
@@ -158,13 +164,26 @@ export default function NoticeCreate() {
               className={`${styles.dropdownTrigger} ${dropdownOpen ? styles.dropdownTriggerOpen : ''}`}
               onClick={() => setDropdownOpen((v) => !v)}
             >
-              <span className={!selectedCategoryId ? styles.dropdownPlaceholder : ''}>
-                {selectedCategoryId ? categoryOptions.find((c) => c.id === selectedCategoryId)?.name ?? '선택' : '선택'}
+              <span className={selectedCategoryId === null ? styles.dropdownPlaceholder : ''}>
+                {selectedCategoryId === null
+                  ? '선택'
+                  : selectedCategoryId === 0
+                    ? '선택안함'
+                    : categoryOptions.find((c) => c.id === selectedCategoryId)?.name ?? '선택'}
               </span>
               <LuChevronDown className={`${styles.dropdownChevron} ${dropdownOpen ? styles.dropdownChevronOpen : ''}`} />
             </button>
             {dropdownOpen && (
               <ul className={styles.dropdownMenu}>
+                <li>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownItem} ${selectedCategoryId === 0 ? styles.dropdownItemActive : ''}`}
+                    onClick={() => { setSelectedCategoryId(0); setDropdownOpen(false); }}
+                  >
+                    선택안함
+                  </button>
+                </li>
                 {categoryOptions.map((opt) => (
                   <li key={opt.id}>
                     <button
@@ -179,12 +198,12 @@ export default function NoticeCreate() {
               </ul>
             )}
           </div>
-        </div>
+        </div>}
 
         <div className={styles.field}>
           <label className={styles.label}>제목</label>
           <div className={styles.titleRow}>
-            {selectedCategoryId && (
+            {selectedCategoryId !== null && selectedCategoryId !== 0 && (
               <span className={styles.titlePrefix}>[{categoryOptions.find((c) => c.id === selectedCategoryId)?.name}]</span>
             )}
             <input

@@ -87,14 +87,24 @@ export default function NoticeDetail() {
 
   useEffect(() => {
     fetchNotice();
-    getNoticeCategories()
+    if (!isAdmin) {
+      getNoticeCategories()
+        .then((list) => setCategoryOptions(list))
+        .catch(() => {});
+    }
+  }, [fetchNotice, isAdmin]);
+
+  /* ADMIN: 지점 변경 시 해당 지점 카테고리 로드 */
+  useEffect(() => {
+    if (!isAdmin || !editStoreId) return;
+    getNoticeCategories(editStoreId)
       .then((list) => setCategoryOptions(list))
-      .catch(() => {});
-  }, [fetchNotice]);
+      .catch(() => setCategoryOptions([]));
+  }, [isAdmin, editStoreId]);
 
   const startEditing = () => {
     if (!notice) return;
-    setEditCategoryId(notice.categoryId);
+    setEditCategoryId(notice.categoryId ?? 0);
     setEditTitle(notice.title);
     setEditContent(notice.content);
     setEditPinned(notice.pinned);
@@ -119,10 +129,6 @@ export default function NoticeDetail() {
       setSaveError('지점을 선택해주세요.');
       return;
     }
-    if (!editCategoryId) {
-      setSaveError('말머리를 선택해주세요.');
-      return;
-    }
     if (!editTitle.trim()) {
       setSaveError('제목을 입력해주세요.');
       return;
@@ -136,7 +142,7 @@ export default function NoticeDetail() {
     try {
       const updated = await updateNotice(
         Number(noticeId),
-        { categoryId: editCategoryId, title: editTitle.trim(), content: editContent, pinned: editPinned, active: editActive },
+        { categoryId: editCategoryId || null, title: editTitle.trim(), content: editContent, pinned: editPinned, active: editActive },
         isAdmin && editStoreId ? editStoreId : undefined,
       );
       setNotice(updated);
@@ -244,7 +250,7 @@ export default function NoticeDetail() {
               </div>
             )}
 
-            <div className={styles.field}>
+            {(!isAdmin || editStoreId !== null) && <div className={styles.field}>
               <label className={styles.label}>구분</label>
               <div className={styles.dropdown} ref={editDropdownRef}>
                 <button
@@ -252,13 +258,26 @@ export default function NoticeDetail() {
                   className={`${styles.dropdownTrigger} ${editDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
                   onClick={() => setEditDropdownOpen((v) => !v)}
                 >
-                  <span className={!editCategoryId ? styles.dropdownPlaceholder : ''}>
-                    {editCategoryId ? categoryOptions.find((c) => c.id === editCategoryId)?.name ?? '선택' : '선택'}
+                  <span className={editCategoryId === null ? styles.dropdownPlaceholder : ''}>
+                    {editCategoryId === null
+                      ? '선택'
+                      : editCategoryId === 0
+                        ? '선택안함'
+                        : categoryOptions.find((c) => c.id === editCategoryId)?.name ?? '선택'}
                   </span>
                   <LuChevronDown className={`${styles.dropdownChevron} ${editDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
                 </button>
                 {editDropdownOpen && (
                   <ul className={styles.dropdownMenu}>
+                    <li>
+                      <button
+                        type="button"
+                        className={`${styles.dropdownItem} ${editCategoryId === 0 ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setEditCategoryId(0); setEditDropdownOpen(false); }}
+                      >
+                        선택안함
+                      </button>
+                    </li>
                     {categoryOptions.map((opt) => (
                       <li key={opt.id}>
                         <button
@@ -273,12 +292,12 @@ export default function NoticeDetail() {
                   </ul>
                 )}
               </div>
-            </div>
+            </div>}
 
             <div className={styles.field}>
               <label className={styles.label}>제목</label>
               <div className={styles.editTitleRow}>
-                {editCategoryId && (
+                {editCategoryId !== null && editCategoryId !== 0 && (
                   <span className={styles.titlePrefix}>[{categoryOptions.find((c) => c.id === editCategoryId)?.name}]</span>
                 )}
                 <input
