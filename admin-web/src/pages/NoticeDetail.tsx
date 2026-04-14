@@ -12,6 +12,7 @@ import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import useConfirm from '../hooks/useConfirm';
 import { getNoticeCategories } from '../api/noticeCategoryApi';
+import type { NoticeCategory } from '../api/noticeCategoryApi';
 import styles from './NoticeDetail.module.css';
 
 export default function NoticeDetail() {
@@ -54,8 +55,8 @@ export default function NoticeDetail() {
 
   /* 수정 모드 */
   const [editing, setEditing] = useState(false);
-  const [editCategory, setEditCategory] = useState('선택');
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<NoticeCategory[]>([]);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editPinned, setEditPinned] = useState(false);
@@ -87,21 +88,14 @@ export default function NoticeDetail() {
   useEffect(() => {
     fetchNotice();
     getNoticeCategories()
-      .then((list) => setCategoryOptions(list.map((c) => c.name)))
+      .then((list) => setCategoryOptions(list))
       .catch(() => {});
   }, [fetchNotice]);
 
   const startEditing = () => {
     if (!notice) return;
-    // Parse [과목] prefix from title
-    const prefixMatch = notice.title.match(/^\[(.+?)\]\s*/);
-    if (prefixMatch) {
-      setEditCategory(prefixMatch[1]);
-      setEditTitle(notice.title.slice(prefixMatch[0].length));
-    } else {
-      setEditCategory('선택');
-      setEditTitle(notice.title);
-    }
+    setEditCategoryId(notice.categoryId);
+    setEditTitle(notice.title);
     setEditContent(notice.content);
     setEditPinned(notice.pinned);
     setEditActive(notice.active);
@@ -125,7 +119,7 @@ export default function NoticeDetail() {
       setSaveError('지점을 선택해주세요.');
       return;
     }
-    if (editCategory === '선택') {
+    if (!editCategoryId) {
       setSaveError('말머리를 선택해주세요.');
       return;
     }
@@ -138,13 +132,11 @@ export default function NoticeDetail() {
       return;
     }
 
-    const fullTitle = `[${editCategory}] ${editTitle}`;
-
     setSaving(true);
     try {
       const updated = await updateNotice(
         Number(noticeId),
-        { title: fullTitle, content: editContent, pinned: editPinned, active: editActive },
+        { categoryId: editCategoryId, title: editTitle.trim(), content: editContent, pinned: editPinned, active: editActive },
         isAdmin && editStoreId ? editStoreId : undefined,
       );
       setNotice(updated);
@@ -260,21 +252,21 @@ export default function NoticeDetail() {
                   className={`${styles.dropdownTrigger} ${editDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
                   onClick={() => setEditDropdownOpen((v) => !v)}
                 >
-                  <span className={editCategory === '선택' ? styles.dropdownPlaceholder : ''}>
-                    {editCategory}
+                  <span className={!editCategoryId ? styles.dropdownPlaceholder : ''}>
+                    {editCategoryId ? categoryOptions.find((c) => c.id === editCategoryId)?.name ?? '선택' : '선택'}
                   </span>
                   <LuChevronDown className={`${styles.dropdownChevron} ${editDropdownOpen ? styles.dropdownChevronOpen : ''}`} />
                 </button>
                 {editDropdownOpen && (
                   <ul className={styles.dropdownMenu}>
                     {categoryOptions.map((opt) => (
-                      <li key={opt}>
+                      <li key={opt.id}>
                         <button
                           type="button"
-                          className={`${styles.dropdownItem} ${editCategory === opt ? styles.dropdownItemActive : ''}`}
-                          onClick={() => { setEditCategory(opt); setEditDropdownOpen(false); }}
+                          className={`${styles.dropdownItem} ${editCategoryId === opt.id ? styles.dropdownItemActive : ''}`}
+                          onClick={() => { setEditCategoryId(opt.id); setEditDropdownOpen(false); }}
                         >
-                          {opt}
+                          {opt.name}
                         </button>
                       </li>
                     ))}
@@ -286,8 +278,8 @@ export default function NoticeDetail() {
             <div className={styles.field}>
               <label className={styles.label}>제목</label>
               <div className={styles.editTitleRow}>
-                {editCategory !== '선택' && (
-                  <span className={styles.titlePrefix}>[{editCategory}]</span>
+                {editCategoryId && (
+                  <span className={styles.titlePrefix}>[{categoryOptions.find((c) => c.id === editCategoryId)?.name}]</span>
                 )}
                 <input
                   type="text"
@@ -377,7 +369,9 @@ export default function NoticeDetail() {
               </div>
             </div>
 
-            <h2 className={styles.noticeTitle}>{notice.title}</h2>
+            <h2 className={styles.noticeTitle}>
+              {notice.categoryName ? `[${notice.categoryName}] ${notice.title}` : notice.title}
+            </h2>
 
             <div className={styles.divider} />
 

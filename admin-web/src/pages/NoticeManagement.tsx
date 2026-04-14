@@ -97,8 +97,7 @@ export default function NoticeManagement() {
         if (n.storeName !== storeFilter) return false;
       }
       if (category !== '전체 보기') {
-        const prefix = `[${category}]`;
-        if (!n.title.startsWith(prefix)) return false;
+        if (n.categoryName !== category) return false;
       }
       if (searchText.trim()) {
         if (!n.title.toLowerCase().includes(searchText.toLowerCase())) return false;
@@ -171,6 +170,8 @@ export default function NoticeManagement() {
     <div className={styles.page}>
       {showSettings && (
         <NoticeSettingsModal
+          isAdmin={isAdmin}
+          stores={stores}
           onClose={() => setShowSettings(false)}
           onSave={() => { fetchCategories(); setCategory('전체 보기'); }}
         />
@@ -205,7 +206,7 @@ export default function NoticeManagement() {
               value={category}
               options={subjectOptions}
               placeholder="전체 보기"
-              onChange={setCategory}
+              onChange={(v) => { setCategory(v); setCurrentPage(1); }}
             />
           </div>
 
@@ -299,7 +300,7 @@ export default function NoticeManagement() {
                       onClick={() => navigate(`/notices/${notice.id}`)}
                     >
                       {notice.pinned && <span className={styles.pinIcon}>📌</span>}
-                      {notice.title}
+                      {notice.categoryName ? `[${notice.categoryName}] ${notice.title}` : notice.title}
                     </td>
                     <td>{formatDate(notice.createdAt)}</td>
                     <td>{notice.storeName}</td>

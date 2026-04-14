@@ -8,13 +8,13 @@ import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import { getNoticeCategories } from '../api/noticeCategoryApi';
+import type { NoticeCategory } from '../api/noticeCategoryApi';
 import styles from './NoticeCreate.module.css';
-import f from '../styles/filter.module.css';
 
 export default function NoticeCreate() {
   const navigate = useNavigate();
-  const [category, setCategory] = useState('선택');
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<NoticeCategory[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [pinned, setPinned] = useState(false);
@@ -38,7 +38,7 @@ export default function NoticeCreate() {
       }
     });
     getNoticeCategories()
-      .then((list) => setCategoryOptions(list.map((c) => c.name)))
+      .then((list) => setCategoryOptions(list))
       .catch(() => {});
   }, []);
 
@@ -64,7 +64,7 @@ export default function NoticeCreate() {
       setError('지점을 선택해주세요.');
       return;
     }
-    if (category === '선택') {
+    if (!selectedCategoryId) {
       setError('말머리를 선택해주세요.');
       return;
     }
@@ -77,12 +77,10 @@ export default function NoticeCreate() {
       return;
     }
 
-    const fullTitle = `[${category}] ${title}`;
-
     setIsLoading(true);
     try {
       await createNotice(
-        { title: fullTitle, content, pinned },
+        { categoryId: selectedCategoryId, title: title.trim(), content, pinned },
         isAdmin && selectedStoreId ? selectedStoreId : undefined,
       );
       navigate('/notices');
@@ -160,21 +158,21 @@ export default function NoticeCreate() {
               className={`${styles.dropdownTrigger} ${dropdownOpen ? styles.dropdownTriggerOpen : ''}`}
               onClick={() => setDropdownOpen((v) => !v)}
             >
-              <span className={category === '선택' ? styles.dropdownPlaceholder : ''}>
-                {category}
+              <span className={!selectedCategoryId ? styles.dropdownPlaceholder : ''}>
+                {selectedCategoryId ? categoryOptions.find((c) => c.id === selectedCategoryId)?.name ?? '선택' : '선택'}
               </span>
               <LuChevronDown className={`${styles.dropdownChevron} ${dropdownOpen ? styles.dropdownChevronOpen : ''}`} />
             </button>
             {dropdownOpen && (
               <ul className={styles.dropdownMenu}>
                 {categoryOptions.map((opt) => (
-                  <li key={opt}>
+                  <li key={opt.id}>
                     <button
                       type="button"
-                      className={`${styles.dropdownItem} ${category === opt ? styles.dropdownItemActive : ''}`}
-                      onClick={() => { setCategory(opt); setDropdownOpen(false); }}
+                      className={`${styles.dropdownItem} ${selectedCategoryId === opt.id ? styles.dropdownItemActive : ''}`}
+                      onClick={() => { setSelectedCategoryId(opt.id); setDropdownOpen(false); }}
                     >
-                      {opt}
+                      {opt.name}
                     </button>
                   </li>
                 ))}
@@ -186,8 +184,8 @@ export default function NoticeCreate() {
         <div className={styles.field}>
           <label className={styles.label}>제목</label>
           <div className={styles.titleRow}>
-            {category !== '선택' && (
-              <span className={styles.titlePrefix}>[{category}]</span>
+            {selectedCategoryId && (
+              <span className={styles.titlePrefix}>[{categoryOptions.find((c) => c.id === selectedCategoryId)?.name}]</span>
             )}
             <input
               type="text"

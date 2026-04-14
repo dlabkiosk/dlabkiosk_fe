@@ -6,10 +6,13 @@ export interface Notice {
   id: number;
   storeId: number;
   storeName: string;
+  categoryId: number | null;
+  categoryName: string | null;
   title: string;
   content: string;
   pinned: boolean;
   active: boolean;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { LuPin } from 'react-icons/lu';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
+import { getNoticeCategories } from '../api/noticeCategoryApi';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
   VOICE_NOTICE_OPEN,
@@ -14,12 +15,6 @@ import styles from './NoticeSection.module.css';
 const DEFAULT_COUNT = 3;
 const PAGE_SIZE = 10;
 
-/** 제목에서 [xxx] 말머리를 추출. 없으면 null */
-function extractPrefix(title: string): string | null {
-  const m = title.match(/^\[([^\]]+)\]\s*/);
-  return m ? m[1] : null;
-}
-
 export default function NoticeSection() {
   const { speak } = useAccessibility();
   const [allNotices, setAllNotices] = useState<Notice[]>([]);
@@ -28,42 +23,28 @@ export default function NoticeSection() {
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
   /* 필터 & 페이지네이션 */
-  const [filterPrefix, setFilterPrefix] = useState<string>('전체 보기');
+  const [filterCategory, setFilterCategory] = useState<string>('전체 보기');
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(0);
 
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const data = await getNotices();
-        if (!cancelled) setAllNotices(data);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    getNotices()
+      .then((data) => { if (!cancelled) setAllNotices(data); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    getNoticeCategories()
+      .then((list) => { if (!cancelled) setCategoryOptions(list.map((c) => c.name)); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
-  /* 말머리 목록 추출 (중복 제거, 순서 유지) */
-  const prefixOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const n of allNotices) {
-      const p = extractPrefix(n.title);
-      if (p && !seen.has(p)) {
-        seen.add(p);
-        result.push(p);
-      }
-    }
-    return result;
-  }, [allNotices]);
-
   /* 필터 적용된 목록 */
   const filteredNotices = useMemo(() => {
-    if (filterPrefix === '전체 보기') return allNotices;
-    return allNotices.filter((n) => extractPrefix(n.title) === filterPrefix);
-  }, [allNotices, filterPrefix]);
+    if (filterCategory === '전체 보기') return allNotices;
+    return allNotices.filter((n) => n.categoryName === filterCategory);
+  }, [allNotices, filterCategory]);
 
   const pagedNotices = filteredNotices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filteredNotices.length / PAGE_SIZE));
@@ -75,8 +56,8 @@ export default function NoticeSection() {
     return [...pinned, ...nonPinned];
   }, [allNotices]);
 
-  const handleFilterChange = (prefix: string) => {
-    setFilterPrefix(prefix);
+  const handleFilterChange = (cat: string) => {
+    setFilterCategory(cat);
     setFilterOpen(false);
     setPage(0);
   };
@@ -98,11 +79,15 @@ export default function NoticeSection() {
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  /** 제목 표시: categoryName이 있으면 [카테고리] 제목 형태 */
+  const displayTitle = (notice: Notice) =>
+    notice.categoryName ? `[${notice.categoryName}] ${notice.title}` : notice.title;
+
   const openModal = () => {
     setShowList(true);
     setSelectedNotice(null);
     setPage(0);
-    setFilterPrefix('전체 보기');
+    setFilterCategory('전체 보기');
     setFilterOpen(false);
     speak(VOICE_NOTICE_OPEN);
   };
@@ -123,7 +108,7 @@ export default function NoticeSection() {
       >
         <span className={styles.modalItemTitle}>
           {notice.pinned && <LuPin className={styles.pinIcon} />}
-          {notice.title}
+          {displayTitle(notice)}
         </span>
         <span className={styles.modalItemDate}>{formatDate(notice.createdAt)}</span>
       </button>
@@ -158,7 +143,7 @@ export default function NoticeSection() {
               tabIndex={0}
             >
               {notice.pinned && <LuPin className={styles.pinIcon} />}
-              {notice.title}
+              {displayTitle(notice)}
             </li>
           ))
         )}
@@ -188,7 +173,7 @@ export default function NoticeSection() {
                     className={styles.filterButton}
                     onClick={() => setFilterOpen((v) => !v)}
                   >
-                    {filterPrefix}
+                    {filterCategory}
                     <span className={`${styles.filterArrow} ${filterOpen ? styles.filterArrowOpen : ''}`}>
                       &#x25BC;
                     </span>
@@ -197,16 +182,16 @@ export default function NoticeSection() {
                     <div className={styles.filterDropdown}>
                       <button
                         type="button"
-                        className={`${styles.filterOption} ${filterPrefix === '전체 보기' ? styles.filterOptionActive : ''}`}
+                        className={`${styles.filterOption} ${filterCategory === '전체 보기' ? styles.filterOptionActive : ''}`}
                         onClick={() => handleFilterChange('전체 보기')}
                       >
                         전체 보기
                       </button>
-                      {prefixOptions.map((p) => (
+                      {categoryOptions.map((p) => (
                         <button
                           key={p}
                           type="button"
-                          className={`${styles.filterOption} ${filterPrefix === p ? styles.filterOptionActive : ''}`}
+                          className={`${styles.filterOption} ${filterCategory === p ? styles.filterOptionActive : ''}`}
                           onClick={() => handleFilterChange(p)}
                         >
                           {p}
@@ -280,7 +265,7 @@ export default function NoticeSection() {
               <div className={styles.detailHeader}>
                 <h4 className={styles.detailTitle}>
                   {selectedNotice.pinned && <LuPin className={styles.pinIcon} />}
-                  {selectedNotice.title}
+                  {displayTitle(selectedNotice)}
                 </h4>
                 <span className={styles.detailDate}>{formatDate(selectedNotice.createdAt)}</span>
               </div>

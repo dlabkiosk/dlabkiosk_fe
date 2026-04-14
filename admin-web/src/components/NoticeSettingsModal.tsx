@@ -7,31 +7,46 @@ import {
   updateNoticeCategoryOrder,
 } from '../api/noticeCategoryApi';
 import type { NoticeCategory } from '../api/noticeCategoryApi';
+import type { Store } from '../api/storeApi';
+import FilterSelect from './FilterSelect';
 import styles from './NoticeSettingsModal.module.css';
 
 interface Props {
-  storeId?: number;
+  isAdmin?: boolean;
+  stores?: Store[];
   onClose: () => void;
   onSave: () => void;
 }
 
-export default function NoticeSettingsModal({ storeId, onClose, onSave }: Props) {
+export default function NoticeSettingsModal({ isAdmin, stores = [], onClose, onSave }: Props) {
   const [categories, setCategories] = useState<NoticeCategory[]>([]);
   const [newSubject, setNewSubject] = useState('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(undefined);
+
+  const effectiveStoreId = isAdmin ? selectedStoreId : undefined;
 
   useEffect(() => {
+    if (isAdmin && selectedStoreId === undefined) {
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    getNoticeCategories(storeId)
+    getNoticeCategories(effectiveStoreId)
       .then(setCategories)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [storeId]);
+  }, [isAdmin, selectedStoreId, effectiveStoreId]);
 
   const handleAdd = async () => {
+    if (isAdmin && selectedStoreId === undefined) {
+      setError('지점을 먼저 선택해주세요.');
+      return;
+    }
     const trimmed = newSubject.trim();
     if (!trimmed) return;
     if (categories.some((c) => c.name === trimmed)) {
@@ -40,7 +55,7 @@ export default function NoticeSettingsModal({ storeId, onClose, onSave }: Props)
     }
     try {
       setError('');
-      const created = await createNoticeCategory(trimmed, storeId);
+      const created = await createNoticeCategory(trimmed, effectiveStoreId);
       setCategories((prev) => [...prev, created]);
       setNewSubject('');
     } catch (e: unknown) {
@@ -81,7 +96,7 @@ export default function NoticeSettingsModal({ storeId, onClose, onSave }: Props)
     setError('');
     try {
       const orderedIds = categories.map((c) => c.id);
-      const updated = await updateNoticeCategoryOrder(orderedIds, storeId);
+      const updated = await updateNoticeCategoryOrder(orderedIds, effectiveStoreId);
       setCategories(updated);
       onSave();
       onClose();
@@ -103,6 +118,22 @@ export default function NoticeSettingsModal({ storeId, onClose, onSave }: Props)
         </div>
 
         <div className={styles.body}>
+          {isAdmin && (
+            <div className={styles.section}>
+              <label className={styles.sectionLabel}>지점 선택</label>
+              <FilterSelect
+                value={selectedStoreId !== undefined ? stores.find((s) => s.id === selectedStoreId)?.storeName ?? '' : ''}
+                options={stores.map((s) => s.storeName)}
+                placeholder="지점을 선택하세요"
+                onChange={(name) => {
+                  const store = stores.find((s) => s.storeName === name);
+                  setSelectedStoreId(store?.id);
+                  setError('');
+                }}
+              />
+            </div>
+          )}
+
           <div className={styles.section}>
             <label className={styles.sectionLabel}>말머리 관리</label>
             <p className={styles.sectionHint}>드래그하여 순서를 변경할 수 있습니다.</p>

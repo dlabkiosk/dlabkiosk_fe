@@ -6,6 +6,8 @@ export interface Notice {
   id: number;
   storeId: number;
   storeName: string;
+  categoryId: number | null;
+  categoryName: string | null;
   title: string;
   content: string;
   pinned: boolean;
@@ -16,12 +18,14 @@ export interface Notice {
 }
 
 interface CreateNoticeRequest {
+  categoryId?: number | null;
   title: string;
   content: string;
   pinned: boolean;
 }
 
 interface UpdateNoticeRequest {
+  categoryId?: number | null;
   title: string;
   content: string;
   pinned: boolean;
