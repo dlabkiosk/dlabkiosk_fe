@@ -7,15 +7,10 @@ import {
   LuList,
   LuLayoutGrid,
   LuX,
-  LuPlus,
-  LuPencil,
   LuMapPin,
-  LuSave,
-  LuGripVertical,
 } from 'react-icons/lu';
 import seatIcon from '../assets/seat_active.png';
 import printerIcon from '../assets/printer.png';
-import { getStudents } from '../api/studentApi';
 import {
   getSeats,
   getSeatAreas,
@@ -133,41 +128,11 @@ export default function SeatManagement() {
   /* ── 캔버스 배치 모드 ── */
   type PlacingTarget = 'add' | 'edit' | null;
   const [placingMode, setPlacingMode] = useState<PlacingTarget>(null);
-  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const editSeatRef = useRef<SeatWithStatus | null>(null);
 
-  /* ── 좌석 편집 모드 (일괄 저장) ── */
-  const [editingLayout, setEditingLayout] = useState(false);
-  const [savingLayout, setSavingLayout] = useState(false);
-
-  interface PendingAdd {
-    tempId: string;
-    seatLabel: string;
-    seatType: string;
-    xPos: number;
-    yPos: number;
-  }
-  interface PendingMove {
-    seatId: number;
-    xPos: number;
-    yPos: number;
-  }
-  const [pendingAdds, setPendingAdds] = useState<PendingAdd[]>([]);
-  const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
-  const [pendingDeletes, setPendingDeletes] = useState<Set<number>>(new Set());
-
-  /* ── 편집 모드: 좌석 추가 모달 ── */
-  const [editAddPos, setEditAddPos] = useState<{ x: number; y: number } | null>(null);
-  const [editAddLabel, setEditAddLabel] = useState('');
-  const [editAddType, setEditAddType] = useState('INDIVIDUAL');
-
-  /* ── 드래그 상태 ── */
-  const [draggingSeatId, setDraggingSeatId] = useState<number | string | null>(null);
-  const dragOffsetRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
-
-  /* ── 캔버스 드래그-패닝 (비편집 모드) ── */
+  /* ── 캔버스 드래그-패닝 ── */
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
@@ -508,236 +473,17 @@ export default function SeatManagement() {
       setNewYPos(String(pos.y));
       setShowAddForm(true);
       setPlacingMode(null);
-      setGhostPos(null);
     } else if (placingMode === 'edit' && editSeatRef.current) {
       setEditXPos(String(pos.x));
       setEditYPos(String(pos.y));
       setSelectedSeat(editSeatRef.current);
       setPlacingMode(null);
-      setGhostPos(null);
     }
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!placingMode) { setGhostPos(null); return; }
-    const raw = getCanvasPos(e);
-    if (raw) setGhostPos(snapToGrid(raw));
-  };
-
-  const handleCanvasMouseLeave = () => {
-    setGhostPos(null);
   };
 
   const cancelPlacing = () => {
     setPlacingMode(null);
-    setGhostPos(null);
   };
-
-  /* ── 편집 모드 진입/취소/저장 ── */
-  const enterEditMode = () => {
-    closeSeatDetail();
-    setPendingAdds([]);
-    setPendingMoves([]);
-    setPendingDeletes(new Set());
-    setEditingLayout(true);
-  };
-
-  const cancelEditMode = async () => {
-    const hasChanges = pendingAdds.length > 0 || pendingMoves.length > 0 || pendingDeletes.size > 0;
-    if (hasChanges && !await confirm('변경사항을 취소하시겠습니까?')) return;
-    setPendingAdds([]);
-    setPendingMoves([]);
-    setPendingDeletes(new Set());
-    setEditingLayout(false);
-    setDraggingSeatId(null);
-    loadLayout();
-  };
-
-  const saveEditMode = async () => {
-    const totalChanges = pendingAdds.length + pendingMoves.length + pendingDeletes.size;
-    if (totalChanges === 0) {
-      setEditingLayout(false);
-      return;
-    }
-    setSavingLayout(true);
-    try {
-      // 삭제 처리
-      for (const seatId of pendingDeletes) {
-        await deleteSeat(seatId);
-      }
-      // 추가 처리
-      for (const add of pendingAdds) {
-        await createSeat({ seatLabel: add.seatLabel, seatType: add.seatType, xPos: add.xPos, yPos: add.yPos });
-      }
-      // 이동 처리 (삭제 대상은 건너뜀)
-      for (const move of pendingMoves) {
-        if (pendingDeletes.has(move.seatId)) continue;
-        const original = seats.find((s) => s.id === move.seatId);
-        if (!original) continue;
-        await updateSeat(move.seatId, {
-          seatLabel: original.seatLabel,
-          seatType: original.seatType,
-          xPos: move.xPos,
-          yPos: move.yPos,
-          active: original.active,
-        });
-      }
-      setPendingAdds([]);
-      setPendingMoves([]);
-      setPendingDeletes(new Set());
-      setEditingLayout(false);
-      loadLayout();
-    } catch (err) {
-      await alert('저장에 실패했습니다. 일부 변경만 적용되었을 수 있습니다.');
-      loadLayout();
-    } finally {
-      setSavingLayout(false);
-    }
-  };
-
-  /** 편집 모드에서 좌석의 현재 좌표 (이동 반영) */
-  const getEditPos = (seat: SeatWithStatus) => {
-    const move = pendingMoves.find((m) => m.seatId === seat.id);
-    return move ? { x: move.xPos, y: move.yPos } : { x: seat.xPos, y: seat.yPos };
-  };
-
-  /** 편집 모드: 빈 셀 클릭 → 좌석 추가 모달 열기 */
-  const handleEditCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!editingLayout || draggingSeatId) return;
-    const raw = getCanvasPos(e);
-    if (!raw) return;
-    const pos = snapToGrid(raw);
-
-    // 기존 좌석/추가 예정 좌석과 겹치는지 확인
-    const occupied = seats.some((s) => s.active && !pendingDeletes.has(s.id) && getEditPos(s).x === pos.x && getEditPos(s).y === pos.y)
-      || pendingAdds.some((a) => a.xPos === pos.x && a.yPos === pos.y);
-    if (occupied) return;
-
-    setEditAddPos(pos);
-    setEditAddLabel('');
-    setEditAddType('INDIVIDUAL');
-  };
-
-  /** 편집 모드: 좌석 추가 모달 확인 */
-  const handleEditAddConfirm = async () => {
-    if (!editAddPos) return;
-    if (!editAddLabel.trim()) { await alert('좌석 라벨을 입력해주세요.'); return; }
-
-    // 중복 라벨 확인
-    const allLabels = [
-      ...seats.filter((s) => !pendingDeletes.has(s.id)).map((s) => s.seatLabel),
-      ...pendingAdds.map((a) => a.seatLabel),
-    ];
-    if (allLabels.includes(editAddLabel.trim())) {
-      await alert('이미 동일한 좌석 번호가 존재합니다.');
-      return;
-    }
-
-    setPendingAdds((prev) => [...prev, {
-      tempId: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      seatLabel: editAddLabel.trim(),
-      seatType: editAddType,
-      xPos: editAddPos.x,
-      yPos: editAddPos.y,
-    }]);
-    setEditAddPos(null);
-  };
-
-  /** 드래그 시작 (기존 좌석) */
-  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>, seatId: number) => {
-    if (!editingLayout) return;
-    e.stopPropagation();
-    const pos = getCanvasPos(e);
-    if (!pos) return;
-    const seat = seats.find((s) => s.id === seatId);
-    if (!seat) return;
-    const editP = getEditPos(seat);
-    dragOffsetRef.current = { dx: pos.x - editP.x, dy: pos.y - editP.y };
-    setDraggingSeatId(seatId);
-  };
-
-  /** 드래그 시작 (추가 예정 좌석) */
-  const handlePendingDragStart = (e: React.MouseEvent<HTMLDivElement>, tempId: string, xPos: number, yPos: number) => {
-    if (!editingLayout) return;
-    e.stopPropagation();
-    const pos = getCanvasPos(e);
-    if (!pos) return;
-    dragOffsetRef.current = { dx: pos.x - xPos, dy: pos.y - yPos };
-    setDraggingSeatId(tempId);
-  };
-
-  /** 드래그 중 / 편집 모드 호버 */
-  const handleDragMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!draggingSeatId) {
-      if (editingLayout || placingMode) {
-        const raw = getCanvasPos(e);
-        if (raw) setGhostPos(snapToGrid(raw));
-      }
-      return;
-    }
-    const pos = getCanvasPos(e);
-    if (!pos) return;
-    const snapped = snapToGrid({ x: pos.x - dragOffsetRef.current.dx, y: pos.y - dragOffsetRef.current.dy });
-    setGhostPos(snapped);
-  };
-
-  /** 드래그 종료 */
-  const handleDragEnd = () => {
-    if (!draggingSeatId || !ghostPos) {
-      setDraggingSeatId(null);
-      setGhostPos(null);
-      return;
-    }
-
-    // 겹침 확인 (자기 자신 제외)
-    const isOccupied = seats.some((s) => {
-      if (!s.active || pendingDeletes.has(s.id)) return false;
-      if (s.id === draggingSeatId) return false;
-      const p = getEditPos(s);
-      return p.x === ghostPos.x && p.y === ghostPos.y;
-    }) || pendingAdds.some((a) => {
-      if (a.tempId === draggingSeatId) return false;
-      return a.xPos === ghostPos.x && a.yPos === ghostPos.y;
-    });
-
-    if (!isOccupied) {
-      if (typeof draggingSeatId === 'number') {
-        // 기존 좌석 이동
-        setPendingMoves((prev) => {
-          const filtered = prev.filter((m) => m.seatId !== draggingSeatId);
-          const original = seats.find((s) => s.id === draggingSeatId);
-          // 원래 위치로 돌아왔으면 제거
-          if (original && original.xPos === ghostPos.x && original.yPos === ghostPos.y) return filtered;
-          return [...filtered, { seatId: draggingSeatId, xPos: ghostPos.x, yPos: ghostPos.y }];
-        });
-      } else {
-        // 추가 예정 좌석 이동
-        setPendingAdds((prev) => prev.map((a) =>
-          a.tempId === draggingSeatId ? { ...a, xPos: ghostPos.x, yPos: ghostPos.y } : a
-        ));
-      }
-    }
-
-    setDraggingSeatId(null);
-    setGhostPos(null);
-  };
-
-  /** 편집 모드: 추가 예정 좌석 삭제 */
-  const removePendingAdd = (tempId: string) => {
-    setPendingAdds((prev) => prev.filter((a) => a.tempId !== tempId));
-  };
-
-  /** 편집 모드: 기존 좌석 삭제 토글 (이동 기록은 유지하여 위치 보존) */
-  const togglePendingDelete = (seatId: number) => {
-    setPendingDeletes((prev) => {
-      const next = new Set(prev);
-      if (next.has(seatId)) next.delete(seatId);
-      else next.add(seatId);
-      return next;
-    });
-  };
-
-  const pendingChangeCount = pendingAdds.length + pendingMoves.length + pendingDeletes.size;
 
   /* ── 좌석 추가 핸들러 ── */
   const resetAddForm = () => {
@@ -747,7 +493,6 @@ export default function SeatManagement() {
     setNewYPos('');
     setShowAddForm(false);
     setPlacingMode(null);
-    setGhostPos(null);
   };
 
   const handleAddSeat = async () => {
@@ -956,10 +701,16 @@ export default function SeatManagement() {
         await rejectSeatChangeRequest(id);
       }
       loadWaiting();
-    } catch (err) {
-      await alert(`${label}에 실패했습니다.`);
+      setModalItem(null);
+    } catch (err: unknown) {
+      let msg = `${label}에 실패했습니다.`;
+      if (err instanceof Error) {
+        msg = err.message.includes('409') || err.message.includes('Conflict')
+          ? '해당 좌석에 이미 학생이 배정되어 있어 승인할 수 없습니다.'
+          : err.message;
+      }
+      await alert(msg);
     }
-    setModalItem(null);
   };
 
   const getStatusBadge = (status: SeatChangeRequest['status']) => {

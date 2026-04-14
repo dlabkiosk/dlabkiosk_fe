@@ -7,13 +7,14 @@ import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
-import { getFormSubjects } from '../utils/noticeSubjects';
+import { getNoticeCategories } from '../api/noticeCategoryApi';
 import styles from './NoticeCreate.module.css';
 import f from '../styles/filter.module.css';
 
 export default function NoticeCreate() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('선택');
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [pinned, setPinned] = useState(false);
@@ -36,6 +37,9 @@ export default function NoticeCreate() {
         getStores().then((list) => setStores(list.filter((s) => s.active)));
       }
     });
+    getNoticeCategories()
+      .then((list) => setCategoryOptions(list.map((c) => c.name)))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -163,7 +167,7 @@ export default function NoticeCreate() {
             </button>
             {dropdownOpen && (
               <ul className={styles.dropdownMenu}>
-                {getFormSubjects().filter((o) => o !== '선택').map((opt) => (
+                {categoryOptions.map((opt) => (
                   <li key={opt}>
                     <button
                       type="button"
@@ -202,12 +206,12 @@ export default function NoticeCreate() {
           <textarea
             className={styles.textarea}
             placeholder="공지 내용을 입력해주세요."
-            maxLength={1000}
+            maxLength={5000}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={10}
           />
-          <span className={styles.charCount}>{content.length}/1,000</span>
+          <span className={styles.charCount}>{content.length}/5,000</span>
         </div>
 
         <div className={styles.pinnedField}>

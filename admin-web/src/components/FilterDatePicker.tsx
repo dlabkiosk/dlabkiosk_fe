@@ -39,7 +39,10 @@ export default function FilterDatePicker({ value, onChange, id, minDate, maxDate
         ref={ref}
         locale="ko"
         selected={toDate(value)}
-        onChange={(d: Date | null) => onChange(toStr(d))}
+        onChange={(d: Date | null) => {
+          onChange(toStr(d));
+          setTimeout(() => ref.current?.setOpen(false), 0);
+        }}
         dateFormat="yyyy-MM-dd"
         className={value ? s.input : `${s.input} ${s.inputPlaceholder}`}
         placeholderText={placeholder}

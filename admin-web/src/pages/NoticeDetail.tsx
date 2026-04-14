@@ -11,7 +11,7 @@ import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import { ApiError } from '../api/client';
 import useConfirm from '../hooks/useConfirm';
-import { getFormSubjects } from '../utils/noticeSubjects';
+import { getNoticeCategories } from '../api/noticeCategoryApi';
 import styles from './NoticeDetail.module.css';
 
 export default function NoticeDetail() {
@@ -55,6 +55,7 @@ export default function NoticeDetail() {
   /* 수정 모드 */
   const [editing, setEditing] = useState(false);
   const [editCategory, setEditCategory] = useState('선택');
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editPinned, setEditPinned] = useState(false);
@@ -85,6 +86,9 @@ export default function NoticeDetail() {
 
   useEffect(() => {
     fetchNotice();
+    getNoticeCategories()
+      .then((list) => setCategoryOptions(list.map((c) => c.name)))
+      .catch(() => {});
   }, [fetchNotice]);
 
   const startEditing = () => {
@@ -263,7 +267,7 @@ export default function NoticeDetail() {
                 </button>
                 {editDropdownOpen && (
                   <ul className={styles.dropdownMenu}>
-                    {getFormSubjects().filter((o) => o !== '선택').map((opt) => (
+                    {categoryOptions.map((opt) => (
                       <li key={opt}>
                         <button
                           type="button"
@@ -302,12 +306,12 @@ export default function NoticeDetail() {
               <textarea
                 className={styles.textarea}
                 placeholder="공지 내용을 입력해주세요."
-                maxLength={1000}
+                maxLength={5000}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={10}
               />
-              <span className={styles.charCount}>{editContent.length}/1,000</span>
+              <span className={styles.charCount}>{editContent.length}/5,000</span>
             </div>
 
             <div className={styles.pinnedField}>

@@ -62,17 +62,8 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
   useEffect(() => {
     getExamSchedules()
       .then((list: ExamSchedule[]) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const upcoming = list.filter((e) => {
-          const d = new Date(e.examDate);
-          d.setHours(0, 0, 0, 0);
-          return d.getTime() >= today.getTime();
-        });
-
         setDdays(
-          upcoming.map((e) => ({
+          list.map((e) => ({
             label: e.examName,
             dday: calcDday(e.examDate),
           })),
@@ -105,7 +96,8 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
               key={item.label}
               className={`${styles.ddayTag} ${idx === ddays.length - 1 ? styles.ddayTagPrimary : ''}`}
             >
-              {item.label} <span className={idx === ddays.length - 1 ? styles.ddayValuePrimary : styles.ddayValue}>{item.dday}</span>
+              <span className={styles.ddayLabel}>{item.label}</span>
+              <span className={idx === ddays.length - 1 ? styles.ddayValuePrimary : styles.ddayValue}>{item.dday}</span>
             </span>
           ))}
         </div>

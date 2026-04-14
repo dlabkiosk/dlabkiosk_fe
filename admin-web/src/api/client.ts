@@ -83,12 +83,24 @@ async function request<T>(
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+
   if (!res.ok) {
+    // 에러 응답에도 JSON body가 있으면 서버 메시지 사용
+    if (text) {
+      try {
+        const json = JSON.parse(text) as ApiResponse<T>;
+        if (json.error?.message) {
+          throw new ApiError(json.error.code ?? 'HTTP_ERROR', json.error.message);
+        }
+      } catch (e) {
+        if (e instanceof ApiError) throw e;
+      }
+    }
     throw new ApiError('HTTP_ERROR', `HTTP ${res.status}: ${res.statusText}`);
   }
 
   // 204 No Content 또는 빈 응답 body 처리
-  const text = await res.text();
   if (!text) {
     return undefined as T;
   }

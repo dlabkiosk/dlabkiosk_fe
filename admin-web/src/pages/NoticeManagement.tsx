@@ -9,7 +9,7 @@ import { getStores } from '../api/storeApi';
 import type { Store } from '../api/storeApi';
 import useConfirm from '../hooks/useConfirm';
 import NoticeSettingsModal from '../components/NoticeSettingsModal';
-import { getSubjects } from '../utils/noticeSubjects';
+import { getNoticeCategories } from '../api/noticeCategoryApi';
 import styles from './NoticeManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
@@ -27,7 +27,7 @@ export default function NoticeManagement() {
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [subjectOptions, setSubjectOptions] = useState(() => ['전체 보기', ...getSubjects()]);
+  const [subjectOptions, setSubjectOptions] = useState<string[]>(['전체 보기']);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
@@ -44,6 +44,16 @@ export default function NoticeManagement() {
       }
     });
   }, []);
+
+  const fetchCategories = useCallback(() => {
+    getNoticeCategories()
+      .then((list) => setSubjectOptions(['전체 보기', ...list.map((c) => c.name)]))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const fetchNotices = useCallback(async () => {
     setLoading(true);
@@ -162,7 +172,7 @@ export default function NoticeManagement() {
       {showSettings && (
         <NoticeSettingsModal
           onClose={() => setShowSettings(false)}
-          onSave={() => { setSubjectOptions(['전체 보기', ...getSubjects()]); setCategory('전체 보기'); }}
+          onSave={() => { fetchCategories(); setCategory('전체 보기'); }}
         />
       )}
       {/* Header */}
