@@ -90,6 +90,7 @@
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
 }
 
 .table tbody tr:last-child td {
@@ -142,8 +143,6 @@
   z-index: 2;
   background-color: var(--color-bg-card);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .table thead .stickyCol {

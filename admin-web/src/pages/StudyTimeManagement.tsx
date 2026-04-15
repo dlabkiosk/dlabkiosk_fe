@@ -46,6 +46,7 @@ interface StudentStudyRow {
   name: string;
   seat: string;
   total: string;
+  totalMinutes: number;
   storeId?: number;
   storeName?: string;
   dailyTimes: Record<string, string>;
@@ -53,7 +54,7 @@ interface StudentStudyRow {
 
 /* ── 정렬 ── */
 
-type SortField = 'name' | 'studentNumber' | 'seat' | 'total';
+type SortField = 'name' | 'studentNumber' | 'seat' | 'total' | string;
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -61,9 +62,31 @@ interface SortState {
   dir: SortDir;
 }
 
+/** "05시간 30분" → 330, "-" → 0 */
+function parseTimeToMinutes(val: string): number {
+  if (!val || val === '-') return 0;
+  let total = 0;
+  const hMatch = val.match(/(\d+)\s*시간/);
+  const mMatch = val.match(/(\d+)\s*분/);
+  if (hMatch) total += Number(hMatch[1]) * 60;
+  if (mMatch) total += Number(mMatch[1]);
+  return total;
+}
+
 function compareStudyRows(a: StudentStudyRow, b: StudentStudyRow, field: SortField, dir: SortDir): number {
-  const va = a[field] ?? '';
-  const vb = b[field] ?? '';
+  if (field === 'total') {
+    const cmp = a.totalMinutes - b.totalMinutes;
+    return dir === 'desc' ? -cmp : cmp;
+  }
+  // 날짜 컬럼 (dailyTimes key)
+  if (field.includes('/')) {
+    const va = parseTimeToMinutes(a.dailyTimes[field] ?? '');
+    const vb = parseTimeToMinutes(b.dailyTimes[field] ?? '');
+    const cmp = va - vb;
+    return dir === 'desc' ? -cmp : cmp;
+  }
+  const va = (a[field as keyof StudentStudyRow] as string) ?? '';
+  const vb = (b[field as keyof StudentStudyRow] as string) ?? '';
   const cmp = va.localeCompare(vb);
   return dir === 'desc' ? -cmp : cmp;
 }
@@ -99,6 +122,7 @@ function toRows(data: StudentStudyTime[], startStr: string, endStr: string): Stu
       name: s.studentName,
       seat: s.seatLabel || '-',
       total: s.totalStudyTime,
+      totalMinutes: s.totalMinutes,
       storeId: s.storeId,
       storeName: s.storeName,
       dailyTimes,
@@ -390,12 +414,24 @@ export default function StudyTimeManagement() {
                 <th className={`${styles.sortableCol} ${styles.stickyCol}`} style={{ left: isAdmin ? 390 : 250, width: 80, minWidth: 80, maxWidth: 80 }} onClick={() => handleSort('seat')}>
                   좌석 <SortIcon field="seat" />
                 </th>
-                <th className={`${styles.sortableCol} ${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 100, minWidth: 100, maxWidth: 100 }} onClick={() => handleSort('total')}>
+                <th className={`${styles.sortableCol} ${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 130, minWidth: 130 }} onClick={() => handleSort('total')}>
                   합계 <SortIcon field="total" />
                 </th>
-                {dayHeaders.map((d) => (
-                  <th key={d.toISOString()} style={{ minWidth: 90 }}>{formatDateShort(d)}</th>
-                ))}
+                {dayHeaders.map((d) => {
+                  const dayKey = formatDateShort(d);
+                  return (
+                    <th
+                      key={d.toISOString()}
+                      className={styles.sortableCol}
+                      style={{ minWidth: 110 }}
+                      onClick={() => handleSort(dayKey)}
+                    >
+                      {dayKey} {sort.field === dayKey ? (
+                        sort.dir === 'asc' ? <LuArrowUp className={styles.sortIconActive} /> : <LuArrowDown className={styles.sortIconActive} />
+                      ) : <LuArrowUpDown className={styles.sortIcon} />}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -417,7 +453,7 @@ export default function StudyTimeManagement() {
                     <td className={styles.stickyCol} style={{ left: isAdmin ? 190 : 50, width: 100, minWidth: 100, maxWidth: 100 }}>{row.name}</td>
                     <td className={styles.stickyCol} style={{ left: isAdmin ? 290 : 150, width: 100, minWidth: 100, maxWidth: 100 }}>{row.studentNumber}</td>
                     <td className={styles.stickyCol} style={{ left: isAdmin ? 390 : 250, width: 80, minWidth: 80, maxWidth: 80 }}>{row.seat}</td>
-                    <td className={`${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 100, minWidth: 100, maxWidth: 100 }}>{row.total}</td>
+                    <td className={`${styles.stickyCol} ${styles.stickyColLast}`} style={{ left: isAdmin ? 470 : 330, width: 130, minWidth: 130 }}>{row.total}</td>
                     {dayHeaders.map((d) => {
                       const key = formatDateShort(d);
                       const val = row.dailyTimes[key];

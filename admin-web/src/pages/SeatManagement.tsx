@@ -8,6 +8,8 @@ import {
   LuLayoutGrid,
   LuX,
   LuMapPin,
+  LuPlus,
+  LuMinus,
 } from 'react-icons/lu';
 import seatIcon from '../assets/seat_active.png';
 import printerIcon from '../assets/printer.png';
@@ -137,6 +139,36 @@ export default function SeatManagement() {
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   const panMovedRef = useRef(false);
+
+  /* ── 줌 ── */
+  const [zoom, setZoom] = useState(1);
+  const ZOOM_MIN = 0.3;
+  const ZOOM_MAX = 2;
+  const ZOOM_STEP = 0.1;
+
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(1)));
+  }, []);
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(1)));
+  }, []);
+  const handleZoomReset = useCallback(() => setZoom(1), []);
+
+  // Ctrl + 마우스 휠로 줌
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setZoom((z) => {
+        const next = z + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+        return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +next.toFixed(1)));
+      });
+    };
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, []);
 
   const handlePanStart = useCallback((e: React.MouseEvent) => {
     const container = scrollContainerRef.current;
@@ -737,7 +769,7 @@ export default function SeatManagement() {
   }, [page, totalPages]);
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${view === 'layout' ? styles.pageLayout : ''}`}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>
@@ -758,7 +790,7 @@ export default function SeatManagement() {
 
       {/* ── 배치도 뷰 ── */}
       {view === 'layout' && (
-        <>
+        <div className={styles.layoutView}>
           {/* 필터 */}
           <div className={f.filterCard}>
             <div className={f.filterRow}>
@@ -810,6 +842,11 @@ export default function SeatManagement() {
                 <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
               </div>
               <div className={styles.layoutHeaderActions}>
+                <div className={styles.zoomControls}>
+                  <button type="button" className={styles.zoomBtn} onClick={handleZoomOut} title="축소"><LuMinus /></button>
+                  <button type="button" className={styles.zoomLabel} onClick={handleZoomReset} title="원래 크기">{Math.round(zoom * 100)}%</button>
+                  <button type="button" className={styles.zoomBtn} onClick={handleZoomIn} title="확대"><LuPlus /></button>
+                </div>
                 <button
                   type="button"
                   className={styles.printBtn}
@@ -844,8 +881,17 @@ export default function SeatManagement() {
                 ref={canvasRef}
                 className={styles.seatCanvas}
                 style={{
+                  width: canvasSize.width * zoom,
+                  height: canvasSize.height * zoom,
+                }}
+              >
+              <div
+                className={styles.seatCanvasInner}
+                style={{
                   width: canvasSize.width,
                   height: canvasSize.height,
+                  transform: `scale(${zoom})`,
+                  transformOrigin: '0 0',
                 }}
               >
                 {filteredSeats.map((seat) => {
@@ -883,10 +929,11 @@ export default function SeatManagement() {
                 })}
 
               </div>
+              </div>
             )}
           </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* ── 대기 리스트 뷰 ── */}

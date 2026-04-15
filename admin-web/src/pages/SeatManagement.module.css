@@ -4,6 +4,18 @@
   gap: var(--spacing-md);
 }
 
+.pageLayout {
+  height: calc(100vh - var(--navbar-height) - var(--spacing-lg) * 2);
+  overflow: hidden;
+}
+
+.layoutView {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* ── Page Header ── */
 .pageHeader {
   display: flex;
@@ -154,8 +166,8 @@
   flex-direction: column;
   gap: var(--spacing-md);
   overflow: auto;
-  min-height: auto;
-  max-height: calc(100vh - 260px);
+  flex: 1;
+  min-height: 0;
   position: relative;
   scrollbar-width: none;
 }
@@ -192,6 +204,8 @@
 .layoutWrapper {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .areaTitle {
@@ -245,10 +259,61 @@
   cursor: grabbing;
 }
 
+/* ── Zoom Controls ── */
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.zoomBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  transition: background-color 0.15s;
+}
+
+.zoomBtn:hover {
+  background-color: var(--color-primary-light);
+}
+
+.zoomLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 32px;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.zoomLabel:hover {
+  background-color: var(--color-primary-light);
+}
+
 /* ── Seat Canvas (xPos/yPos 기반) ── */
 .seatCanvas {
   position: relative;
-  min-width: min-content;
+}
+
+.seatCanvasInner {
+  position: relative;
 }
 
 .seatCanvasPlacing {
