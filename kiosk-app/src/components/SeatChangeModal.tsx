@@ -354,7 +354,7 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
                 else if (occupied) cellClass += ` ${styles.seatOccupied}`;
                 else cellClass += ` ${styles.seatEmpty}`;
 
-                const canSelect = !current && availability?.available;
+                const canSelect = !current;
 
                 return (
                   <button
