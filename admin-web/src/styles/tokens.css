@@ -3,8 +3,8 @@
   --color-sidebar-bg: #ffffff;
   --color-sidebar-text: #999999;
   --color-sidebar-text-active: #000000;
-  --color-sidebar-hover: #f3f4f6;
-  --color-sidebar-active-bg: #F6F7FB;
+  --color-sidebar-hover: #e8e9f0;
+  --color-sidebar-active-bg: #E2E4EE;
   --color-sidebar-logo: #1a1a2e;
   --color-sidebar-sub-text: #6b7280;
 
@@ -14,12 +14,12 @@
   --color-excel: #004F2F;
 
   /* Colors - Background */
-  --color-bg-page: #F2F3F8;
+  --color-bg-page: #ECEDF3;
   --color-bg-card: #ffffff;
   --color-bg-navbar: #ffffff;
-  --color-bg-muted: #f5f5f5;
-  --color-bg-search: #F6F7F8;
-  --color-bg-tab: #E5E5EC;
+  --color-bg-muted: #eef0f2;
+  --color-bg-search: #eef0f3;
+  --color-bg-tab: #D8D9E2;
   /* --color-hover:#F2F3F8; */
 
   /* Colors - Text */
@@ -29,8 +29,8 @@
   --color-text-print: #1E1E1E;
 
   /* Colors - Border */
-  --color-border: #e5e7eb;
-  --color-border-light: #f0f0f0;
+  --color-border: #d1d5db;
+  --color-border-light: #e2e4e8;
 
   /* Colors - Status */
   --color-success: #22c55e;
@@ -63,9 +63,9 @@
   --radius-full: 9999px;
 
   /* Shadow */
-  --shadow-sm: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 0.25rem 1rem rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.13);
+  --shadow-lg: 0 0.25rem 1rem rgba(0, 0, 0, 0.16);
 
   /* Font */
   --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
