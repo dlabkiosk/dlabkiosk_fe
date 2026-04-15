@@ -4,6 +4,17 @@ import type { KioskSession } from '../api/kioskAuthApi';
 import styles from './KioskAdminPanel.module.css';
 
 const PIN_LENGTH = 4;
+const RESOLUTION_KEY = 'kiosk-resolution';
+type Resolution = 'FHD' | '4K';
+
+function getResolution(): Resolution {
+  return (localStorage.getItem(RESOLUTION_KEY) as Resolution) ?? 'FHD';
+}
+
+function setResolution(res: Resolution) {
+  localStorage.setItem(RESOLUTION_KEY, res);
+  document.documentElement.style.zoom = res === '4K' ? '2' : '1';
+}
 
 interface KioskAdminPanelProps {
   connected: boolean;
@@ -19,6 +30,13 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resolution, setResolutionState] = useState<Resolution>(getResolution);
+
+  const handleResolutionToggle = () => {
+    const next: Resolution = resolution === 'FHD' ? '4K' : 'FHD';
+    setResolution(next);
+    setResolutionState(next);
+  };
 
   const handleKeyPress = (key: string) => {
     if (loading) return;
@@ -126,6 +144,13 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>QR스캐너</span>
             <span className={styles.infoBadgeActive}>자동 감지</span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>해상도</span>
+            <button type="button" className={styles.resolutionToggle} onClick={handleResolutionToggle}>
+              <span className={`${styles.resolutionOption} ${resolution === 'FHD' ? styles.resolutionActive : ''}`}>FHD</span>
+              <span className={`${styles.resolutionOption} ${resolution === '4K' ? styles.resolutionActive : ''}`}>4K</span>
+            </button>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LuPin } from 'react-icons/lu';
+import { LuPin, LuCirclePlus } from 'react-icons/lu';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
 import { getNoticeCategories } from '../api/noticeCategoryApi';
@@ -9,7 +9,6 @@ import {
   VOICE_NOTICE_DETAIL,
   VOICE_BACK_TO_MAIN,
 } from '../constants/voiceGuide';
-import plusButtonIcon from '../assets/plus-button.png';
 import styles from './NoticeSection.module.css';
 
 const DEFAULT_COUNT = 3;
@@ -119,13 +118,12 @@ export default function NoticeSection() {
     <section className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>공지사항</h2>
-        <img
-          src={plusButtonIcon}
-          alt="공지사항 더보기"
+        <LuCirclePlus
           className={styles.moreIcon}
           onClick={openModal}
           role="button"
           tabIndex={0}
+          aria-label="공지사항 더보기"
         />
       </div>
       <ul className={styles.list}>
@@ -203,7 +201,7 @@ export default function NoticeSection() {
               </div>
 
               {filteredNotices.length === 0 ? (
-                <p className={styles.emptyText}>해당하는 공지가 없습니다.</p>
+                <p className={styles.emptyText}>등록된 공지가 없습니다.</p>
               ) : (
                 <ul className={styles.modalList}>
                   {pagedNotices.map((n) => renderNoticeItem(n))}

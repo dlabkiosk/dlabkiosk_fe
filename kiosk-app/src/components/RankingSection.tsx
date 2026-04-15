@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getStudyRankings, getAllStoreRankings } from '../api/rankingApi';
 import type { DsaRankingItem, AllStoreRankingItem } from '../api/rankingApi';
-import plusButtonIcon from '../assets/plus-button.png';
+import { LuCirclePlus } from 'react-icons/lu';
 import ranking1stIcon from '../assets/ranking_1st.png';
 import ranking2ndIcon from '../assets/ranking_2nd.png';
 import ranking3rdIcon from '../assets/ranking_3rd.png';
@@ -128,13 +128,12 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
       <section className={styles.container}>
         <div className={styles.header}>
           <h2 className={styles.title}>순공 랭킹</h2>
-          <img
-            src={plusButtonIcon}
-            alt="순공 랭킹 더보기"
+          <LuCirclePlus
             className={styles.moreIcon}
             onClick={openModal}
             role="button"
             tabIndex={0}
+            aria-label="순공 랭킹 더보기"
           />
         </div>
 

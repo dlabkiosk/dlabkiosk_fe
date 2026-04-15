@@ -243,6 +243,30 @@
   cursor: default;
 } */
 
+/* ── 해상도 토글 ── */
+.resolutionToggle {
+  display: flex;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-gray);
+  cursor: pointer;
+  padding: 0;
+}
+
+.resolutionOption {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.resolutionActive {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .errorText {
   font-size: 0.6875rem;
   color: var(--color-error);
