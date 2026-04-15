@@ -837,16 +837,16 @@ export default function SeatManagement() {
           {/* 배치도 */}
           <div className={styles.layoutWrapper}>
             <div className={styles.layoutHeader}>
+              <div className={styles.zoomControls}>
+                <button type="button" className={styles.zoomBtn} onClick={handleZoomOut} title="축소"><LuMinus /></button>
+                <button type="button" className={styles.zoomLabel} onClick={handleZoomReset} title="원래 크기">{Math.round(zoom * 100)}%</button>
+                <button type="button" className={styles.zoomBtn} onClick={handleZoomIn} title="확대"><LuPlus /></button>
+              </div>
               <div className={styles.areaTitle}>
                 배정인원 : {occupiedCount}명
                 <span className={styles.areaSummary}>(여석 {vacantCount}석)</span>
               </div>
               <div className={styles.layoutHeaderActions}>
-                <div className={styles.zoomControls}>
-                  <button type="button" className={styles.zoomBtn} onClick={handleZoomOut} title="축소"><LuMinus /></button>
-                  <button type="button" className={styles.zoomLabel} onClick={handleZoomReset} title="원래 크기">{Math.round(zoom * 100)}%</button>
-                  <button type="button" className={styles.zoomBtn} onClick={handleZoomIn} title="확대"><LuPlus /></button>
-                </div>
                 <button
                   type="button"
                   className={styles.printBtn}
