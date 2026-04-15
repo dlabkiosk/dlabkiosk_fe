@@ -7,7 +7,7 @@ interface ConfirmOptions {
 }
 
 interface ConfirmState {
-  message: string;
+  message: React.ReactNode;
   resolve: (value: boolean) => void;
   options?: ConfirmOptions;
 }
@@ -23,7 +23,7 @@ export default function useConfirm() {
   const [promptState, setPromptState] = useState<PromptState | null>(null);
 
   const confirm = useCallback(
-    (message: string, options?: ConfirmOptions): Promise<boolean> =>
+    (message: React.ReactNode, options?: ConfirmOptions): Promise<boolean> =>
       new Promise((resolve) => {
         setState({ message, resolve, options });
       }),
@@ -42,7 +42,7 @@ export default function useConfirm() {
 
   /** alert 대체 (확인 버튼만 표시) */
   const alert = useCallback(
-    (message: string): Promise<boolean> =>
+    (message: React.ReactNode): Promise<boolean> =>
       new Promise((resolve) => {
         setState({ message, resolve, options: { cancelLabel: '' } });
       }),

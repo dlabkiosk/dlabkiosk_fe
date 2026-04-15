@@ -12,7 +12,8 @@
   background: #fff;
   border-radius: var(--radius-lg);
   padding: var(--spacing-xl);
-  width: var(--size-modal-xs);
+  min-width: var(--size-modal-xs);
+  width: max-content;
   max-width: 90vw;
 }
 

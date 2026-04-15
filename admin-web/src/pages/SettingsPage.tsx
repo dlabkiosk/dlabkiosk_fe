@@ -2869,6 +2869,8 @@ function StudentMessageSettings() {
     return () => window.removeEventListener('openStudentMessageModal', handler);
   }, [isAdmin]);
 
+  const MAX_MESSAGES_PER_STUDENT = 5;
+
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   const resetForm = () => {
@@ -2883,8 +2885,6 @@ function StudentMessageSettings() {
   const openAdd = () => {
     resetForm();
     setModalStoreId(selectedStoreId);
-    // 현재 선택된 학생이 있으면 미리 체크
-    if (selectedStudentId) setModalStudentIds([selectedStudentId]);
     setShowModal(true);
     // 템플릿 관리에서 새로 등록한 항목이 바로 반영되도록 모달 열 때 재조회
     getMessageTemplates().then(setAllMsgTemplates).catch(() => {});
@@ -2958,6 +2958,28 @@ function StudentMessageSettings() {
     if (!selectedTemplate && !formContent.trim()) {
       await alert('템플릿을 선택하거나 커스텀 메시지를 입력해주세요.');
       return;
+    }
+    // 신규 등록 시 학생별 메시지 5개 제한 체크
+    if (!editTarget) {
+      const overLimitNames: string[] = [];
+      for (const sid of modalStudentIds) {
+        try {
+          const msgs = await getStudentMessages(sid);
+          if (msgs.length >= MAX_MESSAGES_PER_STUDENT) {
+            const st = allStudents.find((s) => s.id === sid);
+            overLimitNames.push(st?.name ?? `학생(${sid})`);
+          }
+        } catch { /* 조회 실패 시 건너뜀 */ }
+      }
+      if (overLimitNames.length > 0) {
+        await alert(
+          <>
+            <div>다음 학생은 이미 메시지가 {MAX_MESSAGES_PER_STUDENT}개 등록되어 더 이상 추가할 수 없습니다.</div>
+            <div style={{ marginTop: 12, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>{overLimitNames.join(', ')}</div>
+          </>
+        );
+        return;
+      }
     }
     try {
       if (editTarget) {
@@ -3065,8 +3087,16 @@ function StudentMessageSettings() {
                   <div className={styles.msgContentHeader}>
                     <span className={styles.msgContentTitle}>
                       {selectedStudent?.name} ({selectedStudent?.studentNumber})
+                      <span style={{ marginLeft: 8, fontSize: 'var(--font-size-sm)', fontWeight: 400, color: messages.length >= MAX_MESSAGES_PER_STUDENT ? '#dc2626' : 'var(--color-text-muted)' }}>
+                        {messages.length} / {MAX_MESSAGES_PER_STUDENT}개
+                      </span>
                     </span>
                   </div>
+                  {messages.length >= MAX_MESSAGES_PER_STUDENT && (
+                    <p style={{ margin: 0, padding: '6px 12px', fontSize: 'var(--font-size-sm)', color: '#dc2626', backgroundColor: '#fef2f2', borderRadius: 'var(--radius-sm)' }}>
+                      메시지는 학생당 최대 {MAX_MESSAGES_PER_STUDENT}개까지 등록할 수 있습니다. 추가 등록을 원하시면 기존 메시지를 삭제해주세요.
+                    </p>
+                  )}
 
                   {msgLoading ? (
                     <p className={styles.placeholderText}>로딩 중...</p>
