@@ -92,6 +92,11 @@ export default function NoticeSettingsModal({ isAdmin, stores = [], onClose, onS
   };
 
   const handleSave = async () => {
+    if (categories.length === 0) {
+      onSave();
+      onClose();
+      return;
+    }
     setSaving(true);
     setError('');
     try {
