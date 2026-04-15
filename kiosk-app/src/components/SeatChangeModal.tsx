@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getSeatAreas, getSeats } from '../api/seatApi';
 import type { SeatArea, SeatInfo } from '../api/seatApi';
-import { submitSeatChangeRequest, getAvailableSeats, getMySeatChangeRequest, cancelSeatChangeRequest } from '../api/seatChangeApi';
-import type { AvailableSeat, MySeatChangeRequest } from '../api/seatChangeApi';
+import { submitSeatChangeRequest, getMySeatChangeRequest, cancelSeatChangeRequest } from '../api/seatChangeApi';
+import type { MySeatChangeRequest } from '../api/seatChangeApi';
 import type { Student } from '../data/mockStudents';
 import styles from './SeatChangeModal.module.css';
 
@@ -30,7 +30,6 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
   const [areas, setAreas] = useState<SeatArea[]>([]);
   const [selectedAreaCd, setSelectedAreaCd] = useState<string>('');
   const [seats, setSeats] = useState<SeatInfo[]>([]);
-  const [availabilityMap, setAvailabilityMap] = useState<Map<string, AvailableSeat>>(new Map());
   const [loading, setLoading] = useState(true);
   const [seatsLoading, setSeatsLoading] = useState(false);
   // 선택 좌석 (seatId + seatLabel 한 쌍으로 관리)
@@ -51,15 +50,11 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
     Promise.all([
       getMySeatChangeRequest(identifier, inputMethod),
       getSeatAreas(),
-      getAvailableSeats(),
     ])
-      .then(([myRequest, areaList, available]) => {
+      .then(([myRequest, areaList]) => {
         setExistingRequest(myRequest);
         setAreas(areaList);
         if (areaList.length > 0) setSelectedAreaCd(areaList[0].areaCd);
-        const map = new Map<string, AvailableSeat>();
-        for (const seat of available) map.set(seat.seatLabel, seat);
-        setAvailabilityMap(map);
       })
       .catch(() => setErrorMessage('좌석 정보를 불러올 수 없습니다.'))
       .finally(() => setLoading(false));
@@ -342,7 +337,6 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
             >
               {activeSeats.map((seat: SeatInfo) => {
                 const current = isCurrentSeat(seat.seatNm);
-                const availability = availabilityMap.get(seat.seatNm);
                 const seatCd = seat.seatCd;
                 const selected = selectedSeatCds.includes(seatCd);
                 const selectionIdx = selectedSeatCds.indexOf(seatCd);
