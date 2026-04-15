@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAdvertisements } from '../api/advertisementApi';
 import type { Advertisement } from '../api/advertisementApi';
-// import adBannerFallback from '../assets/ad_banner.png';
+import logoImg from '../assets/logo.png';
 import styles from './AdBanner.module.css';
 
 const FETCH_INTERVAL_MS = 5 * 60 * 1000; // 5분마다 목록 갱신
@@ -44,18 +44,18 @@ export default function AdBanner() {
     };
   }, [ads, currentIdx]);
 
-  // 광고가 없으면 기본 이미지 표시
-  // if (ads.length === 0) {
-  //   return (
-  //     <section className={styles.container}>
-  //       <img src={adBannerFallback} alt="광고 배너" className={styles.image} />
-  //     </section>
-  //   );
-  // }
-
   const current = ads[currentIdx];
 
-  if (!current) return null;
+  // 광고가 없으면 로고가 있는 빈 배너 영역 표시
+  if (!current) {
+    return (
+      <section className={styles.container}>
+        <div className={styles.emptyBanner}>
+          <img src={logoImg} alt="로고" className={styles.emptyLogo} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.container}>
