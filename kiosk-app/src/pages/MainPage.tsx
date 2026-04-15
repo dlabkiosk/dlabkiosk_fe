@@ -117,19 +117,35 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   const lastAutoTagCardTime = useRef<number>(0);
   const lastAutoTagQrTime = useRef<number>(0);
 
-  useEffect(() => {
-    if (scanResult && scanResult.receivedAt.getTime() !== lastAutoTagCardTime.current && !isAnyModalOpenRef.current) {
-      lastAutoTagCardTime.current = scanResult.receivedAt.getTime();
-      setScanTarget({ actionId: 'tag', label: '출결' });
-    }
-  }, [scanResult]);
+  // 다른 모달이 열려있을 때 스캔이 들어오면 모달을 닫고 출결 처리
+  // scanTarget(CardScanModal)과 showAdmin(어드민패널)은 제외
+  const closeOtherModals = useCallback(() => {
+    setShowRemoteApply(false);
+    setShowSeatLeaveReason(false);
+    setShowMealPlan(false);
+    setShowSeatMap(false);
+    setPhoneSubmissionStudent(null);
+    setSeatChangeStudent(null);
+    setStudentInfoTarget(null);
+  }, []);
 
   useEffect(() => {
-    if (qrResult && qrResult.receivedAt.getTime() !== lastAutoTagQrTime.current && !isAnyModalOpenRef.current) {
-      lastAutoTagQrTime.current = qrResult.receivedAt.getTime();
+    if (scanResult && scanResult.receivedAt.getTime() !== lastAutoTagCardTime.current) {
+      if (scanTarget || showAdmin) return; // CardScanModal 내부에서 처리 / 어드민 패널은 유지
+      lastAutoTagCardTime.current = scanResult.receivedAt.getTime();
+      closeOtherModals();
       setScanTarget({ actionId: 'tag', label: '출결' });
     }
-  }, [qrResult]);
+  }, [scanResult, scanTarget, showAdmin, closeOtherModals]);
+
+  useEffect(() => {
+    if (qrResult && qrResult.receivedAt.getTime() !== lastAutoTagQrTime.current) {
+      if (scanTarget || showAdmin) return; // CardScanModal 내부에서 처리 / 어드민 패널은 유지
+      lastAutoTagQrTime.current = qrResult.receivedAt.getTime();
+      closeOtherModals();
+      setScanTarget({ actionId: 'tag', label: '출결' });
+    }
+  }, [qrResult, scanTarget, showAdmin, closeOtherModals]);
 
   const handleMenuClick = (menuId: string) => {
     if (menuId === 'seat-leave') {
