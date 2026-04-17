@@ -373,15 +373,14 @@
 }
 
 .checkInInputBadge {
-  background-color: #e0f2f1;
-  color: #00796b;
-  /* border: 1px solid #00796b; */
+  background-color: #fdecea;
+  color: #d32f2f;
   font-family: inherit;
   cursor: pointer;
 }
 
 .checkInInputBadge:hover {
-  background-color: #b2dfdb;
+  background-color: #fbd9d5;
 }
 
 .checkInPlus {

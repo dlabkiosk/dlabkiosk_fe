@@ -20,7 +20,7 @@ import FilterSelect from '../components/FilterSelect';
 
 /* ── 출결 상태 ── */
 
-const STATUS_OPTIONS = ['전체', '등원', '미출석', '외출', '하원', '공석', '미확인', '좌석이탈'];
+const STATUS_OPTIONS = ['전체', '등원', '미출석', '외출', '하원', '좌석이탈'];
 const PHONE_OPTIONS = ['전체', 'O', 'X'];
 
 const ITEMS_PER_PAGE = 15;
