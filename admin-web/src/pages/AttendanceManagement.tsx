@@ -7,7 +7,7 @@ import {
 import attendanceIcon from '../assets/attendance_active.png';
 import downloadIcon from '../assets/download.png';
 import qrDownloadIcon from '../assets/qr_download.png';
-import { getAttendances } from '../api/attendanceApi';
+import { getAttendances, updateCheckInTime } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { downloadStudentQr, downloadStudentsQrBulk } from '../api/studentApi';
@@ -27,7 +27,7 @@ const ITEMS_PER_PAGE = 15;
 
 /* ── 정렬 ── */
 
-type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'attendanceStatus' | 'phoneSubmitted';
+type SortField = 'studentName' | 'studentNumber' | 'seatLabel' | 'attendanceStatus' | 'checkedInAt' | 'phoneSubmitted';
 type SortDir = 'asc' | 'desc';
 
 interface SortState {
@@ -42,6 +42,9 @@ function compareRows(a: AttendanceRecord, b: AttendanceRecord, field: SortField,
   if (field === 'phoneSubmitted') {
     va = a.phoneSubmitted ? 'O' : 'X';
     vb = b.phoneSubmitted ? 'O' : 'X';
+  } else if (field === 'checkedInAt') {
+    va = a.checkedInAt ?? '';
+    vb = b.checkedInAt ?? '';
   } else {
     va = a[field] ?? '';
     vb = b[field] ?? '';
@@ -53,11 +56,21 @@ function compareRows(a: AttendanceRecord, b: AttendanceRecord, field: SortField,
 
 /* ── CSV 다운로드 ── */
 
+function formatCheckInAt(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 function downloadCsv(rows: AttendanceRecord[]) {
-  const header = '이름,학번,좌석,출결현황,휴대폰 미소지';
+  const header = '이름,학번,좌석,출결현황,등원시각,휴대폰 미소지';
   const lines = rows.map((r) => {
     const phone = r.phoneSubmitted ? 'O' : 'X';
-    return `${r.studentName},${r.studentNumber},${r.seatLabel ?? ''},${r.attendanceStatus ?? ''},${phone}`;
+    const checkIn = formatCheckInAt(r.checkedInAt);
+    return `${r.studentName},${r.studentNumber},${r.seatLabel ?? ''},${r.attendanceStatus ?? ''},${checkIn},${phone}`;
   });
 
   const bom = '\uFEFF';
@@ -97,6 +110,11 @@ export default function AttendanceManagement() {
   const [qrStudent, setQrStudent] = useState<{ studentId: number; studentName: string; studentNumber: string; storeName: string } | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
+
+  /* 등원시각 수정 모달 */
+  const [editTarget, setEditTarget] = useState<AttendanceRecord | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   /* API 데이터 */
   const [rows, setRows] = useState<AttendanceRecord[]>([]);
@@ -326,6 +344,77 @@ export default function AttendanceManagement() {
     link.click();
   };
 
+  /** ISO → time input용 HH:mm (로컬 시각 기준). 값 없으면 현재 시각. */
+  const toTimeInputValue = (iso: string | null): string => {
+    const d = iso ? new Date(iso) : new Date();
+    if (Number.isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  /** 오늘 날짜(YYYY-MM-DD, 로컬 기준) */
+  const todayDateStr = (): string => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const MM = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${MM}-${dd}`;
+  };
+
+  /** HH:mm(24h) → { period: '오전'|'오후', hour12: '01'..'12', minute: '00'..'59' } */
+  const parseTimeParts = (hhmm: string) => {
+    const [h, m] = hhmm.split(':');
+    const H = Number(h);
+    const period = H < 12 ? '오전' : '오후';
+    const h12 = H % 12 === 0 ? 12 : H % 12;
+    return {
+      period,
+      hour12: String(h12).padStart(2, '0'),
+      minute: (m ?? '00').padStart(2, '0'),
+    };
+  };
+
+  /** { period, hour12, minute } → HH:mm(24h) */
+  const composeTime = (period: string, hour12: string, minute: string): string => {
+    const h12 = Number(hour12);
+    let H = h12 % 12;
+    if (period === '오후') H += 12;
+    return `${String(H).padStart(2, '0')}:${minute}`;
+  };
+
+  const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  const openEditModal = (row: AttendanceRecord) => {
+    setEditTarget(row);
+    setEditValue(toTimeInputValue(row.checkedInAt));
+  };
+
+  const closeEditModal = () => {
+    if (editSaving) return;
+    setEditTarget(null);
+    setEditValue('');
+  };
+
+  const handleEditSave = async () => {
+    if (!editTarget || !editValue) return;
+    setEditSaving(true);
+    try {
+      // 오늘 날짜 + 선택 시각 → LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+      const checkInAt = `${todayDateStr()}T${editValue}:00`;
+      await updateCheckInTime(editTarget.studentId, checkInAt);
+      setEditTarget(null);
+      setEditValue('');
+      await fetchData();
+    } catch (err) {
+      console.error('[updateCheckInTime] 실패', err);
+      alert('등원시각 수정에 실패했습니다.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const handleQrPrint = () => {
     if (!qrUrl) return;
     const win = window.open('', '_blank');
@@ -470,6 +559,9 @@ export default function AttendanceManagement() {
               <th className={styles.sortableCol} onClick={() => handleSort('attendanceStatus')}>
                 출결현황 <SortIcon field="attendanceStatus" />
               </th>
+              <th className={styles.sortableCol} onClick={() => handleSort('checkedInAt')}>
+                등원시각 <SortIcon field="checkedInAt" />
+              </th>
               <th className={styles.sortableCol} onClick={() => handleSort('phoneSubmitted')}>
                 휴대폰 미소지 <SortIcon field="phoneSubmitted" />
               </th>
@@ -478,11 +570,11 @@ export default function AttendanceManagement() {
           <tbody>
             {loading ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 7 : 6}>로딩 중...</td>
+                <td colSpan={isAdmin ? 8 : 7}>로딩 중...</td>
               </tr>
             ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
-                <td colSpan={isAdmin ? 7 : 6}>출결 내역이 없습니다.</td>
+                <td colSpan={isAdmin ? 8 : 7}>출결 내역이 없습니다.</td>
               </tr>
             ) : (
               pagedData.map((row) => (
@@ -503,6 +595,31 @@ export default function AttendanceManagement() {
                       <span className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}>
                         {row.attendanceStatus}
                       </span>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    {['등원', '외출', '하원', '좌석이탈'].includes(row.attendanceStatus) ? (
+                      row.checkedInAt ? (
+                        <button
+                          type="button"
+                          className={`${styles.statusBadge} ${styles.checkInTimeBadge}`}
+                          onClick={() => openEditModal(row)}
+                          title="등원시각 수정"
+                        >
+                          {formatCheckInAt(row.checkedInAt)}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`${styles.statusBadge} ${styles.checkInInputBadge}`}
+                          onClick={() => openEditModal(row)}
+                          title="등원시각 입력 (DSA 수기 등원)"
+                        >
+                          <span className={styles.checkInPlus}>+</span> 시각 입력
+                        </button>
+                      )
                     ) : (
                       '-'
                     )}
@@ -572,6 +689,63 @@ export default function AttendanceManagement() {
             <div className={styles.modalActions}>
               <button type="button" className={styles.btnSecondary} onClick={handleQrPrint} disabled={!qrUrl}>인쇄</button>
               <button type="button" className={styles.btnPrimary} onClick={handleQrDownload} disabled={!qrUrl}>다운로드</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 등원시각 수정 모달 */}
+      {editTarget && (
+        <div className={styles.overlay} onClick={closeEditModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeEditModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>등원시각 수정</h3>
+
+            <div className={styles.qrInfo}>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>이름</span><span>{editTarget.studentName}</span></p>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>학번</span><span>{editTarget.studentNumber}</span></p>
+              <p className={styles.qrInfoRow}>
+                <span className={styles.qrLabel}>현재 등원시각</span>
+                <span>{editTarget.checkedInAt ? formatCheckInAt(editTarget.checkedInAt) : '미입력 (DSA 수기 등원)'}</span>
+              </p>
+            </div>
+
+            <div className={styles.editField}>
+              <label className={styles.editLabel}>
+                등원시각 <span className={styles.editHint}>(오늘 {todayDateStr()})</span>
+              </label>
+              <div className={styles.timePickerRow}>
+                {(() => {
+                  const { period, hour12, minute } = parseTimeParts(editValue || '00:00');
+                  return (
+                    <>
+                      <FilterSelect
+                        value={period}
+                        options={['오전', '오후']}
+                        onChange={(v) => setEditValue(composeTime(v, hour12, minute))}
+                      />
+                      <FilterSelect
+                        value={hour12}
+                        options={HOUR_OPTIONS}
+                        onChange={(v) => setEditValue(composeTime(period, v, minute))}
+                      />
+                      <span className={styles.timeColon}>:</span>
+                      <FilterSelect
+                        value={minute}
+                        options={MINUTE_OPTIONS}
+                        onChange={(v) => setEditValue(composeTime(period, hour12, v))}
+                      />
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnSecondary} onClick={closeEditModal} disabled={editSaving}>취소</button>
+              <button type="button" className={styles.btnPrimary} onClick={handleEditSave} disabled={editSaving || !editValue}>
+                {editSaving ? '저장 중...' : '저장'}
+              </button>
             </div>
           </div>
         </div>

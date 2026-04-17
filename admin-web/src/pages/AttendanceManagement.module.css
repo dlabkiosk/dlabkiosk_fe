@@ -357,3 +357,86 @@
   padding: var(--spacing-xl) !important;
   color: var(--color-text-muted);
 }
+
+/* 등원시각 배지 — 청록 계열 (실선: 입력됨 / 점선: 입력 필요).
+   .statusBadge와 크기·폰트 동일, 버튼이라 font-family만 상속시킴. */
+.checkInTimeBadge {
+  background-color: #e0f2f1;
+  color: #00796b;
+  /* border: 1px solid #00796b; */
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.checkInTimeBadge:hover {
+  background-color: #b2dfdb;
+}
+
+.checkInInputBadge {
+  background-color: #e0f2f1;
+  color: #00796b;
+  /* border: 1px solid #00796b; */
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.checkInInputBadge:hover {
+  background-color: #b2dfdb;
+}
+
+.checkInPlus {
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+/* 등원시각 수정 모달 입력 필드 — 필터 input 스타일 톤 맞춤 */
+.editField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: var(--spacing-md) 0;
+}
+
+.editLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.editHint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  margin-left: var(--spacing-xs);
+}
+
+/* 시각 선택 FilterSelect 3개 정렬 */
+.timePickerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: nowrap;
+}
+
+/* 모달 폭 안에 맞추려고 FilterSelect 내부 button/ul 폭 축소 */
+.timePickerRow > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.timePickerRow > div > button {
+  width: 100%;
+  padding-right: calc(var(--spacing-lg) + var(--spacing-xs));
+}
+
+.timePickerRow > div > ul {
+  width: 100%;
+  min-width: 4.5rem;
+}
+
+.timeColon {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  padding: 0 var(--spacing-xxs, 2px);
+  flex: 0 0 auto;
+}

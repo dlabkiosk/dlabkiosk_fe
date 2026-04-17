@@ -1,4 +1,4 @@
-import { apiGet } from './client';
+import { apiGet, apiPut } from './client';
 
 /* ── 타입 ── */
 
@@ -8,6 +8,9 @@ export interface AttendanceRecord {
   studentNumber: string;
   seatLabel: string;
   attendanceStatus: string;
+  /** 우리 시스템 등원 처리 시각. null이면 DSA에서 직접 처리된 케이스 */
+  checkedInAt: string | null;
+  late: boolean;
   phoneSubmitted: boolean;
   /** 프론트에서 ADMIN 전체 조회 시 주입 */
   storeName?: string;
@@ -38,4 +41,12 @@ export function getAttendances(params?: AttendanceParams): Promise<AttendanceRec
 
   const qs = query.toString();
   return apiGet<AttendanceRecord[]>(`/api/v1/admin/attendances${qs ? `?${qs}` : ''}`);
+}
+
+/**
+ * 이미 등원 처리된 학생의 등원 시각을 수정합니다. 순공시간 보정용.
+ * @param checkInAt ISO LocalDateTime 문자열 (예: 2026-04-17T08:30:00)
+ */
+export function updateCheckInTime(studentId: number, checkInAt: string): Promise<string> {
+  return apiPut<string>('/api/v1/admin/attendances/check-in-time', { studentId, checkInAt });
 }
