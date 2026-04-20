@@ -91,6 +91,14 @@ export default function BranchDetailPage() {
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate('/settings?tab=지점 정보')}
+            aria-label="뒤로가기"
+          >
+            <LuArrowLeft />
+          </button>
           <div className={styles.pageTitleGroup}>
             <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
             <h2 className={styles.pageTitle}>설정</h2>
@@ -109,6 +117,14 @@ export default function BranchDetailPage() {
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate('/settings?tab=지점 정보')}
+            aria-label="뒤로가기"
+          >
+            <LuArrowLeft />
+          </button>
           <div className={styles.pageTitleGroup}>
             <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
             <h2 className={styles.pageTitle}>설정</h2>
@@ -128,21 +144,19 @@ export default function BranchDetailPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate('/settings?tab=지점 정보')}
+          aria-label="뒤로가기"
+        >
+          <LuArrowLeft />
+        </button>
         <div className={styles.pageTitleGroup}>
           <img src={settingIcon} alt="" className={styles.pageTitleIcon} />
           <h2 className={styles.pageTitle}>설정</h2>
         </div>
       </div>
-
-      {/* 뒤로가기 */}
-      <button
-        type="button"
-        className={styles.tabBtn}
-        onClick={() => navigate('/settings?tab=지점 정보')}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-      >
-        <LuArrowLeft /> 뒤로가기
-      </button>
 
       <div className={styles.section}>
         <div className={styles.sectionHeader}>

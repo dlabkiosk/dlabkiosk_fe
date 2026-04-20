@@ -1617,6 +1617,23 @@ function SeatLeaveReasonSettings() {
     if (!(await confirm('이 사유를 삭제하시겠습니까?'))) return;
     try {
       await deleteSeatLeaveReason(id);
+
+      // 남은 사유들의 displayOrder를 1부터 연속되도록 재정렬
+      const remaining = reasons
+        .filter((r) => r.id !== id)
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+      const renumberPromises = remaining
+        .map((r, i) => ({ ...r, newOrder: i + 1 }))
+        .filter((r) => r.newOrder !== r.displayOrder)
+        .map((r) => updateSeatLeaveReason(r.id, {
+          reasonName: r.reasonName,
+          displayOrder: r.newOrder,
+          active: r.active,
+        }));
+      if (renumberPromises.length > 0) {
+        await Promise.all(renumberPromises);
+      }
+
       await fetchReasons();
     } catch (err) {
       await alert('삭제에 실패했습니다.');
