@@ -133,7 +133,14 @@ export default function KioskAdminPanel({ connected, error, session, onConnect, 
           <div className={styles.infoRow}>
             <span className={styles.infoLabel}>카드리더기</span>
             {connected ? (
-              <span className={styles.infoBadgeActive}>연결 완료</span>
+              <button
+                type="button"
+                className={`${styles.infoBadgeActive} ${styles.infoBadgeActiveButton}`}
+                onClick={onConnect}
+                title="다시 연결"
+              >
+                연결 완료
+              </button>
             ) : (
               <button type="button" className={styles.infoBadgeButton} onClick={onConnect}>
                 카드리더기 연결하기

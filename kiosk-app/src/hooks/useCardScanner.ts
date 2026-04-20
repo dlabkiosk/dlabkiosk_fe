@@ -6,6 +6,26 @@ export interface CardScanResult {
   receivedAt: Date;
 }
 
+/** Web Serial API의 영문 에러 메시지를 한글로 변환 */
+function toKoreanError(msg: string): string {
+  if (msg.includes('Failed to open serial port')) {
+    return '카드리더기를 연결할 수 없습니다. 다른 프로그램에서 사용 중이거나 장치가 분리된 상태일 수 있습니다.';
+  }
+  if (msg.includes('The port is already open')) {
+    return '이미 카드리더기가 연결되어 있습니다.';
+  }
+  if (msg.includes('The device has been lost') || msg.includes('device has been lost')) {
+    return '카드리더기 연결이 끊어졌습니다. 장치를 다시 연결해주세요.';
+  }
+  if (msg.includes('NetworkError') || msg.includes('Access denied')) {
+    return '카드리더기에 접근할 수 없습니다. 장치 권한을 확인해주세요.';
+  }
+  if (msg.includes('NotFoundError')) {
+    return '카드리더기를 찾을 수 없습니다.';
+  }
+  return '카드리더기 연결 중 오류가 발생했습니다.';
+}
+
 /**
  * Web Serial API를 사용한 카드리더기 입력 수신 훅
  *
@@ -86,12 +106,12 @@ export function useCardScanner(
       if (runningRef.current) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[useCardScanner] 읽기 에러:', msg);
-        setError(msg);
+        setError(toKoreanError(msg));
       }
     }
   }, [debounceMs]);
 
-  /** 포트 연결 (사용자 제스처 필요) */
+  /** 포트 연결 (사용자 제스처 필요). 이미 연결된 상태면 정리 후 재연결. */
   const connect = useCallback(async () => {
     if (!('serial' in navigator)) {
       setError('이 브라우저는 Web Serial API를 지원하지 않습니다. Chrome을 사용해주세요.');
@@ -100,6 +120,27 @@ export function useCardScanner(
 
     try {
       setError(null);
+
+      // 1) 현재 훅이 잡고 있는 포트/리더 정리
+      if (portRef.current || readerRef.current) {
+        console.log('[useCardScanner] 기존 포트 정리 중...');
+        runningRef.current = false;
+        try { await readerRef.current?.cancel(); } catch { /* noop */ }
+        try { await portRef.current?.close(); } catch { /* noop */ }
+        readerRef.current = null;
+        portRef.current = null;
+        setConnected(false);
+      }
+
+      // 2) 로그아웃/재마운트로 훅은 새로 만들어졌지만 브라우저 레벨에서 이미 열린
+      //    포트(이전 세션에서 close 미완료된 포트)가 남아있는 경우까지 정리
+      try {
+        const existing = await navigator.serial.getPorts();
+        for (const p of existing) {
+          try { await p.close(); } catch { /* 이미 닫혔거나 접근 불가 → 무시 */ }
+        }
+      } catch { /* getPorts 실패 시 무시하고 계속 */ }
+
       console.log('[useCardScanner] 포트 선택 요청...');
 
       const port = await navigator.serial.requestPort();
@@ -127,16 +168,22 @@ export function useCardScanner(
         return;
       }
       console.error('[useCardScanner] 연결 에러:', msg);
-      setError(msg);
+      setError(toKoreanError(msg));
     }
   }, [readLoop]);
 
-  /** 컴포넌트 언마운트 시 정리 */
+  /** 컴포넌트 언마운트 시 정리 — cancel → close 순서 보장 */
   useEffect(() => {
     return () => {
       runningRef.current = false;
-      readerRef.current?.cancel().catch(() => {});
-      portRef.current?.close().catch(() => {});
+      const reader = readerRef.current;
+      const port = portRef.current;
+      readerRef.current = null;
+      portRef.current = null;
+      (async () => {
+        try { await reader?.cancel(); } catch { /* noop */ }
+        try { await port?.close(); } catch { /* noop */ }
+      })();
     };
   }, []);
 
