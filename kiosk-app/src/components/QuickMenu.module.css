@@ -48,7 +48,7 @@
 .label {
   font-size: var(--font-md);
   font-weight: var(--weight-semibold);
-  color: #505050;
+  color: #000;
   /* 한글 단어 단위 유지: 공백에서만 줄바꿈, "출결" 같은 단어 중간에선 안 끊김 */
   word-break: keep-all;
   overflow-wrap: break-word;
