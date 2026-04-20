@@ -5,21 +5,9 @@ import { kioskMe } from './api/kioskAuthApi';
 import type { KioskSession } from './api/kioskAuthApi';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 
-const RESOLUTION_KEY = 'kiosk-resolution';
-
-function applyResolution(resolution: string) {
-  document.documentElement.style.zoom = resolution === '4K' ? '2' : '1';
-}
-
 export default function App() {
   const [session, setSession] = useState<KioskSession | null>(null);
   const [checking, setChecking] = useState(true);
-
-  // 저장된 해상도 설정 적용
-  useEffect(() => {
-    const saved = localStorage.getItem(RESOLUTION_KEY) ?? 'FHD';
-    applyResolution(saved);
-  }, []);
 
   // 서버 세션 확인 (항상 서버 기준)
   useEffect(() => {
