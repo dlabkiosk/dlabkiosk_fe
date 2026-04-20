@@ -1,0 +1,72 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.modal {
+  position: relative;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-10) var(--space-7);
+  width: 60vw;
+}
+
+.title {
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: center;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.subtitle {
+  font-size: var(--font-base);
+  color: var(--color-text-hint);
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.outlineButton {
+  flex: 1;
+  padding: var(--space-5);
+  font-size: var(--font-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.outlineButton:active {
+  background: var(--color-bg-gray);
+}
+
+.dangerButton {
+  flex: 1;
+  padding: var(--space-5);
+  font-size: var(--font-base);
+  font-weight: var(--weight-medium);
+  color: #fff;
+  background: var(--color-error);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.dangerButton:active {
+  opacity: 0.85;
+}

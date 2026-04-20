@@ -5,6 +5,7 @@ import { useSecretTap } from '../hooks/useSecretTap';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { getExamSchedules } from '../api/examScheduleApi';
 import type { ExamSchedule } from '../api/examScheduleApi';
+import ExitConfirmModal from './ExitConfirmModal';
 import styles from './Header.module.css';
 
 interface DdayItem {
@@ -49,9 +50,14 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
   const { highContrast } = useAccessibility();
   const [ddays, setDdays] = useState<DdayItem[]>([]);
   const [now, setNow] = useState(() => new Date());
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
 
   const handleLogoTap = useSecretTap(() => {
     onAdminAccess?.();
+  });
+
+  const handleTimeTap = useSecretTap(() => {
+    setExitConfirmOpen(true);
   });
 
   useEffect(() => {
@@ -75,6 +81,7 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
   }, []);
 
   return (
+    <>
     <header className={styles.header}>
       <div className={styles.logoSection}>
         <img
@@ -86,7 +93,7 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
         {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
       </div>
       <div className={styles.rightSection}>
-        <div className={styles.datetime}>
+        <div className={styles.datetime} onClick={handleTimeTap}>
           <span>{formatDate(now)}</span>
           <span>{formatTime(now)}</span>
         </div>
@@ -103,5 +110,15 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
         </div>
       </div>
     </header>
+    {exitConfirmOpen && (
+      <ExitConfirmModal
+        onCancel={() => setExitConfirmOpen(false)}
+        onConfirm={() => {
+          setExitConfirmOpen(false);
+          window.close();
+        }}
+      />
+    )}
+    </>
   );
 }
