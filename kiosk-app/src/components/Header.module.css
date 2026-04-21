@@ -25,6 +25,18 @@
   color: var(--color-text-muted);
 }
 
+.refreshButton {
+  margin-left: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-white);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
 .rightSection {
   flex: 1;
   min-width: 0;

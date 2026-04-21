@@ -91,6 +91,13 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
           onClick={handleLogoTap}
         />
         {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
+        <button
+          type="button"
+          className={styles.refreshButton}
+          onClick={() => window.location.reload()}
+        >
+          새로고침
+        </button>
       </div>
       <div className={styles.rightSection}>
         <div className={styles.datetime} onClick={handleTimeTap}>
