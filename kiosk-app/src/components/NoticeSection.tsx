@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuPin, LuCirclePlus } from 'react-icons/lu';
 import { getNotices } from '../api/noticeApi';
 import type { Notice } from '../api/noticeApi';
@@ -13,6 +13,7 @@ import styles from './NoticeSection.module.css';
 
 const DEFAULT_COUNT = 3;
 const PAGE_SIZE = 10;
+const FETCH_INTERVAL_MS = 30 * 1000; // 30초마다 공지 갱신
 
 export default function NoticeSection() {
   const { speak } = useAccessibility();
@@ -28,16 +29,32 @@ export default function NoticeSection() {
 
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
 
+  const fetchNotices = useCallback(async () => {
+    try {
+      const data = await getNotices();
+      setAllNotices(data);
+    } catch {
+      // 조회 실패 시 기존 목록 유지
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 초기 로드 + 주기적 갱신 + 카테고리 1회 로드
   useEffect(() => {
+    fetchNotices();
+    const interval = setInterval(fetchNotices, FETCH_INTERVAL_MS);
+
     let cancelled = false;
-    getNotices()
-      .then((data) => { if (!cancelled) setAllNotices(data); })
-      .finally(() => { if (!cancelled) setLoading(false); });
     getNoticeCategories()
       .then((list) => { if (!cancelled) setCategoryOptions(list.map((c) => c.name)); })
       .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [fetchNotices]);
 
   /* 필터 적용된 목록 */
   const filteredNotices = useMemo(() => {
@@ -88,6 +105,7 @@ export default function NoticeSection() {
     setPage(0);
     setFilterCategory('전체 보기');
     setFilterOpen(false);
+    fetchNotices();
     speak(VOICE_NOTICE_OPEN);
   };
 
