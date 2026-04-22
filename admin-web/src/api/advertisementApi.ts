@@ -25,12 +25,12 @@ export function getAdvertisement(id: number): Promise<Advertisement> {
   return apiGet<Advertisement>(`/api/v1/admin/advertisements/${id}`);
 }
 
-/** 파일 크기 제한 (50MB) */
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+/** 파일 크기 제한 (100MB) */
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 function validateFile(file: File) {
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`파일 크기가 너무 큽니다. (${(file.size / 1024 / 1024).toFixed(1)}MB, 최대 50MB)`);
+    throw new Error(`파일 크기가 너무 큽니다. (${(file.size / 1024 / 1024).toFixed(1)}MB, 최대 100MB)`);
   }
 }
 
