@@ -48,7 +48,7 @@ function compareMealRecord(a: MealRecord, b: MealRecord, field: SortField, dir: 
   if (typeof va === 'boolean' && typeof vb === 'boolean') {
     cmp = (va === vb) ? 0 : va ? -1 : 1;
   } else if (typeof va === 'string' && typeof vb === 'string') {
-    cmp = va.localeCompare(vb);
+    cmp = va.localeCompare(vb, 'ko', { numeric: true });
   }
 
   return dir === 'desc' ? -cmp : cmp;

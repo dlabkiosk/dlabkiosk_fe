@@ -83,8 +83,8 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
 
   const canvasSize = useMemo(() => {
     if (activeSeats.length === 0) return { width: 300, height: 200 };
-    const maxX = Math.max(...activeSeats.map((s) => s.xPos));
-    const maxY = Math.max(...activeSeats.map((s) => s.yPos));
+    const maxX = Math.max(...activeSeats.map((s) => s.yPos));
+    const maxY = Math.max(...activeSeats.map((s) => s.xPos));
     return {
       width: Math.max(300, maxX * CELL_W + CELL_W + 16),
       height: Math.max(200, maxY * CELL_H + CELL_H + 16),
@@ -357,8 +357,8 @@ export default function SeatChangeModal({ student, inputMethod, onClose }: SeatC
                     className={cellClass}
                     style={{
                       position: 'absolute',
-                      left: seat.xPos * CELL_W,
-                      top: seat.yPos * CELL_H,
+                      left: seat.yPos * CELL_W,
+                      top: seat.xPos * CELL_H,
                     }}
                     onClick={() => canSelect && handleSeatToggle(seatCd, seat.seatNm)}
                     disabled={!canSelect && !selected}

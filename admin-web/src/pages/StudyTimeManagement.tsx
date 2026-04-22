@@ -24,12 +24,6 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
-function formatDateDot(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}.${m}.${d}`;
-}
 
 function formatDateShort(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -87,7 +81,7 @@ function compareStudyRows(a: StudentStudyRow, b: StudentStudyRow, field: SortFie
   }
   const va = (a[field as keyof StudentStudyRow] as string) ?? '';
   const vb = (b[field as keyof StudentStudyRow] as string) ?? '';
-  const cmp = va.localeCompare(vb);
+  const cmp = va.localeCompare(vb, 'ko', { numeric: true });
   return dir === 'desc' ? -cmp : cmp;
 }
 

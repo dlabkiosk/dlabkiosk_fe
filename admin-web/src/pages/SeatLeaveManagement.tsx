@@ -40,7 +40,7 @@ function compareRows(a: SeatLeaveRecord, b: SeatLeaveRecord, field: SortField, d
   }
   const va = (a[field] ?? '') as string;
   const vb = (b[field] ?? '') as string;
-  const cmp = va.localeCompare(vb);
+  const cmp = va.localeCompare(vb, 'ko', { numeric: true });
   return dir === 'desc' ? -cmp : cmp;
 }
 

@@ -48,8 +48,8 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
 
   const canvasSize = useMemo(() => {
     if (activeSeats.length === 0) return { width: 400, height: 300 };
-    const maxX = Math.max(...activeSeats.map((s) => s.xPos));
-    const maxY = Math.max(...activeSeats.map((s) => s.yPos));
+    const maxX = Math.max(...activeSeats.map((s) => s.yPos));
+    const maxY = Math.max(...activeSeats.map((s) => s.xPos));
     return {
       width: Math.max(400, maxX * CELL_W + CELL_W + 16),
       height: Math.max(300, maxY * CELL_H + CELL_H + 16),
@@ -117,8 +117,8 @@ export default function SeatMapModal({ onClose }: SeatMapModalProps) {
                     className={`${styles.seatCell} ${occupied ? styles.seatOccupied : styles.seatEmpty}`}
                     style={{
                       position: 'absolute',
-                      left: seat.xPos * CELL_W,
-                      top: seat.yPos * CELL_H,
+                      left: seat.yPos * CELL_W,
+                      top: seat.xPos * CELL_H,
                     }}
                   >
                     <span className={styles.seatLabel}>{seat.seatNm}</span>

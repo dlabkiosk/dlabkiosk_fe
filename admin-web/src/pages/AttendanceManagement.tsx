@@ -50,7 +50,7 @@ function compareRows(a: AttendanceRecord, b: AttendanceRecord, field: SortField,
     vb = b[field] ?? '';
   }
 
-  const cmp = va.localeCompare(vb);
+  const cmp = va.localeCompare(vb, 'ko', { numeric: true });
   return dir === 'desc' ? -cmp : cmp;
 }
 

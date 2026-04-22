@@ -66,7 +66,7 @@ function compareRows(a: SeatChangeRequest, b: SeatChangeRequest, field: SortFiel
   const vb = (b[field] ?? '') as string;
   const cmp = field === 'createdAt'
     ? new Date(va).getTime() - new Date(vb).getTime()
-    : va.localeCompare(vb);
+    : va.localeCompare(vb, 'ko', { numeric: true });
   return dir === 'desc' ? -cmp : cmp;
 }
 
@@ -361,8 +361,8 @@ export default function SeatManagement() {
             seatCd: dsa.seatCd,
             seatLabel,
             seatType: backendSeat?.seatType ?? 'INDIVIDUAL',
-            xPos: dsa.xPos * DSA_CELL_W,
-            yPos: dsa.yPos * DSA_CELL_H,
+            xPos: dsa.yPos * DSA_CELL_W,
+            yPos: dsa.xPos * DSA_CELL_H,
             active: true,
             areaCd: selectedAreaCd,
             areaNm: '',

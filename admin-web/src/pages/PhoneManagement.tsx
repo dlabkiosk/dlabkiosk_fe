@@ -48,7 +48,7 @@ function compareRows(a: PhoneSubmission, b: PhoneSubmission, field: SortField, d
     case 'memo': va = a.memo ?? ''; vb = b.memo ?? ''; break;
   }
 
-  const cmp = va.localeCompare(vb);
+  const cmp = va.localeCompare(vb, 'ko', { numeric: true });
   return dir === 'desc' ? -cmp : cmp;
 }
 

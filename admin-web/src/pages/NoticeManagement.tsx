@@ -123,7 +123,7 @@ export default function NoticeManagement() {
       if (sort.field) {
         const va = a[sort.field] ?? '';
         const vb = b[sort.field] ?? '';
-        const cmp = va.localeCompare(vb);
+        const cmp = va.localeCompare(vb, 'ko', { numeric: true });
         return sort.dir === 'desc' ? -cmp : cmp;
       }
       return 0;
