@@ -85,6 +85,7 @@ export default function SeatLeaveManagement() {
   const [searchNumber, setSearchNumber] = useState('');
   const [searchStartDate, setSearchStartDate] = useState(today);
   const [searchEndDate, setSearchEndDate] = useState(today);
+  const [statusFilter, setStatusFilter] = useState<'전체' | '이탈중' | '복귀'>('전체');
   const [appliedFilters, setAppliedFilters] = useState({ name: '', number: '', start: today, end: today });
 
   /* 선택 */
@@ -203,11 +204,17 @@ export default function SeatLeaveManagement() {
     }
   };
 
-  /* ── 클라이언트 정렬 (필터는 서버가 처리) ── */
+  /* ── 상태 필터 + 정렬 (이름/학번/지점/기간은 서버가 처리) ── */
+  const filteredData = useMemo(() => {
+    if (statusFilter === '전체') return data;
+    if (statusFilter === '이탈중') return data.filter((r) => !r.endedAt);
+    return data.filter((r) => !!r.endedAt); // 복귀
+  }, [data, statusFilter]);
+
   const sortedData = useMemo(() => {
-    if (!sort.field) return data;
-    return [...data].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
-  }, [data, sort]);
+    if (!sort.field) return filteredData;
+    return [...filteredData].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
+  }, [filteredData, sort]);
 
   /* ── EXCEL (현재 검색 결과만 CSV) ── */
   const handleExcel = () => {
@@ -341,6 +348,15 @@ export default function SeatLeaveManagement() {
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
               onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div className={f.filterGroup}>
+            <label className={f.filterLabel}>상태</label>
+            <FilterSelect
+              value={statusFilter}
+              options={['전체', '이탈중', '복귀']}
+              placeholder="전체"
+              onChange={(v) => { setStatusFilter(v as '전체' | '이탈중' | '복귀'); setPage(1); }}
             />
           </div>
           <div className={f.filterGroup}>
