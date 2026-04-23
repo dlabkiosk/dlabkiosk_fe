@@ -7,7 +7,7 @@ import {
 import attendanceIcon from '../assets/attendance_active.png';
 import downloadIcon from '../assets/download.png';
 import qrDownloadIcon from '../assets/qr_download.png';
-import { getAttendances, updateCheckInTime } from '../api/attendanceApi';
+import { getAttendances, updateCheckInTime, updateCheckOut, deleteOngoingOuting } from '../api/attendanceApi';
 import type { AttendanceRecord } from '../api/attendanceApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { downloadStudentQr, downloadStudentsQrBulk } from '../api/studentApi';
@@ -17,6 +17,7 @@ import type { Store } from '../api/storeApi';
 import styles from './AttendanceManagement.module.css';
 import f from '../styles/filter.module.css';
 import FilterSelect from '../components/FilterSelect';
+import useConfirm from '../hooks/useConfirm';
 
 /* ── 출결 상태 ── */
 
@@ -88,6 +89,8 @@ function downloadCsv(rows: AttendanceRecord[]) {
 /* ── Page ── */
 
 export default function AttendanceManagement() {
+  const { confirm, alert, ConfirmDialog } = useConfirm();
+
   /* Filters */
   const [searchName, setSearchName] = useState('');
   const [searchStudentNumber, setSearchStudentNumber] = useState('');
@@ -115,6 +118,14 @@ export default function AttendanceManagement() {
   const [editTarget, setEditTarget] = useState<AttendanceRecord | null>(null);
   const [editValue, setEditValue] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+
+  /* 하원 취소 모달 */
+  const [checkOutTarget, setCheckOutTarget] = useState<AttendanceRecord | null>(null);
+  const [checkOutSaving, setCheckOutSaving] = useState(false);
+
+  /* 외출 취소 모달 */
+  const [outingTarget, setOutingTarget] = useState<AttendanceRecord | null>(null);
+  const [outingSaving, setOutingSaving] = useState(false);
 
   /* API 데이터 */
   const [rows, setRows] = useState<AttendanceRecord[]>([]);
@@ -330,7 +341,7 @@ export default function AttendanceManagement() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('[bulk QR download] 실패', err);
-      alert('QR 일괄 다운로드에 실패했습니다.');
+      void alert('QR 일괄 다운로드에 실패했습니다.');
     } finally {
       setBulkQrLoading(false);
     }
@@ -409,9 +420,59 @@ export default function AttendanceManagement() {
       await fetchData();
     } catch (err) {
       console.error('[updateCheckInTime] 실패', err);
-      alert('등원시각 수정에 실패했습니다.');
+      void alert('등원시각 수정에 실패했습니다.');
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const openCheckOutModal = (row: AttendanceRecord) => {
+    setCheckOutTarget(row);
+  };
+
+  const closeCheckOutModal = () => {
+    if (checkOutSaving) return;
+    setCheckOutTarget(null);
+  };
+
+  const handleCheckOutCancel = async () => {
+    if (!checkOutTarget) return;
+    if (!(await confirm(`${checkOutTarget.studentName} 학생의 ${checkOutTarget.ourState ?? '하원'}을 취소하시겠습니까?`))) return;
+    setCheckOutSaving(true);
+    try {
+      await updateCheckOut(checkOutTarget.studentId, null);
+      setCheckOutTarget(null);
+      await fetchData();
+    } catch (err) {
+      console.error('[updateCheckOut cancel] 실패', err);
+      void alert('하원 취소에 실패했습니다.');
+    } finally {
+      setCheckOutSaving(false);
+    }
+  };
+
+  const openOutingModal = (row: AttendanceRecord) => {
+    setOutingTarget(row);
+  };
+
+  const closeOutingModal = () => {
+    if (outingSaving) return;
+    setOutingTarget(null);
+  };
+
+  const handleOutingDelete = async () => {
+    if (!outingTarget) return;
+    if (!(await confirm(`${outingTarget.studentName} 학생의 외출을 취소하시겠습니까?`))) return;
+    setOutingSaving(true);
+    try {
+      await deleteOngoingOuting(outingTarget.studentId);
+      setOutingTarget(null);
+      await fetchData();
+    } catch (err) {
+      console.error('[deleteOngoingOuting] 실패', err);
+      void alert('외출 취소에 실패했습니다.');
+    } finally {
+      setOutingSaving(false);
     }
   };
 
@@ -590,11 +651,31 @@ export default function AttendanceManagement() {
                   <td>{row.studentName}</td>
                   <td>{row.studentNumber}</td>
                   <td>{row.seatLabel}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     {row.attendanceStatus ? (
-                      <span className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}>
-                        {row.attendanceStatus}
-                      </span>
+                      row.dsaDrift && (row.ourState === '하원' || row.ourState === '조퇴') ? (
+                        <button
+                          type="button"
+                          className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}
+                          onClick={() => openCheckOutModal(row)}
+                          title={`DSA와 불일치 — 우리 시스템 ${row.ourState} 취소 필요`}
+                        >
+                          {row.attendanceStatus}
+                        </button>
+                      ) : row.dsaDrift && row.ourState === '외출' ? (
+                        <button
+                          type="button"
+                          className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}
+                          onClick={() => openOutingModal(row)}
+                          title="DSA와 불일치 — 우리 시스템 외출 취소 필요"
+                        >
+                          {row.attendanceStatus}
+                        </button>
+                      ) : (
+                        <span className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}>
+                          {row.attendanceStatus}
+                        </span>
+                      )
                     ) : (
                       '-'
                     )}
@@ -750,6 +831,65 @@ export default function AttendanceManagement() {
           </div>
         </div>
       )}
+
+      {/* 하원 취소 모달 */}
+      {checkOutTarget && (
+        <div className={styles.overlay} onClick={closeCheckOutModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeCheckOutModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>{checkOutTarget.ourState === '조퇴' ? '조퇴' : '하원'} 취소</h3>
+
+            <div className={styles.qrInfo}>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>이름</span><span>{checkOutTarget.studentName}</span></p>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>학번</span><span>{checkOutTarget.studentNumber}</span></p>
+              <p className={styles.qrInfoRow}>
+                <span className={styles.qrLabel}>DSA 상태</span>
+                <span>{checkOutTarget.attendanceStatus}</span>
+              </p>
+              <p className={styles.qrInfoRow}>
+                <span className={styles.qrLabel}>우리 시스템</span>
+                <span>{checkOutTarget.ourState ?? '-'}</span>
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnDanger} onClick={handleCheckOutCancel} disabled={checkOutSaving}>
+                {checkOutSaving ? '처리 중...' : '하원 취소'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 외출 취소 모달 */}
+      {outingTarget && (
+        <div className={styles.overlay} onClick={closeOutingModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.modalClose} onClick={closeOutingModal}>&#x2715;</button>
+            <h3 className={styles.modalTitle}>외출 취소</h3>
+
+            <div className={styles.qrInfo}>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>이름</span><span>{outingTarget.studentName}</span></p>
+              <p className={styles.qrInfoRow}><span className={styles.qrLabel}>학번</span><span>{outingTarget.studentNumber}</span></p>
+              <p className={styles.qrInfoRow}>
+                <span className={styles.qrLabel}>DSA 상태</span>
+                <span>{outingTarget.attendanceStatus}</span>
+              </p>
+              <p className={styles.qrInfoRow}>
+                <span className={styles.qrLabel}>우리 시스템</span>
+                <span>{outingTarget.ourState ?? '-'}</span>
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.btnDanger} onClick={handleOutingDelete} disabled={outingSaving}>
+                {outingSaving ? '처리 중...' : '외출 취소'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {ConfirmDialog}
     </div>
   );
 }
