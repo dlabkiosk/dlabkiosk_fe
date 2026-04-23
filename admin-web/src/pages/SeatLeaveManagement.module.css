@@ -163,7 +163,7 @@
 
 /* ── Buttons ── */
 .returnButton {
-  padding: var(--size-btn-padding-v) var(--size-btn-padding-h);
+  padding: var(--size-badge-padding-v) var(--size-btn-padding-h);
   border: 1px solid var(--color-danger);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);

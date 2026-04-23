@@ -66,7 +66,7 @@ function formatElapsed(minutes: number): string {
   return `${Math.floor(minutes / 60)}시간 ${minutes % 60}분`;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 
 /* ── Page ── */
 
@@ -98,7 +98,6 @@ export default function SeatLeaveManagement() {
 
   /* API 데이터 */
   const [data, setData] = useState<SeatLeaveRecord[]>([]);
-  const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(false);
 
   /* 실시간 경과 갱신 */
@@ -120,16 +119,20 @@ export default function SeatLeaveManagement() {
     return () => clearInterval(timer);
   }, [data]);
 
-  /* ── 데이터 조회 ── */
+  /* ── 데이터 조회 (서버 필터 + 클라이언트 페이지네이션) ── */
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const selectedStore = storeFilter === '전체' ? undefined : stores.find((s) => s.storeName === storeFilter);
       const [result, students] = await Promise.all([
         getSeatLeaves({
           startDate: appliedFilters.start || undefined,
           endDate: appliedFilters.end || undefined,
-          page: page - 1,
-          size: ITEMS_PER_PAGE,
+          storeId: selectedStore?.id,
+          studentName: appliedFilters.name || undefined,
+          studentNumber: appliedFilters.number || undefined,
+          page: 0,
+          size: 99999,
         }),
         getStudents(),
       ]);
@@ -153,13 +156,12 @@ export default function SeatLeaveManagement() {
       });
 
       setData(enriched);
-      setTotalElements(result.totalElements);
     } catch (err) {
 
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters, page]);
+  }, [appliedFilters, storeFilter, stores]);
 
   useEffect(() => {
     fetchData();
@@ -201,23 +203,11 @@ export default function SeatLeaveManagement() {
     }
   };
 
-  /* ── 클라이언트 필터 + 정렬 ── */
-  const filteredData = useMemo(() => {
-    return data.filter((row) => {
-      if (searchName && !row.studentName.includes(searchName)) return false;
-      if (searchNumber && !(row.studentNumber ?? '').includes(searchNumber)) return false;
-      if (isAdmin && storeFilter !== '전체') {
-        const sName = studentStoreMap.get(row.studentId) ?? row.storeName;
-        if (sName !== storeFilter) return false;
-      }
-      return true;
-    });
-  }, [data, searchName, searchNumber, isAdmin, storeFilter, studentStoreMap]);
-
+  /* ── 클라이언트 정렬 (필터는 서버가 처리) ── */
   const sortedData = useMemo(() => {
-    if (!sort.field) return filteredData;
-    return [...filteredData].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
-  }, [filteredData, sort]);
+    if (!sort.field) return data;
+    return [...data].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
+  }, [data, sort]);
 
   /* ── EXCEL (현재 검색 결과만 CSV) ── */
   const handleExcel = () => {
@@ -252,7 +242,13 @@ export default function SeatLeaveManagement() {
     URL.revokeObjectURL(url);
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalElements / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / ITEMS_PER_PAGE));
+
+  /* ── 클라이언트 페이지네이션 ── */
+  const pagedData = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return sortedData.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedData, page]);
 
   const allSelected = sortedData.length > 0 && sortedData.every((r) => selectedIds.has(r.id));
   const handleSelectAll = () => {
@@ -321,7 +317,7 @@ export default function SeatLeaveManagement() {
                 value={storeFilter}
                 options={['전체', ...stores.map((s) => s.storeName)]}
                 placeholder="전체"
-                onChange={setStoreFilter}
+                onChange={(v) => { setStoreFilter(v); setPage(1); }}
               />
             </div>
           )}
@@ -403,12 +399,12 @@ export default function SeatLeaveManagement() {
               <tr className={styles.emptyRow}>
                 <td colSpan={isAdmin ? 11 : 10}>불러오는 중...</td>
               </tr>
-            ) : sortedData.length === 0 ? (
+            ) : pagedData.length === 0 ? (
               <tr className={styles.emptyRow}>
                 <td colSpan={isAdmin ? 11 : 10}>이탈 내역이 없습니다.</td>
               </tr>
             ) : (
-              sortedData.map((row) => {
+              pagedData.map((row) => {
                 const isAway = !row.endedAt;
                 const elapsed = getElapsedMinutes(row.startedAt, row.endedAt);
                 return (
