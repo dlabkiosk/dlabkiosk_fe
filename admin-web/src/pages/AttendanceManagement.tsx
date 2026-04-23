@@ -157,10 +157,10 @@ export default function AttendanceManagement() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // attendanceStatus 필터는 dsaDrift 케이스 포함을 위해 클라이언트에서 처리
       const commonParams = {
         studentName: searchName || undefined,
         studentNumber: searchStudentNumber || undefined,
-        attendanceStatus: (filterStatus !== '전체' && filterStatus !== '좌석이탈') ? filterStatus : undefined,
         phoneSubmitted: filterPhone === '전체' ? undefined : filterPhone === 'O',
       };
 
@@ -239,7 +239,13 @@ export default function AttendanceManagement() {
       data = data.filter((r) => (r.studentNumber ?? '').includes(searchStudentNumber));
     }
     if (filterStatus !== '전체') {
-      data = data.filter((r) => r.attendanceStatus === filterStatus);
+      data = data.filter((r) => {
+        // 기본: attendanceStatus 일치
+        if (r.attendanceStatus === filterStatus) return true;
+        // 추가: dsaDrift가 있고 우리 시스템 상태가 필터값과 일치 (ex: 미확인이지만 하원 취소 필요)
+        if (r.dsaDrift && r.ourState === filterStatus) return true;
+        return false;
+      });
     }
     if (filterPhone !== '전체') {
       const wantPhone = filterPhone === 'O';
@@ -656,20 +662,20 @@ export default function AttendanceManagement() {
                       row.dsaDrift && (row.ourState === '하원' || row.ourState === '조퇴') ? (
                         <button
                           type="button"
-                          className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}
+                          className={`${styles.statusBadge} ${styles.statusDrift}`}
                           onClick={() => openCheckOutModal(row)}
-                          title={`DSA와 불일치 — 우리 시스템 ${row.ourState} 취소 필요`}
+                          title={`DSA 상태: ${row.attendanceStatus} / 우리 시스템: ${row.ourState} — 클릭해서 취소`}
                         >
-                          {row.attendanceStatus}
+                          {row.ourState} 취소 필요
                         </button>
                       ) : row.dsaDrift && row.ourState === '외출' ? (
                         <button
                           type="button"
-                          className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}
+                          className={`${styles.statusBadge} ${styles.statusDrift}`}
                           onClick={() => openOutingModal(row)}
-                          title="DSA와 불일치 — 우리 시스템 외출 취소 필요"
+                          title={`DSA 상태: ${row.attendanceStatus} / 우리 시스템: 외출 — 클릭해서 취소`}
                         >
-                          {row.attendanceStatus}
+                          외출 취소 필요
                         </button>
                       ) : (
                         <span className={`${styles.statusBadge} ${getStatusClass(row.attendanceStatus)}`}>
