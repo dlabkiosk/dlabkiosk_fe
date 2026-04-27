@@ -181,9 +181,11 @@ export default function BranchDetailPage() {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>
               지점코드
-              <span style={{ marginLeft: 'var(--spacing-sm)', color: '#b45309', fontSize: 'var(--font-size-xs)', fontWeight: 400 }}>
-                *지점코드 변경 시 해당 지점 키오스크는 다시 로그인이 필요합니다
-              </span>
+              {isEditing && (
+                <span style={{ marginLeft: 'var(--spacing-sm)', color: '#b45309', fontSize: 'var(--font-size-xs)', fontWeight: 400 }}>
+                  *지점코드 변경 시 해당 지점 키오스크는 다시 로그인이 필요합니다
+                </span>
+              )}
             </label>
             {isEditing ? (
               <input className={styles.formInput} value={formStoreCode} onChange={(e) => setFormStoreCode(e.target.value)} />
