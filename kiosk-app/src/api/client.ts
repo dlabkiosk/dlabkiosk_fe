@@ -45,7 +45,8 @@ async function request<T>(
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401) {
-    throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.');
+    window.dispatchEvent(new CustomEvent('kiosk:unauthorized'));
+    throw new ApiError('UNAUTHORIZED', '인증이 필요합니다. 다시 로그인해주세요.');
   }
 
   let json: ApiResponse<T>;

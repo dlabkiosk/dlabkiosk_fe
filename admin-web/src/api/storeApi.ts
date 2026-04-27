@@ -31,6 +31,7 @@ export interface CreateStoreRequest {
 
 export interface UpdateStoreRequest {
   storeName: string;
+  storeCode: string;
   address: string;
   phone: string;
   active: boolean;
