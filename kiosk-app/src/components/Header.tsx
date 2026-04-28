@@ -44,9 +44,10 @@ function formatTime(date: Date): string {
 interface HeaderProps {
   storeName?: string;
   onAdminAccess?: () => void;
+  cardReaderConnected?: boolean;
 }
 
-export default function Header({ storeName, onAdminAccess }: HeaderProps) {
+export default function Header({ storeName, onAdminAccess, cardReaderConnected }: HeaderProps) {
   const { highContrast } = useAccessibility();
   const [ddays, setDdays] = useState<DdayItem[]>([]);
   const [now, setNow] = useState(() => new Date());
@@ -91,13 +92,13 @@ export default function Header({ storeName, onAdminAccess }: HeaderProps) {
           onClick={handleLogoTap}
         />
         {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={() => window.location.reload()}
+        <span
+          className={`${styles.cardReaderStatus} ${cardReaderConnected ? styles.cardReaderStatusOn : styles.cardReaderStatusOff}`}
+          aria-label={cardReaderConnected ? '카드리더기 연결' : '카드리더기 미연결'}
         >
-          새로고침
-        </button>
+          <span className={styles.cardReaderDot} />
+          {cardReaderConnected ? '연결' : '미연결'}
+        </span>
       </div>
       <div className={styles.rightSection}>
         <div className={styles.datetime} onClick={handleTimeTap}>
