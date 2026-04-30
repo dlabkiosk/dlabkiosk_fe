@@ -31,7 +31,7 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
   const [allLoading, setAllLoading] = useState(false);
   const [allLoaded, setAllLoaded] = useState(false);
 
-  useEffect(() => {
+  const fetchStoreRankings = useCallback(() => {
     getStudyRankings()
       .then((res) => {
         const raw = res.rankingList?.data ?? [];
@@ -45,9 +45,40 @@ export default function RankingSection({ storeName }: RankingSectionProps) {
         });
         setStoreList(unique);
       })
-      .catch(() => {})
+      .catch(() => {
+        // 조회 실패 시 기존 목록 유지
+      })
       .finally(() => setStoreLoading(false));
   }, []);
+
+  // 초기 로드 + 매일 새벽 5시 1회 갱신
+  useEffect(() => {
+    fetchStoreRankings();
+
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const scheduleDailyRefresh = () => {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(5, 0, 0, 0);
+      if (next.getTime() <= now.getTime()) {
+        // 오늘 5시가 이미 지났다면 내일 5시로
+        next.setDate(next.getDate() + 1);
+      }
+      const ms = next.getTime() - now.getTime();
+      timeout = setTimeout(() => {
+        fetchStoreRankings();
+        // 전지점 랭킹은 캐시 무효화 — 다음 열람 시 재조회
+        setAllLoaded(false);
+        setAllList([]);
+        scheduleDailyRefresh();
+      }, ms);
+    };
+    scheduleDailyRefresh();
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [fetchStoreRankings]);
 
   const loadAllRankings = useCallback(() => {
     if (allLoaded) return;
