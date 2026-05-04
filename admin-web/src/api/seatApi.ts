@@ -164,6 +164,8 @@ export function deleteSeat(seatId: number): Promise<string> {
 export function getSeatChangeRequests(params?: {
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   storeId?: number;
+  studentName?: string;
+  studentNumber?: string;
   page?: number;
   size?: number;
   sort?: string;
@@ -171,6 +173,8 @@ export function getSeatChangeRequests(params?: {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.storeId) query.set('storeId', String(params.storeId));
+  if (params?.studentName) query.set('studentName', params.studentName);
+  if (params?.studentNumber) query.set('studentNumber', params.studentNumber);
   query.set('page', String(params?.page ?? 0));
   query.set('size', String(params?.size ?? 20));
   if (params?.sort) query.set('sort', params.sort);

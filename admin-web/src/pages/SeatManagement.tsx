@@ -26,7 +26,7 @@ import {
   approveSeatChangeRequest,
   rejectSeatChangeRequest,
 } from '../api/seatApi';
-import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest, PageResponse } from '../api/seatApi';
+import type { Seat, SeatArea, SeatStatusByArea, SeatStatusItem, SeatWaitingEntry, SeatChangeRequest } from '../api/seatApi';
 import { getSeatLeaves } from '../api/seatLeaveApi';
 import { getMe } from '../api/authApi';
 import { getStores } from '../api/storeApi';
@@ -227,7 +227,7 @@ export default function SeatManagement() {
 
   /* ── 대기 리스트 상태 ── */
   const [waitingData, setWaitingData] = useState<SeatChangeRequest[]>([]);
-  const [waitingTotal, setWaitingTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [sort, setSort] = useState<SortState>({ field: 'createdAt', dir: 'desc' });
   const [page, setPage] = useState(1);
@@ -389,42 +389,25 @@ export default function SeatManagement() {
 
   /* ── 대기 리스트 로드 ── */
   const loadWaiting = useCallback(async () => {
-    if (statusFilter === 'ALL') {
-      // 전체: 모든 상태를 병렬로 조회 후 합침
-      const [pending, approved, rejected] = await Promise.all([
-        getSeatChangeRequests({ status: 'PENDING', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
-        getSeatChangeRequests({ status: 'APPROVED', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
-        getSeatChangeRequests({ status: 'REJECTED', page: 0, size: 500 }).catch(() => ({ content: [], totalElements: 0 })),
-      ]);
-      let combined = [...pending.content, ...approved.content, ...rejected.content];
-      
-      // 클라이언트 측 지점 필터링
-      if (isAdmin && waitingStoreFilter !== '전체') {
-        const targetStoreId = stores.find((s) => s.storeName === waitingStoreFilter)?.id;
-        if (targetStoreId) {
-          combined = combined.filter((r) => r.storeId === targetStoreId);
-        }
-      }
-      
-      setWaitingData(combined);
-      setWaitingTotal(combined.length);
-    } else {
-      getSeatChangeRequests({ status: statusFilter, page: page - 1, size: ITEMS_PER_PAGE })
-        .then((result: PageResponse<SeatChangeRequest>) => {
-          let data = result.content;
-          // 클라이언트 측 지점 필터링
-          if (isAdmin && waitingStoreFilter !== '전체') {
-            const targetStoreId = stores.find((s) => s.storeName === waitingStoreFilter)?.id;
-            if (targetStoreId) {
-              data = data.filter((r) => r.storeId === targetStoreId);
-            }
-          }
-          setWaitingData(data);
-          setWaitingTotal(result.totalElements);
-        })
-        .catch(() => { /* 에러 시 빈 목록 */ });
+    const storeIdParam = isAdmin && waitingStoreFilter !== '전체'
+      ? stores.find((s) => s.storeName === waitingStoreFilter)?.id
+      : undefined;
+    try {
+      const result = await getSeatChangeRequests({
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        storeId: storeIdParam,
+        studentName: wAppliedFilters.name || undefined,
+        studentNumber: wAppliedFilters.number || undefined,
+        page: page - 1,
+        size: ITEMS_PER_PAGE,
+      });
+      setWaitingData(result.content);
+      setTotalPages(Math.max(1, result.totalPages));
+    } catch {
+      setWaitingData([]);
+      setTotalPages(1);
     }
-  }, [statusFilter, page, waitingStoreFilter, isAdmin, stores]);
+  }, [statusFilter, page, waitingStoreFilter, wAppliedFilters, isAdmin, stores]);
 
   useEffect(() => {
     if (view === 'waiting') loadWaiting();
@@ -663,21 +646,11 @@ export default function SeatManagement() {
     setPage(1);
   };
 
-  /* ── 대기 리스트: 클라이언트 필터 + 정렬 ── */
-  const filteredWaiting = useMemo(() => {
-    return waitingData.filter((row) => {
-      if (wAppliedFilters.name && !(row.studentName ?? '').includes(wAppliedFilters.name)) return false;
-      if (wAppliedFilters.number && !(row.studentNumber ?? '').includes(wAppliedFilters.number)) return false;
-      return true;
-    });
-  }, [waitingData, wAppliedFilters]);
-
+  /* ── 대기 리스트: 클라이언트 정렬 (현재 페이지 기준) ── */
   const sortedWaiting = useMemo(() => {
-    if (!sort.field) return filteredWaiting;
-    return [...filteredWaiting].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
-  }, [filteredWaiting, sort]);
-
-  const totalPages = Math.max(1, Math.ceil(waitingTotal / ITEMS_PER_PAGE));
+    if (!sort.field) return waitingData;
+    return [...waitingData].sort((a, b) => compareRows(a, b, sort.field!, sort.dir));
+  }, [waitingData, sort]);
 
   const handleSort = (field: SortField) => {
     setSort((prev) => {
@@ -950,7 +923,7 @@ export default function SeatManagement() {
                   options={['전체', ...stores.map((s) => s.storeName)]}
                   placeholder="전체"
                   defaultValue="전체"
-                  onChange={(v) => setWaitingStoreFilter(v as string)}
+                  onChange={(v) => { setWaitingStoreFilter(v as string); setPage(1); }}
                 />
               </div>
             )}
@@ -961,7 +934,8 @@ export default function SeatManagement() {
                 className={f.filterInput}
                 placeholder="학생명"
                 value={wSearchName}
-                onChange={(e) => { setWSearchName(e.target.value); setWAppliedFilters({ name: e.target.value, number: wSearchNumber }); setPage(1); }}
+                onChange={(e) => setWSearchName(e.target.value)}
+                onKeyDown={handleWaitingKeyDown}
               />
             </div>
             <div className={f.filterGroup}>
@@ -971,7 +945,8 @@ export default function SeatManagement() {
                 className={f.filterInput}
                 placeholder="학번"
                 value={wSearchNumber}
-                onChange={(e) => { setWSearchNumber(e.target.value); setWAppliedFilters({ name: wSearchName, number: e.target.value }); setPage(1); }}
+                onChange={(e) => setWSearchNumber(e.target.value)}
+                onKeyDown={handleWaitingKeyDown}
               />
             </div>
             <div className={f.filterGroup}>
