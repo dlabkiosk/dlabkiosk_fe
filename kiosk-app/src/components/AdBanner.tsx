@@ -4,7 +4,7 @@ import type { Advertisement } from '../api/advertisementApi';
 import logoImg from '../assets/logo.png';
 import styles from './AdBanner.module.css';
 
-const FETCH_INTERVAL_MS = 5 * 60 * 1000; // 5분마다 목록 갱신
+const FETCH_INTERVAL_MS = 30 * 1000; // 30초마다 목록 갱신
 
 export default function AdBanner() {
   const [ads, setAds] = useState<Advertisement[]>([]);

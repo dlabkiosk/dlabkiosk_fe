@@ -21,6 +21,13 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
+  // 401 발생 시 자동으로 로그인 화면으로 복귀
+  useEffect(() => {
+    const handleUnauthorized = () => setSession(null);
+    window.addEventListener('kiosk:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('kiosk:unauthorized', handleUnauthorized);
+  }, []);
+
   const handleLogin = (s: KioskSession) => {
     setSession(s);
   };

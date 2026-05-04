@@ -21,6 +21,7 @@ export default function BranchDetailPage() {
 
   // 수정 폼
   const [formStoreName, setFormStoreName] = useState('');
+  const [formStoreCode, setFormStoreCode] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formActive, setFormActive] = useState(true);
@@ -50,6 +51,7 @@ export default function BranchDetailPage() {
   const startEdit = () => {
     if (!store) return;
     setFormStoreName(store.storeName);
+    setFormStoreCode(store.storeCode);
     setFormAddress(store.address);
     setFormPhone(store.phone);
     setFormActive(store.active);
@@ -62,6 +64,10 @@ export default function BranchDetailPage() {
 
   const handleUpdate = async () => {
     if (!store || submitting) return;
+    if (formStoreCode.trim().length === 0) {
+      await alert('지점코드를 입력해주세요.');
+      return;
+    }
     if (formKioskPin.length > 0 && formKioskPin.length !== 4) {
       await alert('PIN은 숫자 4자리로 입력해주세요.');
       return;
@@ -70,6 +76,7 @@ export default function BranchDetailPage() {
     try {
       await updateStore(store.id, {
         storeName: formStoreName,
+        storeCode: formStoreCode.trim(),
         address: formAddress,
         phone: formPhone,
         active: formActive,
@@ -172,8 +179,19 @@ export default function BranchDetailPage() {
             )}
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>지점코드</label>
-            <p className={styles.formValue}>{store.storeCode}</p>
+            <label className={styles.formLabel}>
+              지점코드
+              {isEditing && (
+                <span style={{ marginLeft: 'var(--spacing-sm)', color: '#b45309', fontSize: 'var(--font-size-xs)', fontWeight: 400 }}>
+                  *지점코드 변경 시 해당 지점 키오스크는 다시 로그인이 필요합니다
+                </span>
+              )}
+            </label>
+            {isEditing ? (
+              <input className={styles.formInput} value={formStoreCode} onChange={(e) => setFormStoreCode(e.target.value)} />
+            ) : (
+              <p className={styles.formValue}>{store.storeCode}</p>
+            )}
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>주소</label>

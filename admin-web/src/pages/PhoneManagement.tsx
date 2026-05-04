@@ -87,7 +87,7 @@ function formatPeriod(row: PhoneSubmission): string {
   return row.endDate ? `${row.startDate} ~ ${row.endDate}` : row.startDate;
 }
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 15;
 const MEMO_MAX_LENGTH = 20;
 
 /* ── Page ── */
@@ -150,9 +150,11 @@ export default function PhoneManagement() {
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const endDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
+      const selectedStore = storeFilter === '전체' ? undefined : stores.find((s) => s.storeName === storeFilter);
       const result: PageResponse<PhoneSubmission> = await getPhoneSubmissions({
         startDate,
         endDate,
+        storeId: selectedStore?.id,
         studentName: appliedFilters.name || undefined,
         studentNumber: appliedFilters.number || undefined,
         page: 0,
@@ -164,7 +166,7 @@ export default function PhoneManagement() {
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters.name, appliedFilters.number, appliedFilters.date, today]);
+  }, [appliedFilters.name, appliedFilters.number, appliedFilters.date, today, storeFilter, stores]);
 
   /* ── 클라이언트 날짜 필터: 선택 날짜가 startDate~endDate 범위에 포함되는 건만 ── */
   const filteredData = useMemo(() => {
@@ -183,7 +185,7 @@ export default function PhoneManagement() {
       });
     }
 
-    // 이름/학번 실시간 필터
+    // 이름/학번 실시간 필터 (서버는 appliedFilters 기준, 입력 중에도 즉시 반영)
     if (searchName) {
       rows = rows.filter((r) => (r.studentName ?? '').includes(searchName));
     }
@@ -191,13 +193,8 @@ export default function PhoneManagement() {
       rows = rows.filter((r) => (r.studentNumber ?? '').includes(searchNumber));
     }
 
-    // ADMIN 지점 필터
-    if (isAdmin && storeFilter !== '전체') {
-      rows = rows.filter((r) => studentStoreMap.get(r.studentId) === storeFilter);
-    }
-
     return rows;
-  }, [allData, appliedFilters.date, searchName, searchNumber, isAdmin, storeFilter, studentStoreMap]);
+  }, [allData, appliedFilters.date, searchName, searchNumber]);
 
   useEffect(() => {
     fetchData();
@@ -376,7 +373,7 @@ export default function PhoneManagement() {
                 value={storeFilter}
                 options={['전체', ...stores.map((s) => s.storeName)]}
                 placeholder="전체"
-                onChange={setStoreFilter}
+                onChange={(v) => { setStoreFilter(v); setPage(1); }}
               />
             </div>
           )}

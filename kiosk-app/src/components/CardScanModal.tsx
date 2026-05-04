@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import cardAndQrImg from '../assets/card_and_qr.jpg';
+import cardAndQrImg from '../assets/card_and_qr.png';
 import blackCardAndQrImg from '../assets/black_card_and_qr.png';
 import { searchStudent, getStudentByPhone8 } from '../api/studentApi';
 import { getStudentMessages } from '../api/studentMessageApi';

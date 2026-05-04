@@ -405,7 +405,7 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
   return (
     <div className={styles.page}>
       <div className={styles.topSection}>
-        <Header storeName={session.storeName} onAdminAccess={() => setShowAdmin(true)} />
+        <Header storeName={session.storeName} onAdminAccess={() => setShowAdmin(true)} cardReaderConnected={connected} />
 
         <div className={styles.infoSection}>
           <NoticeSection />

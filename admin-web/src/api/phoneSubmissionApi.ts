@@ -41,6 +41,7 @@ export interface PageResponse<T> {
 export function getPhoneSubmissions(params?: {
   startDate?: string;
   endDate?: string;
+  storeId?: number;
   studentName?: string;
   studentNumber?: string;
   page?: number;
@@ -49,6 +50,7 @@ export function getPhoneSubmissions(params?: {
   const query = new URLSearchParams();
   if (params?.startDate) query.set('startDate', params.startDate);
   if (params?.endDate) query.set('endDate', params.endDate);
+  if (params?.storeId !== undefined) query.set('storeId', String(params.storeId));
   if (params?.studentName) query.set('studentName', params.studentName);
   if (params?.studentNumber) query.set('studentNumber', params.studentNumber);
   query.set('page', String(params?.page ?? 0));

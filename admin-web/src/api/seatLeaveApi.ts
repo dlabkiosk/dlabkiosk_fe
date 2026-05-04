@@ -165,16 +165,22 @@ export interface PageResponse<T> {
 
 /* ── 좌석 이탈 기록 조회 ── */
 
-/** 기간별 좌석이탈 현황 조회 (페이지네이션) */
+/** 기간별 좌석이탈 현황 조회 (페이지네이션 + 필터) */
 export function getSeatLeaves(params?: {
   startDate?: string;
   endDate?: string;
+  storeId?: number;
+  studentName?: string;
+  studentNumber?: string;
   page?: number;
   size?: number;
 }): Promise<PageResponse<SeatLeaveRecord>> {
   const query = new URLSearchParams();
   if (params?.startDate) query.set('startDate', params.startDate);
   if (params?.endDate) query.set('endDate', params.endDate);
+  if (params?.storeId !== undefined) query.set('storeId', String(params.storeId));
+  if (params?.studentName) query.set('studentName', params.studentName);
+  if (params?.studentNumber) query.set('studentNumber', params.studentNumber);
   query.set('page', String(params?.page ?? 0));
   query.set('size', String(params?.size ?? 20));
   query.set('sort', 'startedAt,DESC');

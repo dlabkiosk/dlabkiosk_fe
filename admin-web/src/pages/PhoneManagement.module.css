@@ -227,14 +227,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--size-icon-btn);
-  height: var(--size-icon-btn);
+  width: 1.5rem;
+  height: 1.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #ffffff;
   color: var(--color-text-secondary);
   cursor: pointer;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   transition: background-color 0.15s, color 0.15s;
 }
 

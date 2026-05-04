@@ -96,6 +96,7 @@ export default function MealManagement() {
   const [searchName, setSearchName] = useState('');
   const [searchNumber, setSearchNumber] = useState('');
   const [searchDate, setSearchDate] = useState(today);
+  const [needsCheckFilter, setNeedsCheckFilter] = useState<'전체' | '확인 필요만'>('전체');
 
   /* 정렬 */
   const [sort, setSort] = useState<SortState>({ field: null, dir: 'asc' });
@@ -209,12 +210,16 @@ export default function MealManagement() {
       data = data.filter((r) => (r.studentNumber ?? '').includes(searchNumber));
     }
 
+    if (needsCheckFilter === '확인 필요만') {
+      data = data.filter((r) => r.lunchUnappliedDetected || r.dinnerUnappliedDetected);
+    }
+
     if (sort.field) {
       data.sort((a, b) => compareMealRecord(a, b, sort.field!, sort.dir));
     }
 
     return data;
-  }, [rows, searchName, searchNumber, sort]);
+  }, [rows, searchName, searchNumber, needsCheckFilter, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
   const pageData = filteredData.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -331,6 +336,14 @@ export default function MealManagement() {
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className={f.filterGroup}>
+            <span className={f.filterLabel}>상태</span>
+            <FilterSelect
+              value={needsCheckFilter}
+              options={['전체', '확인 필요만']}
+              onChange={(v) => setNeedsCheckFilter(v as '전체' | '확인 필요만')}
             />
           </div>
           <div className={f.filterGroup}>

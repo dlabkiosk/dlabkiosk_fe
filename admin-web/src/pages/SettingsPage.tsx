@@ -439,14 +439,24 @@ function BannerManagement() {
     return ads.filter((ad) => ad.storeName === storeFilter);
   }, [ads, isAdmin, storeFilter]);
 
-  const handleFileChange = (selected: File | null) => {
-    setFile(selected);
+  const handleFileChange = async (selected: File | null) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (!selected) {
+      setFile(null);
       setPreviewUrl(null);
       setNaturalSize(null);
       return;
     }
+
+    // 파일 용량 제한 (백엔드 한도와 동일)
+    const MAX_FILE_MB = 100;
+    if (selected.size > MAX_FILE_MB * 1024 * 1024) {
+      await alert(`파일 용량이 너무 큽니다. 최대 ${MAX_FILE_MB}MB까지 업로드 가능합니다.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setFile(selected);
     const url = URL.createObjectURL(selected);
     setPreviewUrl(url);
     setObjectPos({ x: 50, y: 50 });
