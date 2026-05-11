@@ -438,33 +438,26 @@
   margin-left: var(--spacing-xs);
 }
 
-/* 시각 선택 FilterSelect 3개 정렬 */
-.timePickerRow {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-wrap: nowrap;
-}
-
-/* 모달 폭 안에 맞추려고 FilterSelect 내부 button/ul 폭 축소 */
-.timePickerRow > div {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.timePickerRow > div > button {
+/* 등원시각 수정 모달 - 네이티브 time input (키보드 직접 입력 지원) */
+.timeInput {
   width: 100%;
-  padding-right: calc(var(--spacing-lg) + var(--spacing-xs));
-}
-
-.timePickerRow > div > ul {
-  width: 100%;
-  min-width: 4.5rem;
-}
-
-.timeColon {
+  height: var(--size-input-height);
+  box-sizing: border-box;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-md);
-  color: var(--color-text-muted);
-  padding: 0 var(--spacing-xxs, 2px);
-  flex: 0 0 auto;
+  color: var(--color-text-primary);
+  background-color: #ffffff;
+  transition: border-color 0.15s;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeInput:hover {
+  border-color: var(--color-text-muted);
+}
+
+.timeInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }

@@ -379,30 +379,6 @@ export default function AttendanceManagement() {
     return `${yyyy}-${MM}-${dd}`;
   };
 
-  /** HH:mm(24h) → { period: '오전'|'오후', hour12: '01'..'12', minute: '00'..'59' } */
-  const parseTimeParts = (hhmm: string) => {
-    const [h, m] = hhmm.split(':');
-    const H = Number(h);
-    const period = H < 12 ? '오전' : '오후';
-    const h12 = H % 12 === 0 ? 12 : H % 12;
-    return {
-      period,
-      hour12: String(h12).padStart(2, '0'),
-      minute: (m ?? '00').padStart(2, '0'),
-    };
-  };
-
-  /** { period, hour12, minute } → HH:mm(24h) */
-  const composeTime = (period: string, hour12: string, minute: string): string => {
-    const h12 = Number(hour12);
-    let H = h12 % 12;
-    if (period === '오후') H += 12;
-    return `${String(H).padStart(2, '0')}:${minute}`;
-  };
-
-  const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-  const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-
   const openEditModal = (row: AttendanceRecord) => {
     setEditTarget(row);
     setEditValue(toTimeInputValue(row.checkedInAt));
@@ -798,34 +774,24 @@ export default function AttendanceManagement() {
             </div>
 
             <div className={styles.editField}>
-              <label className={styles.editLabel}>
+              <label className={styles.editLabel} htmlFor="edit-checkin-time">
                 등원시각 <span className={styles.editHint}>(오늘 {todayDateStr()})</span>
               </label>
-              <div className={styles.timePickerRow}>
-                {(() => {
-                  const { period, hour12, minute } = parseTimeParts(editValue || '00:00');
-                  return (
-                    <>
-                      <FilterSelect
-                        value={period}
-                        options={['오전', '오후']}
-                        onChange={(v) => setEditValue(composeTime(v, hour12, minute))}
-                      />
-                      <FilterSelect
-                        value={hour12}
-                        options={HOUR_OPTIONS}
-                        onChange={(v) => setEditValue(composeTime(period, v, minute))}
-                      />
-                      <span className={styles.timeColon}>:</span>
-                      <FilterSelect
-                        value={minute}
-                        options={MINUTE_OPTIONS}
-                        onChange={(v) => setEditValue(composeTime(period, hour12, v))}
-                      />
-                    </>
-                  );
-                })()}
-              </div>
+              <input
+                id="edit-checkin-time"
+                type="time"
+                className={styles.timeInput}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editValue && !editSaving) {
+                    e.preventDefault();
+                    void handleEditSave();
+                  }
+                }}
+                autoFocus
+                step={60}
+              />
             </div>
 
             <div className={styles.modalActions}>
