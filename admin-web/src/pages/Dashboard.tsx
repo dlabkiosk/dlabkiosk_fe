@@ -70,6 +70,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState<string>('');
+  const [meLoaded, setMeLoaded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -91,9 +92,11 @@ export default function Dashboard() {
           const active = list.filter((s) => s.active);
           setStores(active);
           if (active.length > 0) setSelectedStore(active[0].storeName);
-        });
+        }).finally(() => setMeLoaded(true));
+      } else {
+        setMeLoaded(true);
       }
-    }).catch(() => {});
+    }).catch(() => setMeLoaded(true));
   }, []);
 
   const getStoreId = (): number | undefined => {
@@ -102,13 +105,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (!meLoaded) return;
     if (isAdmin && !selectedStore) return;
     setLoading(true);
     getDashboardAll(getStoreId())
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [selectedStore, stores]);
+  }, [meLoaded, selectedStore, stores]);
 
   const daily = data?.dailyOperation;
   const att = data?.attendanceSummary;

@@ -6,6 +6,7 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { getExamSchedules } from '../api/examScheduleApi';
 import type { ExamSchedule } from '../api/examScheduleApi';
 import ExitConfirmModal from './ExitConfirmModal';
+import { requestKioskExit } from '../utils/kioskExit';
 import styles from './Header.module.css';
 
 interface DdayItem {
@@ -137,10 +138,7 @@ export default function Header({ storeName, onAdminAccess, cardReaderConnected }
         onCancel={() => setExitConfirmOpen(false)}
         onConfirm={() => {
           setExitConfirmOpen(false);
-          // Chrome의 window.close() 보안 정책 우회:
-          // 현재 창을 스크립트가 연 것처럼 재선언한 뒤 close 호출
-          window.open('', '_self');
-          window.close();
+          void requestKioskExit();
         }}
       />
     )}
