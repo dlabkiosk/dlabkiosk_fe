@@ -8,7 +8,7 @@ applications:
             - cd .. && npm ci
         build:
           commands:
-            - npm run build
+            - npm run build:admin
       artifacts:
         baseDirectory: dist
         files:
@@ -25,7 +25,7 @@ applications:
             - cd .. && npm ci
         build:
           commands:
-            - npm run build
+            - npm run build:kiosk
       artifacts:
         baseDirectory: dist
         files:
