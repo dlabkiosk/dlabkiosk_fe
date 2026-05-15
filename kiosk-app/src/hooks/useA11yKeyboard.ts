@@ -39,6 +39,12 @@ export interface UseA11yKeyboardOptions {
   enabled?: boolean;
   /** TTS 발화 함수. 보통 `useAccessibility().speak` 주입 */
   speak?: (text: string, cancelBefore?: boolean) => void;
+  /**
+   * true이면 120ms 타이밍 가드 비활성, 키 즉시 실행.
+   * 키패드 입력(휴대폰 8자리 등)처럼 연속 빠른 입력이 정상 사용 패턴인 경우 사용.
+   * QR 스캐너 데이터가 들어와도 그대로 처리됨 (worst case: 백엔드 거부).
+   */
+  noTimingGuard?: boolean;
 }
 
 /** QR 스캐너의 `maxKeyIntervalMs`(100ms)보다 약간 큰 값. 단일 사람 입력 판별 */
@@ -87,6 +93,7 @@ export function useA11yKeyboard({
   echoLabels = {},
   enabled = true,
   speak,
+  noTimingGuard = false,
 }: UseA11yKeyboardOptions): void {
   // 매핑/콜백 최신 참조 유지 (effect 의존성 회전 방지)
   const mappingRef = useRef(mapping);
@@ -103,14 +110,14 @@ export function useA11yKeyboard({
     if (!enabled) return;
 
     const handler = (e: KeyboardEvent) => {
-      // 일반 입력 필드 포커스 시 무시 (QR 스캐너와 동일 패턴)
+      // [0] 일반 입력 필드 포커스 시 무시 (QR 스캐너와 동일 패턴)
       if (isInputFocused(e.target)) return;
 
-      // [1] 모든 keydown은 pending을 우선 정리.
-      // QR 스캐너 데이터는 글자/숫자/Enter 등이 빠르게 연속 도착하므로,
-      // 매핑 여부와 무관하게 pending이 있으면 = 연속 입력 = QR로 판단해 취소.
-      // (없으면 그냥 통과)
-      const hadPending = pendingTimerRef.current !== null;
+      // [1] timing-guard 모드: 모든 keydown은 pending을 우선 정리.
+      //   QR 데이터(글자+숫자+Enter)가 빠르게 연속 도착하므로 매핑 여부와 무관하게
+      //   pending이 있으면 = 연속 입력 = QR로 간주해 취소.
+      //   noTimingGuard 모드에서는 이 단계 건너뜀.
+      const hadPending = !noTimingGuard && pendingTimerRef.current !== null;
       if (hadPending) {
         clearTimeout(pendingTimerRef.current!);
         pendingTimerRef.current = null;
@@ -122,10 +129,18 @@ export function useA11yKeyboard({
       const action = mappingRef.current[a11yKey];
       if (!action) return;
 
-      // [2] 직전에 pending을 정리했으면 = 이번 키도 연속 입력의 일부 = 액션 발동 X
+      // [2] noTimingGuard 경로: 키패드 입력 등 즉시 실행. QR 데이터도 그대로 처리.
+      if (noTimingGuard) {
+        action();
+        const label = echoLabelsRef.current[a11yKey];
+        if (label && speakRef.current) speakRef.current(label);
+        return;
+      }
+
+      // [3] 직전에 pending 정리했으면 = 이번 키도 연속 입력의 일부 = 액션 발동 X
       if (hadPending) return;
 
-      // [3] ESC(취소)는 명확한 의도 키 → timing 가드 우회, 즉시 실행
+      // [4] ESC(취소)는 명확한 의도 키 → timing 가드 우회, 즉시 실행
       if (a11yKey === 'CANCEL') {
         action();
         const label = echoLabelsRef.current[a11yKey];
@@ -133,7 +148,7 @@ export function useA11yKeyboard({
         return;
       }
 
-      // [4] 일반 키: 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
+      // [5] 일반 키: 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
       pendingTimerRef.current = setTimeout(() => {
         pendingTimerRef.current = null;
         action();

@@ -9,12 +9,16 @@ import type { MealInfo } from '../api/tagApi';
 import type { Student } from '../data/mockStudents';
 import type { CardScanResult } from '../hooks/useCardScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
   VOICE_KEYPAD_PHONE,
   VOICE_KEYPAD_AUTH_FAIL,
   VOICE_SCAN_AUTH_FAIL,
   VOICE_KEYPAD_NUMBER,
+  VOICE_A11Y_CANCEL,
+  VOICE_A11Y_KEYPAD_BACKSPACE,
+  VOICE_A11Y_KEYPAD_SUBMIT,
   getTagVoice,
 } from '../constants/voiceGuide';
 import checkIcon from '../assets/check.png';
@@ -460,6 +464,42 @@ export default function CardScanModal({ title, scanResult, qrResult, secureClose
     }
     handlePhone8(inputValue);
   }, [inputValue, handlePhone8, showError]);
+
+  // 배리어프리 키패드 매핑 — 휴대폰 8자리 키패드 모드일 때
+  //   숫자 0~9 = 입력, * = 백스페이스, # = 입력 완료, ESC = 모달 닫기
+  // 키패드 모드는 사람이 빠르게 연속 타이핑 하는 정상 패턴이므로 noTimingGuard 사용.
+  const isPhoneKeypad = keypadMode === 'phone';
+  useA11yKeyboard({
+    speak,
+    noTimingGuard: isPhoneKeypad,
+    mapping: {
+      ...(isPhoneKeypad ? {
+        '0': () => handleKeypadPress('0'),
+        '1': () => handleKeypadPress('1'),
+        '2': () => handleKeypadPress('2'),
+        '3': () => handleKeypadPress('3'),
+        '4': () => handleKeypadPress('4'),
+        '5': () => handleKeypadPress('5'),
+        '6': () => handleKeypadPress('6'),
+        '7': () => handleKeypadPress('7'),
+        '8': () => handleKeypadPress('8'),
+        '9': () => handleKeypadPress('9'),
+        STAR: () => handleKeypadPress('backspace'),
+        HASH: handleKeypadSubmit,
+        ENTER: handleKeypadSubmit,
+      } : {}),
+      CANCEL: onClose,
+    },
+    echoLabels: {
+      ...(isPhoneKeypad ? {
+        STAR: VOICE_A11Y_KEYPAD_BACKSPACE,
+        HASH: VOICE_A11Y_KEYPAD_SUBMIT,
+        ENTER: VOICE_A11Y_KEYPAD_SUBMIT,
+        // 0~9는 handleKeypadPress가 자체적으로 speak(VOICE_KEYPAD_NUMBER) 호출하므로 echoLabel 미설정
+      } : {}),
+      CANCEL: VOICE_A11Y_CANCEL,
+    },
+  });
 
   const handleBackToScan = useCallback(() => {
     setKeypadMode(null);

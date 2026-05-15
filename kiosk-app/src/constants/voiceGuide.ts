@@ -123,5 +123,9 @@ export const VOICE_A11Y_REMOTE_SEAT_CHANGE = '2번, 좌석 변경';
 /** 사유 선택 echo. order=1-based, label=사유명 */
 export const VOICE_A11Y_REASON_SELECT = (order: number, label: string) => `${order}번, ${label}`;
 
+/* ── 키패드 (휴대폰 8자리 등) 입력 echo ── */
+export const VOICE_A11Y_KEYPAD_BACKSPACE = '지우기';
+export const VOICE_A11Y_KEYPAD_SUBMIT = '입력 완료';
+
 /* ── TTS 모드 타임아웃 배율 ── */
 export const TTS_TIMEOUT_MULTIPLIER = 1.5;
