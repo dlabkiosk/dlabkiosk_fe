@@ -5,3 +5,9 @@ dist
 admin-web/dist
 kiosk-app/dist
 .vercel
+
+# 로컬 환경변수 파일 (절대 커밋 금지 — secret 유출 방지)
+# .env.example은 템플릿이므로 추적됨
+.env
+.env.local
+.env.*.local
