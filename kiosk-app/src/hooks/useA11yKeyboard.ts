@@ -106,21 +106,26 @@ export function useA11yKeyboard({
       // 일반 입력 필드 포커스 시 무시 (QR 스캐너와 동일 패턴)
       if (isInputFocused(e.target)) return;
 
+      // [1] 모든 keydown은 pending을 우선 정리.
+      // QR 스캐너 데이터는 글자/숫자/Enter 등이 빠르게 연속 도착하므로,
+      // 매핑 여부와 무관하게 pending이 있으면 = 연속 입력 = QR로 판단해 취소.
+      // (없으면 그냥 통과)
+      const hadPending = pendingTimerRef.current !== null;
+      if (hadPending) {
+        clearTimeout(pendingTimerRef.current!);
+        pendingTimerRef.current = null;
+      }
+
       const a11yKey = normalizeKey(e);
       if (!a11yKey) return;
 
       const action = mappingRef.current[a11yKey];
       if (!action) return;
 
-      // 이미 pending 입력이 있으면 = 빠른 연속 입력 = QR 스캐너 데이터로 판단
-      // 둘 다 취소하고 QR 스캐너에 위임
-      if (pendingTimerRef.current) {
-        clearTimeout(pendingTimerRef.current);
-        pendingTimerRef.current = null;
-        return;
-      }
+      // [2] 직전에 pending을 정리했으면 = 이번 키도 연속 입력의 일부 = 액션 발동 X
+      if (hadPending) return;
 
-      // ESC(취소)는 명확한 의도 키 → timing 가드 우회, 즉시 실행
+      // [3] ESC(취소)는 명확한 의도 키 → timing 가드 우회, 즉시 실행
       if (a11yKey === 'CANCEL') {
         action();
         const label = echoLabelsRef.current[a11yKey];
@@ -128,7 +133,7 @@ export function useA11yKeyboard({
         return;
       }
 
-      // 일반 키: 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
+      // [4] 일반 키: 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
       pendingTimerRef.current = setTimeout(() => {
         pendingTimerRef.current = null;
         action();
