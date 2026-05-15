@@ -1,5 +1,12 @@
 import phoneIcon from '../assets/phone.png';
 import seatchangeIcon from '../assets/seatchange.png';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import {
+  VOICE_A11Y_CANCEL,
+  VOICE_A11Y_REMOTE_NO_PHONE,
+  VOICE_A11Y_REMOTE_SEAT_CHANGE,
+} from '../constants/voiceGuide';
 import styles from './RemoteApplyModal.module.css';
 
 interface RemoteAction {
@@ -19,6 +26,23 @@ interface RemoteApplyModalProps {
 }
 
 export default function RemoteApplyModal({ onClose, onSelect }: RemoteApplyModalProps) {
+  const { speak } = useAccessibility();
+
+  // 배리어프리 키패드 매핑 — 1: 휴대폰 미소지, 2: 좌석 변경, ×: 취소
+  useA11yKeyboard({
+    speak,
+    mapping: {
+      '1': () => onSelect('no-phone', '휴대폰 미소지'),
+      '2': () => onSelect('seat-change', '좌석 변경'),
+      CANCEL: onClose,
+    },
+    echoLabels: {
+      '1': VOICE_A11Y_REMOTE_NO_PHONE,
+      '2': VOICE_A11Y_REMOTE_SEAT_CHANGE,
+      CANCEL: VOICE_A11Y_CANCEL,
+    },
+  });
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

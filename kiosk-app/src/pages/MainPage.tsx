@@ -26,6 +26,7 @@ import { useCardScanner } from '../hooks/useCardScanner';
 import type { CardScanResult } from '../hooks/useCardScanner';
 import { useQrScanner } from '../hooks/useQrScanner';
 import type { QrScanResult } from '../hooks/useQrScanner';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
 import AccessibilityBar from '../components/AccessibilityBar';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import {
@@ -39,6 +40,12 @@ import {
   VOICE_SEAT_LEAVE_REASON_SELECTED,
   VOICE_REMOTE_NO_PHONE,
   VOICE_REMOTE_SEAT_CHANGE,
+  VOICE_A11Y_MENU_NO_CARD,
+  VOICE_A11Y_MENU_SEAT_LEAVE,
+  VOICE_A11Y_MENU_REMOTE_APPLY,
+  VOICE_A11Y_MENU_STUDENT_INFO,
+  VOICE_A11Y_MENU_MEAL_PLAN,
+  VOICE_A11Y_MENU_SEAT_MAP,
 } from '../constants/voiceGuide';
 import styles from './MainPage.module.css';
 
@@ -172,6 +179,29 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
       speak(VOICE_MENU_SEAT_MAP);
     }
   };
+
+  // 배리어프리 키패드 단축키 (KS X 9211) — 메인 메뉴 6개 매핑
+  // 모달이 하나라도 열려 있으면 비활성 (모달 자체 매핑에 위임)
+  useA11yKeyboard({
+    enabled: !isAnyModalOpen,
+    speak,
+    mapping: {
+      '1': () => handleMenuClick('no-card'),
+      '2': () => handleMenuClick('seat-leave'),
+      '3': () => handleMenuClick('remote-apply'),
+      '4': () => handleMenuClick('student-info'),
+      '5': () => handleMenuClick('meal-plan'),
+      '6': () => handleMenuClick('seat-map'),
+    },
+    echoLabels: {
+      '1': VOICE_A11Y_MENU_NO_CARD,
+      '2': VOICE_A11Y_MENU_SEAT_LEAVE,
+      '3': VOICE_A11Y_MENU_REMOTE_APPLY,
+      '4': VOICE_A11Y_MENU_STUDENT_INFO,
+      '5': VOICE_A11Y_MENU_MEAL_PLAN,
+      '6': VOICE_A11Y_MENU_SEAT_MAP,
+    },
+  });
 
   // 학적 조회: 학생 식별 후 StudentInfoModal 열기
   const handleStudentFound = useCallback((student: Student) => {

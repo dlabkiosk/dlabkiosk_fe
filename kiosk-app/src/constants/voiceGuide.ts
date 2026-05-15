@@ -107,5 +107,21 @@ export const VOICE_TIMEOUT = '시간이 초과되어 메인 화면으로 돌아�
 /* ── 키패드 숫자 읽기 ── */
 export const VOICE_KEYPAD_NUMBER = (num: string) => num;
 
+/* ── 배리어프리 키패드 단축키 echo (KS X 9211) ──
+ * 키 입력 시 어떤 메뉴/액션이 선택되었는지 음성으로 안내.
+ * `useA11yKeyboard`의 echoLabels 옵션에 주입.
+ */
+export const VOICE_A11Y_MENU_NO_CARD = '1번, 휴대폰번호 출결';
+export const VOICE_A11Y_MENU_SEAT_LEAVE = '2번, 좌석 이탈';
+export const VOICE_A11Y_MENU_REMOTE_APPLY = '3번, 비대면 신청';
+export const VOICE_A11Y_MENU_STUDENT_INFO = '4번, 학적 조회';
+export const VOICE_A11Y_MENU_MEAL_PLAN = '5번, 식단표';
+export const VOICE_A11Y_MENU_SEAT_MAP = '6번, 좌석 배치도';
+export const VOICE_A11Y_CANCEL = '취소';
+export const VOICE_A11Y_REMOTE_NO_PHONE = '1번, 휴대폰 미소지';
+export const VOICE_A11Y_REMOTE_SEAT_CHANGE = '2번, 좌석 변경';
+/** 사유 선택 echo. order=1-based, label=사유명 */
+export const VOICE_A11Y_REASON_SELECT = (order: number, label: string) => `${order}번, ${label}`;
+
 /* ── TTS 모드 타임아웃 배율 ── */
 export const TTS_TIMEOUT_MULTIPLIER = 1.5;

@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getSeatLeaveReasons } from '../api/seatLeaveApi';
 import type { SeatLeaveReason } from '../api/seatLeaveApi';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import type { A11yKey } from '../hooks/useA11yKeyboard';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { VOICE_A11Y_CANCEL, VOICE_A11Y_REASON_SELECT } from '../constants/voiceGuide';
 import styles from './SeatLeaveReasonModal.module.css';
 
 interface SeatLeaveReasonModalProps {
@@ -9,6 +13,7 @@ interface SeatLeaveReasonModalProps {
 }
 
 export default function SeatLeaveReasonModal({ onClose, onSelect }: SeatLeaveReasonModalProps) {
+  const { speak } = useAccessibility();
   const [reasons, setReasons] = useState<SeatLeaveReason[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +23,24 @@ export default function SeatLeaveReasonModal({ onClose, onSelect }: SeatLeaveRea
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // 배리어프리 키패드 매핑 — 사유 1~9 + 취소 (사유는 동적이라 useMemo)
+  const { keyMapping, keyEchoLabels } = useMemo(() => {
+    const mapping: Partial<Record<A11yKey, () => void>> = { CANCEL: onClose };
+    const labels: Partial<Record<A11yKey, string>> = { CANCEL: VOICE_A11Y_CANCEL };
+    reasons.slice(0, 9).forEach((reason, idx) => {
+      const k = String(idx + 1) as A11yKey;
+      mapping[k] = () => onSelect(reason.id, reason.reasonName);
+      labels[k] = VOICE_A11Y_REASON_SELECT(idx + 1, reason.reasonName);
+    });
+    return { keyMapping: mapping, keyEchoLabels: labels };
+  }, [reasons, onClose, onSelect]);
+
+  useA11yKeyboard({
+    mapping: keyMapping,
+    echoLabels: keyEchoLabels,
+    speak,
+  });
 
   return (
     <div className={styles.overlay}>
