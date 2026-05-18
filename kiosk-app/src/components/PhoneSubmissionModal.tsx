@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMyPhoneSubmissions, submitPhoneSubmission } from '../api/phoneSubmissionApi';
 import type { SubmissionType, ActiveSubmissionPeriod } from '../api/phoneSubmissionApi';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './PhoneSubmissionModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
@@ -64,6 +67,16 @@ interface PhoneSubmissionModalProps {
 }
 
 export default function PhoneSubmissionModal({ identifier, inputMethod, studentName, onClose }: PhoneSubmissionModalProps) {
+  const { speak } = useAccessibility();
+
+  // 배리어프리 키패드 매핑 — × (CANCEL) = 닫기
+  // 폼 내부 인터랙션(날짜/옵션 선택)은 터치 UI 사용. 키 네비게이션은 추후 확장.
+  useA11yKeyboard({
+    speak,
+    mapping: { CANCEL: onClose },
+    echoLabels: { CANCEL: VOICE_A11Y_CANCEL },
+  });
+
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);

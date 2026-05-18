@@ -50,6 +50,17 @@ export interface UseA11yKeyboardOptions {
 /** QR 스캐너의 `maxKeyIntervalMs`(100ms)보다 약간 큰 값. 단일 사람 입력 판별 */
 const KEY_TIMING_GUARD_MS = 120;
 
+/**
+ * 키 발동 시 전역에 이벤트 발행 — 부분 시력자용 시각 인디케이터(A11yKeyIndicator)와 연계.
+ * detail.key   : 정규화된 A11yKey
+ * detail.label : echoLabels에 정의된 한글 라벨 (없으면 빈 문자열)
+ */
+function dispatchKeyEvent(key: A11yKey, label: string): void {
+  window.dispatchEvent(
+    new CustomEvent('a11y:key', { detail: { key, label } }),
+  );
+}
+
 /** OS 키 이벤트 → 정규화된 A11yKey. 매핑 불가능한 키는 null */
 function normalizeKey(e: KeyboardEvent): A11yKey | null {
   const key = e.key;
@@ -134,26 +145,36 @@ export function useA11yKeyboard({
         action();
         const label = echoLabelsRef.current[a11yKey];
         if (label && speakRef.current) speakRef.current(label);
+        dispatchKeyEvent(a11yKey, label ?? '');
         return;
       }
 
       // [3] 직전에 pending 정리했으면 = 이번 키도 연속 입력의 일부 = 액션 발동 X
       if (hadPending) return;
 
-      // [4] ESC(취소)는 명확한 의도 키 → timing 가드 우회, 즉시 실행
-      if (a11yKey === 'CANCEL') {
+      // [4] 명확한 의도 키 (QR 스캐너가 절대 보내지 않는 키들) → timing 가드 우회, 즉시 실행
+      //   CANCEL (×/Esc): 모달 닫기
+      //   HOME (△):       메인으로 복귀
+      //   UP/DOWN/LEFT/RIGHT (∧∨<>): 포커스 이동 (사용 모달이 매핑 등록 시)
+      if (
+        a11yKey === 'CANCEL' || a11yKey === 'HOME' ||
+        a11yKey === 'UP' || a11yKey === 'DOWN' ||
+        a11yKey === 'LEFT' || a11yKey === 'RIGHT'
+      ) {
         action();
         const label = echoLabelsRef.current[a11yKey];
         if (label && speakRef.current) speakRef.current(label);
+        dispatchKeyEvent(a11yKey, label ?? '');
         return;
       }
 
-      // [5] 일반 키: 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
+      // [5] 일반 키 (숫자/*/#/Enter): 120ms 동안 추가 입력 없으면 사람 단일 입력으로 판단 → 액션 실행
       pendingTimerRef.current = setTimeout(() => {
         pendingTimerRef.current = null;
         action();
         const label = echoLabelsRef.current[a11yKey];
         if (label && speakRef.current) speakRef.current(label);
+        dispatchKeyEvent(a11yKey, label ?? '');
       }, KEY_TIMING_GUARD_MS);
     };
 

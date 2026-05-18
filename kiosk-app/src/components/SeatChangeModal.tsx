@@ -4,6 +4,9 @@ import type { SeatArea, SeatInfo } from '../api/seatApi';
 import { submitSeatChangeRequest, getMySeatChangeRequest, cancelSeatChangeRequest } from '../api/seatChangeApi';
 import type { MySeatChangeRequest } from '../api/seatChangeApi';
 import type { Student } from '../data/mockStudents';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './SeatChangeModal.module.css';
 
 const SUCCESS_DISPLAY_MS = 2000;
@@ -27,6 +30,16 @@ interface SeatChangeModalProps {
 }
 
 export default function SeatChangeModal({ student, inputMethod, onClose }: SeatChangeModalProps) {
+  const { speak } = useAccessibility();
+
+  // 배리어프리 키패드 매핑 — × (CANCEL) = 닫기
+  // 폼 내부 인터랙션(구역/좌석 선택)은 터치 UI 사용. 키 네비게이션은 추후 확장.
+  useA11yKeyboard({
+    speak,
+    mapping: { CANCEL: onClose },
+    echoLabels: { CANCEL: VOICE_A11Y_CANCEL },
+  });
+
   const [areas, setAreas] = useState<SeatArea[]>([]);
   const [selectedAreaCd, setSelectedAreaCd] = useState<string>('');
   const [seats, setSeats] = useState<SeatInfo[]>([]);

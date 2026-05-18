@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { TTS_TIMEOUT_MULTIPLIER } from '../constants/voiceGuide';
 
-type FontScale = 'default' | 'large' | 'xlarge';
+type FontScale = 'default' | 'xlarge';
 type ZoomScale = 'default' | 'zoomed';
 
 interface AccessibilityState {
@@ -21,6 +21,15 @@ interface AccessibilityActions {
   speak: (text: string, cancelBefore?: boolean) => void;
   /** TTS 모드일 때 타임아웃에 적용할 배율 (꺼져 있으면 1) */
   timeoutMultiplier: number;
+  /** 4개 옵션(TTS/글씨/확대/고대비) 중 하나라도 ON이면 true */
+  isA11yActive: boolean;
+  /**
+   * 배리어프리 통합 토글 (KS X 9211 표준 패턴).
+   *   - 하나라도 ON이면 모두 OFF (reset)
+   *   - 모두 OFF면 모두 ON (TTS + 글씨 크게 + 화면확대 + 고대비)
+   * 사용자가 세부 토글로 개별 조정 후에도 호출 가능.
+   */
+  toggleA11yMode: () => void;
 }
 
 type AccessibilityContextValue = AccessibilityState & AccessibilityActions;
@@ -34,7 +43,6 @@ const DEFAULT_STATE: AccessibilityState = {
 
 const FONT_SCALE_VALUES: Record<FontScale, number> = {
   default: 2,
-  large: 2.25,
   xlarge: 2.5,
 };
 
@@ -79,7 +87,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   const cycleFontScale = useCallback(() => {
     setState((prev) => {
-      const order: FontScale[] = ['default', 'large', 'xlarge'];
+      const order: FontScale[] = ['default', 'xlarge'];
       const idx = order.indexOf(prev.fontScale);
       const next = order[(idx + 1) % order.length];
       applyStyles(next, prev.zoom);
@@ -111,10 +119,40 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setState(DEFAULT_STATE);
   }, [applyStyles]);
 
+  // 4개 옵션 중 하나라도 ON 상태인지 (배리어프리 통합 토글의 표시 상태)
+  const isA11yActive = useMemo(
+    () => state.ttsEnabled || state.fontScale !== 'default' || state.zoom !== 'default' || state.highContrast,
+    [state],
+  );
+
+  // 배리어프리 통합 토글 — KS X 9211 표준 메인 진입점
+  //   - 하나라도 ON: 모두 OFF
+  //   - 모두 OFF: 모두 ON (TTS + 글씨 크게 + 화면 확대 + 고대비)
+  const toggleA11yMode = useCallback(() => {
+    if (isA11yActive) {
+      reset();
+      return;
+    }
+    // 모두 ON으로 전환
+    applyStyles('xlarge', 'zoomed');
+    document.documentElement.classList.add('high-contrast');
+    setState({
+      ttsEnabled: true,
+      fontScale: 'xlarge',
+      zoom: 'zoomed',
+      highContrast: true,
+    });
+  }, [isA11yActive, reset, applyStyles]);
+
   const timeoutMultiplier = useMemo(() => (state.ttsEnabled ? TTS_TIMEOUT_MULTIPLIER : 1), [state.ttsEnabled]);
 
   return (
-    <AccessibilityContext.Provider value={{ ...state, toggleTts, cycleFontScale, toggleZoom, toggleHighContrast, reset, speak, timeoutMultiplier }}>
+    <AccessibilityContext.Provider value={{
+      ...state,
+      toggleTts, cycleFontScale, toggleZoom, toggleHighContrast,
+      reset, speak, timeoutMultiplier,
+      isA11yActive, toggleA11yMode,
+    }}>
       {children}
     </AccessibilityContext.Provider>
   );

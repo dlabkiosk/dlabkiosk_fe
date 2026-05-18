@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getSeatAreas, getSeats } from '../api/seatApi';
 import type { SeatArea, SeatInfo } from '../api/seatApi';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './SeatMapModal.module.css';
 
 interface SeatMapModalProps {
@@ -8,11 +11,36 @@ interface SeatMapModalProps {
 }
 
 export default function SeatMapModal({ onClose }: SeatMapModalProps) {
+  const { speak } = useAccessibility();
   const [areas, setAreas] = useState<SeatArea[]>([]);
   const [selectedAreaCd, setSelectedAreaCd] = useState<string>('');
   const [seats, setSeats] = useState<SeatInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // 배리어프리 키패드 매핑 — 좌석 배치도 (읽기 전용)
+  //   × (CANCEL) / O (ENTER) = 닫기
+  //   ←/→ (LEFT/RIGHT) = 구역 이전/다음 전환
+  const cycleArea = (delta: 1 | -1) => {
+    if (areas.length === 0) return;
+    const idx = areas.findIndex((a) => a.areaCd === selectedAreaCd);
+    const nextIdx = (idx + delta + areas.length) % areas.length;
+    const nextArea = areas[nextIdx];
+    setSelectedAreaCd(nextArea.areaCd);
+    if (nextArea.areaNm) speak(nextArea.areaNm);
+  };
+  useA11yKeyboard({
+    speak,
+    mapping: {
+      CANCEL: onClose,
+      ENTER: onClose,
+      LEFT: () => cycleArea(-1),
+      RIGHT: () => cycleArea(1),
+    },
+    echoLabels: {
+      CANCEL: VOICE_A11Y_CANCEL,
+    },
+  });
 
   /* ── 구역 목록 로드 ── */
   useEffect(() => {

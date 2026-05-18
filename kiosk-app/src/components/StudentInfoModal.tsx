@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Student } from '../data/mockStudents';
 import type { SeatChangeRequest, PhoneSubmission, SeatLeave, Receipt, PointRecord } from '../api/studentApi';
 import MealCalendarModal from './MealCalendarModal';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './StudentInfoModal.module.css';
 
 const INACTIVITY_MS = 25000;   // 25초 후 카운트다운 시작
@@ -80,9 +83,36 @@ type DetailView = 'seatChange' | 'phoneSubmission' | 'seatLeave' | 'receipt' | '
 const DETAIL_PAGE_SIZE = 10;
 
 export default function StudentInfoModal({ student, onClose }: StudentInfoModalProps) {
+  const { speak } = useAccessibility();
   const [showMealCalendar, setShowMealCalendar] = useState(false);
   const [detailView, setDetailView] = useState<DetailView | null>(null);
   const [detailPage, setDetailPage] = useState(1);
+
+  // 배리어프리 키패드 매핑 — 학적 조회 (읽기 전용, 개인정보)
+  //   × (CANCEL) = 닫기 또는 상세보기에서 목록으로
+  //   O (ENTER) = 닫기 (상세보기 X 시)
+  // 상세 화면에서는 ESC가 상세 닫기로 동작, 메인 화면에서는 모달 닫기.
+  useA11yKeyboard({
+    speak,
+    mapping: {
+      CANCEL: () => {
+        if (detailView) {
+          setDetailView(null);
+          setDetailPage(1);
+        } else if (showMealCalendar) {
+          setShowMealCalendar(false);
+        } else {
+          onClose();
+        }
+      },
+      ENTER: () => {
+        if (!detailView && !showMealCalendar) onClose();
+      },
+    },
+    echoLabels: {
+      CANCEL: VOICE_A11Y_CANCEL,
+    },
+  });
 
   /* ── 비활성 타이머 ── */
   const [countdown, setCountdown] = useState<number | null>(null);

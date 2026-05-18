@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import KioskLoginPage from './pages/KioskLoginPage';
 import MainPage from './pages/MainPage';
+import A11yKeyIndicator from './components/A11yKeyIndicator';
 import { kioskMe } from './api/kioskAuthApi';
 import type { KioskSession } from './api/kioskAuthApi';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
@@ -45,6 +46,8 @@ export default function App() {
       ) : (
         <MainPage session={session} onLogout={handleLogout} />
       )}
+      {/* 배리어프리 키 입력 시각 인디케이터 (부분 시력자용, 화면 하단 오버레이) */}
+      <A11yKeyIndicator />
     </AccessibilityProvider>
   );
 }

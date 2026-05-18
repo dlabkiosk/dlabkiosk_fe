@@ -1,3 +1,6 @@
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './AttendanceModal.module.css';
 
 interface AttendanceAction {
@@ -18,6 +21,25 @@ interface AttendanceModalProps {
 }
 
 export default function AttendanceModal({ onClose, onSelect }: AttendanceModalProps) {
+  const { speak } = useAccessibility();
+
+  // 배리어프리 키패드 매핑 — 1/2/3 = 액션 선택, × (CANCEL) = 닫기
+  useA11yKeyboard({
+    speak,
+    mapping: {
+      '1': () => onSelect(ATTENDANCE_ACTIONS[0].id),
+      '2': () => onSelect(ATTENDANCE_ACTIONS[1].id),
+      '3': () => onSelect(ATTENDANCE_ACTIONS[2].id),
+      CANCEL: onClose,
+    },
+    echoLabels: {
+      '1': `1번, ${ATTENDANCE_ACTIONS[0].label}`,
+      '2': `2번, ${ATTENDANCE_ACTIONS[1].label}`,
+      '3': `3번, ${ATTENDANCE_ACTIONS[2].label}`,
+      CANCEL: VOICE_A11Y_CANCEL,
+    },
+  });
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

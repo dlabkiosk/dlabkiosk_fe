@@ -1,5 +1,7 @@
 .container {
   padding: 0 var(--space-12);
+  /* 위쪽 공지/순공만 축소되도록 메뉴 높이 고정 (AdBanner는 이미 flex-shrink: 0) */
+  flex-shrink: 0;
 }
 
 .grid {

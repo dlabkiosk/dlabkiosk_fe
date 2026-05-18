@@ -3,6 +3,28 @@ html {
   font-size: clamp(14px, 3.33vw, 20px);
 }
 
+/* ── 배리어프리 (KS X 9211) — 키보드 포커스 시각 표시 ──
+ * `:focus-visible` 은 키보드 네비게이션 시에만 적용 (마우스 클릭 시 X).
+ * 부분 시력자가 현재 포커스 위치를 명확히 인지할 수 있도록 굵은 outline 적용.
+ */
+:focus-visible {
+  outline: 4px solid #2563EB;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* 고대비 모드에서는 노란색 + 검은 그림자로 더 강한 대비 */
+.high-contrast :focus-visible {
+  outline: 5px solid #fff200;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 8px #000;
+}
+
+/* 마우스 클릭으로 인한 outline 제거 (focus-visible 대신 :focus 표준 동작) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 :root {
   /* ── Colors ── */
   --color-success: #28a745;

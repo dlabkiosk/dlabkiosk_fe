@@ -82,8 +82,7 @@ export const VOICE_BACK_TO_MAIN = '메인 화면으로 돌아왔습니다. 카�
 /* ── 배리어프리 기능 ── */
 export const VOICE_FONT_SCALE: Record<string, string> = {
   default: '글씨 크기가 기본으로 변경되었습니다.',
-  large: '글씨 크기가 크게 변경되었습니다.',
-  xlarge: '글씨 크기가 가장 크게 변경되었습니다.',
+  xlarge: '글씨 크기가 크게 변경되었습니다.',
 };
 
 export const VOICE_ZOOM_ON = '화면이 확대되었습니다.';

@@ -203,6 +203,24 @@ export default function MainPage({ session, onLogout }: MainPageProps) {
     },
   });
 
+  // △ Home 글로벌 핸들러 — 어떤 모달이 열려 있어도 메인으로 복귀
+  // (Admin 패널은 별도 종료 로직이 있으므로 비활성)
+  const goToMain = useCallback(() => {
+    closeOtherModals();
+    setScanTarget(null);
+  }, [closeOtherModals]);
+
+  useA11yKeyboard({
+    enabled: isAnyModalOpen && !showAdmin,
+    speak,
+    mapping: {
+      HOME: goToMain,
+    },
+    echoLabels: {
+      HOME: VOICE_BACK_TO_MAIN,
+    },
+  });
+
   // 학적 조회: 학생 식별 후 StudentInfoModal 열기
   const handleStudentFound = useCallback((student: Student) => {
     setScanTarget(null);

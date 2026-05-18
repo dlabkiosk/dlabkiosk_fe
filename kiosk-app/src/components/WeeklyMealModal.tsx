@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getMealMenuWeek, type MealMenuDay } from '../api/mealMenuApi';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useA11yKeyboard } from '../hooks/useA11yKeyboard';
+import { VOICE_A11Y_CANCEL } from '../constants/voiceGuide';
 import styles from './WeeklyMealModal.module.css';
 
 /* ── 날짜 유틸 ── */
@@ -76,11 +79,29 @@ interface WeeklyMealModalProps {
 }
 
 export default function WeeklyMealModal({ storeId, onClose }: WeeklyMealModalProps) {
+  const { speak } = useAccessibility();
   const today = new Date();
   const thisMonday = getMonday(today);
 
   // 0 = 이번주, 1 = 다음주
   const [weekOffset, setWeekOffset] = useState(0);
+
+  // 배리어프리 키패드 매핑 — 읽기 전용 모달
+  //   × (CANCEL) = 닫기, O (ENTER) = 닫기, ← (LEFT) = 이번주, → (RIGHT) = 다음주
+  useA11yKeyboard({
+    speak,
+    mapping: {
+      CANCEL: onClose,
+      ENTER: onClose,
+      LEFT: () => setWeekOffset(0),
+      RIGHT: () => setWeekOffset(1),
+    },
+    echoLabels: {
+      CANCEL: VOICE_A11Y_CANCEL,
+      LEFT: '이번 주',
+      RIGHT: '다음 주',
+    },
+  });
 
   const monday = addDays(thisMonday, weekOffset * 7);
   const friday = addDays(monday, 4);

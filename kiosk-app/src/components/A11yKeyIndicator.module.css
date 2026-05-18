@@ -1,0 +1,63 @@
+/* 배리어프리 키 입력 시각 인디케이터 — 화면 하단 중앙, 자동 fade out */
+
+.indicator {
+  position: fixed;
+  bottom: 80px;            /* AccessibilityBar 위쪽 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;    /* 클릭 방해 X */
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+
+  background: rgba(0, 0, 0, 0.88);
+  color: #fff;
+  border-radius: 16px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+
+  animation: indicator-fade 1.5s ease-out forwards;
+}
+
+.key {
+  display: inline-block;
+  min-width: 2.4em;
+  padding: 6px 16px;
+  background: #2563EB;
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.label {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@keyframes indicator-fade {
+  0%   { opacity: 0; transform: translate(-50%, 12px); }
+  12%  { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+/* 고대비 모드 — 노란 배경 + 굵은 테두리 */
+:global(.high-contrast) .indicator {
+  background: #fff200;
+  color: #000;
+  border: 3px solid #000;
+  box-shadow: 0 0 0 4px #000;
+}
+
+:global(.high-contrast) .key {
+  background: #000;
+  color: #fff200;
+  border: 2px solid #fff200;
+}
