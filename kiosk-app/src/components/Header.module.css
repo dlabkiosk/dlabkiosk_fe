@@ -25,12 +25,14 @@
   color: var(--color-text-muted);
 }
 
-/* 카드리더기 연결 상태 표시 — 텍스트 없이 점만 (QR 전용 기기 거슬리지 않도록 최소화) */
+/* 카드리더기 연결 상태 표시 — 텍스트 없이 점만 (QR 전용 기기 거슬리지 않도록 최소화).
+   .logoSection (display: flex; align-items: flex-end) 안의 마지막 아이템.
+   logo/지점명은 하단 정렬이지만 점만 align-self: flex-start 로 상단 정렬 → 우측 상단 배치. */
 .cardReaderStatus {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--space-3);
-  /* padding/border/배경 제거 — 점만 노출 */
+  align-self: flex-start;
+  margin-left: var(--space-2);
   padding: 0;
   background: transparent;
   border: none;
@@ -43,15 +45,15 @@
   flex-shrink: 0;
 }
 
-/* 연결됨 → 파란점 */
+/* 연결됨 → 초록점 */
 .cardReaderStatusOn .cardReaderDot {
-  background-color: #1B4F9D;
-  box-shadow: 0 0 0 2px rgba(27, 79, 157, 0.2);
+  background-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
 }
 
 /* 미연결 → 빨간점 */
 .cardReaderStatusOff .cardReaderDot {
-  background-color: #dc3545;
+  background-color: var(--color-error);
   box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 }
 

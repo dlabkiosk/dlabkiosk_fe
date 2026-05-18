@@ -107,8 +107,8 @@ export default function Header({ storeName, onAdminAccess, cardReaderConnected }
           onClick={handleLogoTap}
         />
         {storeName && <span className={styles.storeName}>{storeName.replace(/^D'?LAB\s*/i, '')}</span>}
-        {/* 카드리더기(RFID) 연결 상태: 파란점(연결) / 빨간점(미연결).
-            QR 전용 기기에서는 무시 가능한 작은 시각 표시. */}
+        {/* 카드리더기(RFID) 연결 상태: 초록점(연결) / 빨간점(미연결).
+            로고+지점명 영역(왼쪽) 안에서 우측 상단으로 정렬. QR 전용 기기에서는 무시 가능. */}
         <span
           className={`${styles.cardReaderStatus} ${cardReaderConnected ? styles.cardReaderStatusOn : styles.cardReaderStatusOff}`}
           aria-label={cardReaderConnected ? '카드리더기 연결' : '카드리더기 미연결'}

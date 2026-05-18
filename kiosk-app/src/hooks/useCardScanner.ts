@@ -25,19 +25,27 @@ function rememberPort(port: SerialPort): void {
   } catch { /* localStorage 접근 불가 시 무시 */ }
 }
 
-function findRememberedPort(ports: SerialPort[]): SerialPort | null {
+/**
+ * 저장된 USB 식별자(vendor/product) 와 일치하는 모든 포트 반환.
+ *
+ * 동일 모델 카드리더기를 다른 USB 포트로 옮겨 꽂은 경우, 브라우저 권한 목록에는
+ * 옛 포트(이미 disconnected) 와 새 포트가 모두 남아있을 수 있다. `.find()` 로 첫
+ * 번째만 반환하면 disconnected 포트를 만나 open 실패 후 연결 포기될 수 있으므로,
+ * 매칭되는 모든 후보를 순서대로 반환하여 호출 측에서 차례로 시도하도록 한다.
+ */
+function findAllRememberedPorts(ports: SerialPort[]): SerialPort[] {
   try {
     const vendorStr = localStorage.getItem(STORAGE_VENDOR_KEY);
     const productStr = localStorage.getItem(STORAGE_PRODUCT_KEY);
-    if (!vendorStr || !productStr) return null;
+    if (!vendorStr || !productStr) return [];
     const savedVendor = Number(vendorStr);
     const savedProduct = Number(productStr);
-    return ports.find((p) => {
+    return ports.filter((p) => {
       const info = p.getInfo();
       return info.usbVendorId === savedVendor && info.usbProductId === savedProduct;
-    }) ?? null;
+    });
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -76,7 +84,8 @@ function toKoreanError(msg: string): string {
  * ── 디바이스 식별자 매칭 (다른 USB 포트에 꽂혀도 안전) ──
  *   - 어드민 연결 성공 시 USB 벤더/제품 ID 를 localStorage 에 저장
  *   - 자동 재연결 우선순위:
- *       1) 저장된 식별자와 일치하는 포트 (다른 USB 포트로 옮겨도 같은 디바이스로 인식)
+ *       1) 저장된 식별자와 일치하는 포트 — 후보 N개 모두 차례로 시도
+ *          (옛 USB 포트 권한이 남아있고 disconnected 라도 다음 후보로 fallback)
  *       2) 인증된 포트가 정확히 1개면 그것을 사용 (최초 설치 안전망)
  *       3) 그 외 (여러 포트, 매칭 없음) → 보류, 어드민 수동 연결 필요
  */
@@ -261,13 +270,18 @@ export function useCardScanner(
         return;
       }
 
-      // 1순위: 저장된 식별자(USB 벤더/제품 ID) 와 일치하는 포트 우선 매칭
-      const matched = findRememberedPort(ports);
-      if (matched) {
-        console.log('[useCardScanner] 자동 재연결 시도 (식별자 매칭)');
-        const ok = await openAndRead(matched);
-        if (!ok) console.log('[useCardScanner] 자동 재연결 실패 (식별자 매칭)');
-        return;
+      // 1순위: 저장된 식별자(USB 벤더/제품 ID) 와 일치하는 포트 모두 차례로 시도.
+      //   동일 모델 카드리더기를 다른 USB 포트로 옮긴 경우 옛 포트(disconnected) 가
+      //   매칭 리스트의 첫 번째일 수 있으므로, open 실패 시 다음 후보 시도.
+      const matchedPorts = findAllRememberedPorts(ports);
+      if (matchedPorts.length > 0) {
+        console.log(`[useCardScanner] 자동 재연결 시도 (식별자 매칭, 후보 ${matchedPorts.length}개)`);
+        for (const port of matchedPorts) {
+          const ok = await openAndRead(port);
+          if (ok) return; // 성공 시 종료
+        }
+        console.log('[useCardScanner] 식별자 매칭 후보 모두 open 실패 — 다음 fallback 으로 진행');
+        // 매칭 모두 실패 → 1포트 fallback 로 계속 진행
       }
 
       // 2순위: 인증된 포트가 정확히 1개면 그것을 사용 (최초 설치 안전망)
